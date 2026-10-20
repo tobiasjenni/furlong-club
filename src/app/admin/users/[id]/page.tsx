@@ -1,3 +1,4 @@
+import { TradingSummary } from "@/components/TradingSummary";
 import { requireAdmin } from "@/lib/auth";
 import { notFound } from "next/navigation";
 import { addNote, cancelSubscription, confirmEmail, grantPlan, signOutUser, updateUser } from "@/app/actions/admin";
@@ -7,7 +8,7 @@ import { date, dateTime, usd } from "@/lib/format";
 import { ReviewDepositForm } from "@/components/ManualDepositForms";
 import { transactionUrl } from "@/lib/manual-deposits";
 
-export default async function AdminUser({ params }: { params: Promise<{ id: string }> }) {
+export default async function AdminUser({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ tradingOpen?: string }> }) {
   await requireAdmin();
   const user = await db.user.findUnique({
     where: { id: (await params).id },
@@ -46,6 +47,7 @@ export default async function AdminUser({ params }: { params: Promise<{ id: stri
         </div>
         <form action={updateUser} className="card space-y-3">
           <h3 className="text-lg">Account</h3>
+          {(await searchParams).tradingOpen && <p role="alert" className="text-sm text-gold-300">Resolve all pending or unpaid trading allocations before closing this account.</p>}
           <input type="hidden" name="userId" value={user.id} />
           <div className="grid grid-cols-2 gap-3">
             <div><label className="label">Role</label><select name="role" defaultValue={user.role} className="input"><option>USER</option><option>ADMIN</option></select></div>
@@ -73,6 +75,7 @@ export default async function AdminUser({ params }: { params: Promise<{ id: stri
         </form>
       </div>
       <div className="space-y-4">
+        <TradingSummary userId={user.id} admin />
         <div className="card">
           <h3 className="mb-3 text-lg">Crypto deposit approvals</h3>
           {pendingDeposits.length === 0 && <p className="muted text-sm">No reported deposits awaiting approval for this member.</p>}

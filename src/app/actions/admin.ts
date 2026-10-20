@@ -31,6 +31,7 @@ export async function updateUser(form: FormData) {
   const tags = String(form.get("tags") ?? "").split(",").map((t) => t.trim()).filter(Boolean).slice(0, 20);
   if (id === admin.id && (role !== "ADMIN" || status !== "ACTIVE")) return; // can't lock yourself out
   const before = await db.user.findUniqueOrThrow({ where: { id } });
+  if (status === "CLOSED" && await db.tradingAllocation.count({ where: { userId: id, status: { in: ["PENDING", "ACTIVE", "PAYOUT_READY"] } } })) redirect(`/admin/users/${id}?tradingOpen=1`);
   // Suspending, closing or demoting someone signs them out immediately.
   const revoke = status !== "ACTIVE" || role !== before.role;
   await db.user.update({ where: { id }, data: { role, status, tags, ...(revoke ? { sessionVersion: { increment: 1 } } : {}) } });

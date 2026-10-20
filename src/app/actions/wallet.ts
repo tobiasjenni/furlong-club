@@ -19,8 +19,8 @@ export async function startTopup(_: FormState, form: FormData): Promise<FormStat
   if (!await rateLimit(`topup:${user.id}`, 10, 3600000)) return { error: "Too many attempts. Please try again later." };
   const option = checkoutOptions[Number(form.get("option"))];
   const input = String(form.get("amount") ?? "");
-  const amount = /^\d{1,4}(\.\d{1,2})?$/.test(input) ? decimal(input)?.times(100) : null;
-  if (!amount?.isInteger() || amount.lt(2000) || amount.gt(100000)) return { error: "Choose an amount from $20 to $1,000, with up to two decimal places." };
+  const amount = /^\d{1,5}(\.\d{1,2})?$/.test(input) ? decimal(input)?.times(100) : null;
+  if (!amount?.isInteger() || amount.lt(2000) || amount.gt(1000000)) return { error: "Choose an amount from $20 to $10,000, with up to two decimal places." };
   if (!option || !depositsReady(option)) return { error: "This network is not configured yet." };
   let id: string;
   try {

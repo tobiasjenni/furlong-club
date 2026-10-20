@@ -17,6 +17,7 @@ export function DangerZone() {
         <h2 className="text-xl">Take a break or close your account</h2>
         <p className="muted mt-1 text-sm">
           If betting has stopped being fun, closing your account stops all emails and access straight away. To reopen it later, contact support.
+          Any wallet credit, pending deposits or open trading allocations and payouts must be resolved first. Contact support if you need to pause access while those are reviewed.
         </p>
         <form action={action} className="mt-4 space-y-3">
           <input name="password" type="password" placeholder="Your password" className="input" autoComplete="current-password" required />

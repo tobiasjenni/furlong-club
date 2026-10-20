@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireAdmin } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { PendingTradingNotice } from "@/components/PendingTradingNotice";
 import { PendingDepositNotice } from "@/components/PendingDepositNotice";
 
 export const metadata = { title: { default: "Admin", template: "%s · Admin" }, robots: { index: false } };
@@ -9,6 +10,7 @@ const nav = [
   { href: "/admin", label: "Overview" },
   { href: "/admin/users", label: "Users & CRM" },
   { href: "/admin/deposits", label: "Deposit approvals" },
+  { href: "/admin/trading", label: "Trading allocations" },
   { href: "/admin/payments", label: "Payments" },
   { href: "/admin/wallet", label: "Wallet & reconciliation" },
   { href: "/admin/videos", label: "Videos" },
@@ -18,7 +20,11 @@ const nav = [
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   await requireAdmin();
-  const pending = await db.payment.count({ where: { provider: "manual", status: "CONFIRMING" } });
+  const [pending, tradingPending, tradingDue] = await Promise.all([
+    db.payment.count({ where: { provider: "manual", status: "CONFIRMING" } }),
+    db.tradingAllocation.count({ where: { status: "PENDING" } }),
+    db.tradingAllocation.count({ where: { OR: [{ status: "ACTIVE", unlocksAt: { lte: new Date() } }, { status: "PAYOUT_READY" }] } }),
+  ]);
   return (
     <div className="container-page py-8">
       <div className="mb-6 flex items-center gap-3">
@@ -31,6 +37,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         ))}
       </nav>
       <PendingDepositNotice initialCount={pending} />
+      <PendingTradingNotice initialPending={tradingPending} initialDue={tradingDue} />
       {children}
     </div>
   );

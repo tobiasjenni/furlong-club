@@ -1,7 +1,7 @@
 export const brand = {
   name: "Furlong Club",
   domain: "furlong.club",
-  // The site's host: a fictional character with an AI-generated portrait.
+  // Harry is the site's host. The current portrait asset is an AI-generated illustration.
   host: { first: "Harry", name: "Harry Whitcombe", page: "/meet-harry" },
   supportEmail: "support@furlong.club",
 };

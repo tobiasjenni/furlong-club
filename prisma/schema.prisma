@@ -76,6 +76,7 @@ model User {
   tags            String[]        @default([])
   tokens          AuthToken[]
   walletJournal   WalletJournal[]
+  tradingAllocations TradingAllocation[]
 }
 
 model AuthToken {
@@ -171,6 +172,7 @@ model Payment {
   events            PaymentEvent[]
   journal           WalletJournal[]
   receiptClaims     ReceiptClaim[]
+  chainClaims       ChainTransferClaim[]
 
   @@unique([provider, providerRef])
   @@index([userId])
@@ -204,6 +206,10 @@ model WalletJournal {
   userDeltaCents     Int
   clearingDeltaCents Int
   revenueDeltaCents  Int
+  lockedDeltaCents   Int      @default(0)
+  tradingResultDeltaCents Int @default(0)
+  allocationId       String?
+  allocation         TradingAllocation? @relation(fields: [allocationId], references: [id], onDelete: Restrict)
   createdAt          DateTime @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)"))
 
   @@index([userId, createdAt])
@@ -272,4 +278,75 @@ model AuditLog {
   createdAt DateTime @default(now())
 
   @@index([createdAt])
+}
+
+model TradingProgram {
+  id                String @id
+  enrollmentEnabled Boolean @default(false)
+}
+
+model TradingAllocation {
+  id              String @id
+  userId          String
+  user            User @relation(fields: [userId], references: [id], onDelete: Restrict)
+  requestKey      String @unique
+  principalCents  Int
+  currency        String
+  network         String
+  payoutAddress   String
+  termsVersion    String
+  termsSnapshot   Json
+  status          String @default("PENDING")
+  requestedAt     DateTime @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)"))
+  approvedAt      DateTime?
+  approvedById    String?
+  unlocksAt       DateTime?
+  reviewedAt      DateTime?
+  reviewedById    String?
+  reviewNote      String?
+  profitCents     Int?
+  payoutCents     Int?
+  resultAt        DateTime?
+  resultById      String?
+  resultNote      String?
+  paidAt          DateTime?
+  paidById        String?
+  payoutTxHash    String?
+  payoutNote      String?
+  events          TradingEvent[]
+  journal         WalletJournal[]
+  payoutClaim     TradingPayoutClaim?
+  chainClaims     ChainTransferClaim[]
+
+  @@index([userId, requestedAt])
+  @@index([status, unlocksAt])
+}
+
+model TradingEvent {
+  id           String @id
+  allocationId String
+  allocation   TradingAllocation @relation(fields: [allocationId], references: [id], onDelete: Restrict)
+  actorId      String
+  action       String
+  payload      Json
+  createdAt    DateTime @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)"))
+
+  @@index([allocationId, createdAt])
+}
+
+model TradingPayoutClaim {
+  key          String @id
+  allocationId String @unique
+  allocation   TradingAllocation @relation(fields: [allocationId], references: [id], onDelete: Restrict)
+  network      String
+  txHash       String
+  createdAt    DateTime @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)"))
+}
+
+model ChainTransferClaim {
+  key          String @id
+  paymentId    String?
+  payment      Payment? @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+  allocationId String?
+  allocation   TradingAllocation? @relation(fields: [allocationId], references: [id], onDelete: Restrict)
 }

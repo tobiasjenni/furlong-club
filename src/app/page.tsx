@@ -1,3 +1,4 @@
+import { TradingOffer } from "@/components/TradingOffer";
 import Link from "next/link";
 import { PlanCard } from "@/components/PlanCard";
 import { HostPortrait } from "@/components/HostPortrait";
@@ -21,7 +22,7 @@ const highlights = [
 
 const faqs = [
   { q: "Is Furlong Club a bookmaker?", a: "No. We teach you how to read a race and share our opinion on the day's cards. We accept membership payments and club credit, but never take bets or bet on your behalf. If you choose to bet, you do it yourself with a licensed bookmaker." },
-  { q: "Who is Harry Whitcombe?", a: "Harry is our fictional host with an AI-generated portrait. The analysis behind the videos comes from our team of racing analysts." },
+  { q: "Who is Harry Whitcombe?", a: "Harry Whitcombe is the host of Furlong Club. The current portrait on the site is an AI-generated illustration." },
   { q: "How do I pay?", a: "Paid plans are paid upfront in USDT or USDC and run for 30 days. They do not renew automatically, so you are never charged without choosing to." },
   { q: "Can I cancel?", a: "There is nothing to cancel: when your 30 days end, your plan simply stops. You keep your free account and the intro videos." },
   { q: "Do you guarantee winnings?", a: "No one can. Our videos are education and opinion, not advice. Only bet what you can afford to lose, and stop if it stops being fun." },
@@ -50,7 +51,7 @@ export default async function Home() {
           </div>
           <div className="relative">
             <HostPortrait className="mx-auto w-full max-w-[340px] shadow-2xl" />
-            <p className="muted mt-3 text-center text-xs">Meet {brand.host.name}, our paddock guide. A fictional character with an AI-generated portrait.</p>
+            <p className="muted mt-3 text-center text-xs">Meet {brand.host.name}, our paddock guide. AI-generated illustration.</p>
           </div>
         </div>
       </section>
@@ -85,13 +86,14 @@ export default async function Home() {
           <div>
             <h2 className="text-3xl">Who is {brand.host.first}?</h2>
             <p className="mt-3 text-cream/75">
-              {brand.host.name} is the face of {brand.name}: a flat-capped, binocular-toting regular of British racecourses we created to
-              host our videos. The analysis behind him comes from our team, who have spent years studying UK racing.
+              {brand.host.name} is the host of {brand.name}. Join Harry for racing education, race-day analysis and a closer look at the form.
             </p>
             <Link href={brand.host.page} className="mt-4 inline-block text-gold-300 hover:underline">Read {brand.host.first}&apos;s story →</Link>
           </div>
         </div>
       </section>
+
+      <div className="container-page py-8"><TradingOffer /></div>
 
       <section id="plans" className="container-page py-16 md:py-20">
         <h2 className="text-3xl md:text-4xl">Choose your plan</h2>

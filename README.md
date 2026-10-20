@@ -10,8 +10,10 @@ Horse racing education and tip-video membership site. Next.js 15 + TypeScript + 
   - `mock` provider for local testing (a "simulate payment" button appears on the pay page)
   - `nowpayments` provider with signed IPN webhook at `/api/payments/webhook/nowpayments`
 - Admin back office: stats, user search and filters, CRM notes and tags, role/suspend, grant or cancel access, payments list, video CRUD, plan editing, CSV export
-- Member wallet: USDT/USDC top-ups, USD credit balance, payment receipts and membership purchases from balance. Immutable balanced ledger and pooled settlement trail in admin. Live funding remains disabled until configured; no withdrawals or member-to-member transfers.
-- The host, Harry Whitcombe, is a fictional character with an AI-generated portrait and a visible "fictional character" disclosure; 18+ and responsible gambling notices site-wide; no return claims
+- Member wallet: USDT/USDC top-ups, USD credit balance, payment receipts and membership purchases from balance. Immutable balanced ledger and pooled settlement trail in admin. Manual funding uses configured receiving wallets and admin verification. General withdrawals and member-to-member transfers are not supported.
+- Harry Whitcombe is the real host, as confirmed by the site owner. The current image remains labeled as an AI-generated illustration. Trading terms and daily targets are provisional; production enrollment remains closed.
+
+See [trading operations](docs/trading-operations.md) for the draft $500–$10,000 allocation flow, 33-day locks, actual-result review and manual external payout records. Real trading enrollment remains closed.
 
 ## Run locally
 ```bash
@@ -42,7 +44,7 @@ With `EMAIL_PROVIDER=console`, verification and reset links are printed in the s
 
 ## Going live checklist
 - Postgres (Neon, Supabase, RDS) and hosting (Vercel or any Node host)
-- `PAYMENT_PROVIDER=nowpayments` with API key and IPN secret; set `APP_URL` to the public URL
+- Current manual deposits use `DEPOSIT_MODE=manual`, `WALLET_ENABLED=true` and configured receiving addresses. Optional automated deposits additionally need `PAYMENT_PROVIDER=nowpayments` with API/IPN credentials. Set `APP_URL` to the public URL.
 - Private video hosting (Vimeo private embeds, Bunny Stream or Mux signed URLs) so paid videos can't be shared
 - Resend account and a verified sending domain (`RESEND_API_KEY`)
 - Bunny Stream library with token authentication on (`BUNNY_LIBRARY_ID`, `BUNNY_TOKEN_KEY`)
@@ -69,7 +71,7 @@ GitHub repository secrets (Settings → Secrets and variables → Actions):
 `AUTH_SECRET` and `CRON_SECRET` are generated on the first deploy and kept on the Worker (add a GitHub secret with the same name to set them yourself).
 | `RESEND_API_KEY`, `NOWPAYMENTS_API_KEY`, `NOWPAYMENTS_IPN_SECRET`, `BUNNY_TOKEN_KEY` | Optional, once those accounts exist |
 
-Non-secret settings live in `wrangler.jsonc` under `vars`. Production uses `nowpayments` with simulations explicitly disabled; deposits and direct checkout remain unavailable unless API credentials and a valid receiving address are configured. The separate `wrangler.test.jsonc` deployment enables simulations only with all three settings: `APP_ENV=staging`, `ENABLE_TEST_PAYMENTS=true`, and `PAYMENT_PROVIDER=mock`. Complete [wallet setup](docs/wallet-setup.md) before accepting money. Emails go out through Resend as soon as the `RESEND_API_KEY` secret exists. Until then, admins can confirm emails by hand and get invite and reset links to pass on themselves. Production never logs usable verification or reset links.
+Non-secret settings live in `wrangler.jsonc` under `vars`. Production uses `DEPOSIT_MODE=manual` with simulations explicitly disabled: deposits go to configured public receiving addresses and credit only after admin verification. No payment-provider API key is required for manual deposits. Direct provider checkout is hidden in manual mode. The separate `wrangler.test.jsonc` deployment enables simulations only with all three settings: `APP_ENV=staging`, `ENABLE_TEST_PAYMENTS=true`, and `PAYMENT_PROVIDER=mock`. Complete [wallet setup](docs/wallet-setup.md) before accepting money. Emails go out through Resend as soon as the `RESEND_API_KEY` secret exists. Until then, admins can confirm emails by hand and get invite and reset links to pass on themselves. Production never logs usable verification or reset links.
 
 The Worker needs the Workers Paid plan ($5/month), because password hashing and the database engine use more CPU per request than the free plan's 10 ms allows. `.github/workflows/daily.yml` runs `npm run daily` (renewal reminders, clean-up) every morning against the production database.
 

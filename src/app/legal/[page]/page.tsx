@@ -10,13 +10,14 @@ const pages: Record<string, { title: string; body: string[] }> = {
       "You must be 18 or over, and of legal age to gamble where you live, to use the service.",
       "Subscriptions are paid in advance in stablecoins and run for the stated period. Crypto payments are final once confirmed on-chain.",
       `${brand.name} does not place bets on your behalf and does not hold funds for betting.`,
-      `${brand.host.name} is a fictional character used as the host of ${brand.name}. His portrait is AI-generated and does not show a real person.`,
+      "Trading with Harry is a proposal with unfinished terms. Real trading enrollment is closed. The proposed 2–3% daily target is unverified and not guaranteed. Trading can lose some or all of the principal. The proposed 33-day lock begins on admin approval; any payout is based on actual recorded results and processed manually after maturity. No automated trading or payout is provided by this website.",
+      `${brand.host.name} is the host of ${brand.name}. The current site portrait is an AI-generated illustration, not a photograph.`,
     ],
   },
   privacy: {
     title: "Privacy policy",
     body: [
-      "We store your name, email, optional country, login times and payment records to run your account.",
+      "We store your name, email, optional country, login times, payment records and any trading requests, accepted terms, payout addresses, results and transaction references to run your account. Financial records and audit history are retained when an account closes.",
       "We do not sell your data. Marketing emails are only sent if you opt in, and you can opt out at any time from your account page.",
       `To request a copy or deletion of your data, email ${brand.supportEmail}.`,
     ],

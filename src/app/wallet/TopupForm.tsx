@@ -10,12 +10,12 @@ export function TopupForm({ options, disabled, manual }: { options: { value: num
   const currency = options.find(o => o.value === selected)?.currency ?? "USDT";
   return <form action={action} className="space-y-4">
     <label className="label" htmlFor="topup-amount">{manual ? `Amount to send (${currency})` : "Amount to add (USD)"}</label>
-    <input id="topup-amount" className="input" name="amount" type="number" min="20" max="1000" step="0.01" defaultValue="50" required disabled={disabled} />
+    <input id="topup-amount" className="input" name="amount" type="number" min="20" max="10000" step="0.01" defaultValue="50" required disabled={disabled} />
     <label className="label" htmlFor="topup-network">Pay with</label>
     <select id="topup-network" name="option" className="input" disabled={disabled} value={selected} onChange={event => setSelected(Number(event.target.value))}>
       {options.map(o => <option key={o.value} value={o.value} disabled={!o.enabled}>{o.label}{!o.enabled ? " · unavailable" : ""}</option>)}
     </select>
-    <p className="muted text-xs">{manual ? "Choose an amount from 20 to 1,000 tokens. Each USDT or USDC adds $1 of USD club credit after admin approval. Network fees are paid separately." : "You receive the USD credit shown above once payment and transfer are complete. Send the exact token amount on the next page. Network fees are paid separately; provider minimums can vary."}</p>
+    <p className="muted text-xs">{manual ? "Choose an amount from 20 to 10,000 tokens. Each USDT or USDC adds $1 of USD club credit after admin approval. Network fees are paid separately." : "You receive the USD credit shown above once payment and transfer are complete. Send the exact token amount on the next page. Network fees are paid separately; provider minimums can vary."}</p>
     <FormMessage state={state} />
     <SubmitButton disabled={disabled}>{manual ? "Show deposit address" : "Continue to deposit"}</SubmitButton>
   </form>;

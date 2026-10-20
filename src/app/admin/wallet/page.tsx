@@ -9,7 +9,7 @@ import { depositAddress, depositsReady, manualDepositsEnabled } from "@/lib/manu
 export default async function AdminWallet() {
   await requireAdmin();
   const [totals, drift, pools, review, entries] = await Promise.all([
-    db.walletJournal.aggregate({ _sum: { userDeltaCents: true, revenueDeltaCents: true } }),
+    db.walletJournal.aggregate({ _sum: { userDeltaCents: true, revenueDeltaCents: true, lockedDeltaCents: true, tradingResultDeltaCents: true } }),
     db.$queryRaw<{ id: string; email: string; balanceCents: number; ledgerCents: bigint }[]>`
       SELECT u.id,u.email,u."balanceCents",COALESCE(SUM(j."userDeltaCents"),0)::bigint AS "ledgerCents"
       FROM "User" u LEFT JOIN "WalletJournal" j ON j."userId"=u.id
@@ -25,6 +25,7 @@ export default async function AdminWallet() {
       <div className="card"><p className="muted text-sm">Membership sales (ledger)</p><p className="mt-2 text-3xl">{usd(totals._sum.revenueDeltaCents ?? 0)}</p></div>
       <div className="card"><p className="muted text-sm">Balance reconciliation</p><p className={`mt-2 text-2xl ${drift.length ? "text-red-300" : "text-emerald-300"}`}>{drift.length ? `${drift.length} mismatches` : "All member balances match"}</p></div>
     </div>
+    <section className="card"><h2 className="text-xl">Trading funds · separate from membership credit</h2><p className="mt-3 text-sm">Locked / unpaid principal: <strong>{usd(totals._sum.lockedDeltaCents ?? 0)}</strong> · Completed net member trading result: {usd(-(totals._sum.tradingResultDeltaCents ?? 0))}</p><Link href="/admin/trading" className="mt-3 inline-block text-sm text-gold-300 underline">Review all allocations, maturity dates, payouts and locked-principal reconciliation →</Link></section>
     <section className="card"><h2 className="text-xl">Receiving wallet setup</h2>
       <p className="muted mt-2 text-sm">Wallet payments are {walletEnabled ? "enabled" : "disabled"}. Configure a receiving address for each enabled token/network. No private keys belong in this app.</p>
       <ul className="mt-4 space-y-3 text-sm">{checkoutOptions.map(o => {
@@ -42,9 +43,9 @@ export default async function AdminWallet() {
       {review.length === 0 ? <p className="muted text-sm">No flagged payments.</p> : <table className="table"><thead><tr><th>User</th><th>Reason</th><th>Reference</th></tr></thead><tbody>{review.map(p => <tr key={p.id}><td>{p.user.email}</td><td>{p.reviewReason}</td><td><Link className="text-gold-300 underline" href={`/admin/payments/${p.id}`}>{p.id}</Link></td></tr>)}</tbody></table>}
     </section>
     <section className="card overflow-x-auto"><h2 className="mb-4 text-xl">Latest 100 journal entries · USD cents</h2>
-      <table className="table"><thead><tr><th>Date / reference</th><th>User</th><th>Operation</th><th>Member credit</th><th>Clearing</th><th>Sales</th></tr></thead>
-        <tbody>{entries.map(e => <tr key={e.id}><td>{dateTime(e.createdAt)}<span className="muted block max-w-48 break-all text-xs">{e.paymentId ? <Link className="text-gold-300 underline" href={`/admin/payments/${e.paymentId}`}>{e.id}</Link> : e.id}</span></td><td>{e.user.email}</td><td>{e.kind}<br />{e.description}</td><td>{e.userDeltaCents}</td><td>{e.clearingDeltaCents}</td><td>{e.revenueDeltaCents}</td></tr>)}</tbody>
-      </table><p className="muted mt-3 text-xs">Each row sums to zero. Top-ups create member credit; purchases move it into sales. Historical pre-ledger payments are marked LEGACY and are not reconstructed here.</p>
+      <table className="table"><thead><tr><th>Date / reference</th><th>User</th><th>Operation</th><th>Member credit</th><th>Locked</th><th>Clearing</th><th>Trading result offset</th><th>Sales</th></tr></thead>
+        <tbody>{entries.map(e => <tr key={e.id}><td>{dateTime(e.createdAt)}<span className="muted block max-w-48 break-all text-xs">{e.paymentId ? <Link className="text-gold-300 underline" href={`/admin/payments/${e.paymentId}`}>{e.id}</Link> : e.allocationId ? <Link className="text-gold-300 underline" href={`/admin/trading/${e.allocationId}`}>{e.id}</Link> : e.id}</span></td><td>{e.user.email}</td><td>{e.kind}<br />{e.description}</td><td>{e.userDeltaCents}</td><td>{e.lockedDeltaCents}</td><td>{e.clearingDeltaCents}</td><td>{e.tradingResultDeltaCents}</td><td>{e.revenueDeltaCents}</td></tr>)}</tbody>
+      </table><p className="muted mt-3 text-xs">Each row sums to zero across all five accounts. Trading locks and actual results are separate from membership sales. Historical pre-ledger payments are marked LEGACY and are not reconstructed here.</p>
     </section>
   </div>;
 }

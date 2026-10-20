@@ -1,3 +1,4 @@
+import { TradingSummary } from "@/components/TradingSummary";
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { checkoutOptions, walletEnabled } from "@/lib/config";
@@ -28,7 +29,7 @@ export default async function WalletPage() {
         <div><p className="muted text-sm">Available balance · USD credit</p><p className="mt-2 font-display text-5xl">{usd(user.balanceCents)}</p>
           <p className="muted mt-4 text-sm">Pending top-ups: {usd(pendingCents)}. Pending funds cannot be spent.</p></div>
         <div className="mt-8"><Link href="/plans" className="btn-gold">Use balance for membership</Link>
-          <p className="muted mt-4 text-xs">Your balance is Furlong Club credit in USD. It is not a USDT or USDC token balance. Withdrawals and transfers to other members are not supported.</p></div>
+          <p className="muted mt-4 text-xs">Your balance is Furlong Club credit in USD. It is not a USDT or USDC token balance. General withdrawals and transfers to other members are not supported. Approved trading allocations have a separate lock and external payout record.</p></div>
       </section>
       <section className="card space-y-4"><h2 className="text-2xl">Add funds</h2>
         {!ready && <p role="status" className="rounded-xl bg-gold-400/10 p-3 text-sm text-gold-300">Deposits are currently unavailable. Please check back soon.</p>}
@@ -36,6 +37,7 @@ export default async function WalletPage() {
         <TopupForm options={options} manual={manualDepositsEnabled} disabled={!ready || user.walletFrozen || !user.emailVerifiedAt} />
       </section>
     </div>
+    <TradingSummary userId={user.id} />
     <section className="card"><h2 className="text-xl">How deposits work</h2>
       <ol className="mt-4 grid gap-4 text-sm sm:grid-cols-3">
         <li><span className="text-gold-300">1. Choose and send</span><p className="muted mt-1">Choose your token, network and amount. Send the exact amount to the address shown.</p></li>

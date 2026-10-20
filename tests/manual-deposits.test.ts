@@ -136,7 +136,7 @@ describe("manual deposit lifecycle and financial controls", () => {
     await pg.query(`UPDATE "User" SET "emailVerifiedAt"=now(),"walletFrozen"=true WHERE id=$1`, [other]);
     expect(await create(crypto.randomUUID(), other)).toBe("frozen");
   });
-  it.each([0, 1999, 100001, -2000])("rejects invalid requested cents %s", async cents => {
+  it.each([0, 1999, 1000001, -2000])("rejects invalid requested cents %s", async cents => {
     expect(await create(crypto.randomUUID(), member, cents)).toBe("invalid");
   });
   it("cancels only an unsent request and retains late-transfer reporting", async () => {
