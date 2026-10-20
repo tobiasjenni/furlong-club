@@ -34,7 +34,8 @@ async function main() {
     },
   ];
   for (const p of plans) {
-    await db.plan.upsert({ where: { slug: p.slug }, update: p, create: p });
+    // Only create: prices and copy edited in the admin panel must survive redeploys.
+    await db.plan.upsert({ where: { slug: p.slug }, update: {}, create: p });
   }
 
   const videos = [

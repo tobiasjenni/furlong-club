@@ -26,7 +26,8 @@ const signupSchema = z.object({
 });
 
 // Used when the email is unknown, so a failed login takes as long as a real one and doesn't reveal which emails exist.
-const DUMMY_HASH = bcrypt.hashSync("timing-equaliser-not-a-real-password", 12);
+// A fixed cost-12 hash of a random string, so the comparison costs the same as a real one.
+const DUMMY_HASH = "$2a$12$C6UzMDM.H6dfI/f/IKcEeO5mJ4mRFKuJ1bQnzD6gjmpo8l3Ws7vqS";
 
 async function sendVerification(user: { id: string; email: string }) {
   const token = await issueToken(user.id, "VERIFY_EMAIL");

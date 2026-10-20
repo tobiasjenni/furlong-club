@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { addNote, cancelSubscription, grantPlan, updateUser } from "@/app/actions/admin";
+import { addNote, cancelSubscription, confirmEmail, grantPlan, updateUser } from "@/app/actions/admin";
 import { db } from "@/lib/db";
 import { date, dateTime, usd } from "@/lib/format";
 
@@ -23,7 +23,12 @@ export default async function AdminUser({ params }: { params: Promise<{ id: stri
           <h2 className="text-xl">{user.name ?? "—"}</h2>
           <p className="muted text-sm">{user.email}</p>
           <dl className="mt-4 grid grid-cols-2 gap-2 text-sm">
-            <dt className="muted">Email confirmed</dt><dd>{user.emailVerifiedAt ? date(user.emailVerifiedAt) : "Not yet"}</dd>
+            <dt className="muted">Email confirmed</dt>
+            <dd>
+              {user.emailVerifiedAt ? date(user.emailVerifiedAt) : (
+                <form action={confirmEmail}><input type="hidden" name="userId" value={user.id} /><button className="text-gold-300 hover:underline">Not yet · confirm manually</button></form>
+              )}
+            </dd>
             <dt className="muted">Country</dt><dd>{user.country ?? "—"}</dd>
             <dt className="muted">Joined</dt><dd>{dateTime(user.createdAt)}</dd>
             <dt className="muted">Last login</dt><dd>{dateTime(user.lastLoginAt)}</dd>

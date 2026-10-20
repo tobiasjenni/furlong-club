@@ -48,3 +48,29 @@ With `EMAIL_PROVIDER=console`, verification and reset links are printed in the s
 - Bunny Stream library with token authentication on (`BUNNY_LIBRARY_ID`, `BUNNY_TOKEN_KEY`)
 - `CRON_SECRET` set and the daily job scheduled
 - Replace placeholder legal pages with reviewed text
+
+## Deploying to Cloudflare (furlong.club)
+The app runs on Cloudflare Workers through the OpenNext adapter, with a Neon Postgres database reached over Neon's HTTP driver (`DATABASE_DRIVER=neon-http`). Every push to `main` runs `.github/workflows/deploy.yml`, which:
+1. applies migrations,
+2. seeds plans and the admin account (plans and videos are only created, never overwritten),
+3. builds with `opennextjs-cloudflare`,
+4. uploads Worker secrets,
+5. deploys to `furlong.club` and `www.furlong.club`.
+
+GitHub repository secrets (Settings → Secrets and variables → Actions):
+
+| Secret | What it is |
+| --- | --- |
+| `CLOUDFLARE_API_TOKEN` | API token from the "Edit Cloudflare Workers" template, with the furlong.club zone included |
+| `CLOUDFLARE_ACCOUNT_ID` | Shown on the Cloudflare dashboard overview |
+| `DATABASE_URL` | Neon connection string (`postgresql://…neon.tech/…?sslmode=require`) |
+| `AUTH_SECRET` | `openssl rand -base64 48` |
+| `CRON_SECRET` | `openssl rand -hex 24` |
+| `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD` | First admin login |
+| `RESEND_API_KEY`, `NOWPAYMENTS_API_KEY`, `NOWPAYMENTS_IPN_SECRET`, `BUNNY_TOKEN_KEY` | Optional, once those accounts exist |
+
+Non-secret settings live in `wrangler.jsonc` under `vars`. While `PAYMENT_PROVIDER` is `mock`, a "Test mode" banner shows on every page and no real crypto moves. To go live with payments, switch it to `nowpayments` and set `EMAIL_PROVIDER` to `resend`. Until email is set up, admins can confirm a member's email by hand on the user page.
+
+The Worker needs the Workers Paid plan ($5/month), because password hashing and the database engine use more CPU per request than the free plan's 10 ms allows. `.github/workflows/daily.yml` calls the daily job (renewal reminders, clean-up) every morning.
+
+Local Workers preview: put `DATABASE_URL`, `DATABASE_DRIVER=neon-http` and `AUTH_SECRET` in `.dev.vars`, then run `npm run cf:preview`.

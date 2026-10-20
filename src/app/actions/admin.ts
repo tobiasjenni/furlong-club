@@ -116,3 +116,11 @@ export async function savePlan(form: FormData) {
   await audit(admin.id, "admin.plan_updated", id);
   revalidatePath("/admin/plans");
 }
+
+export async function confirmEmail(form: FormData) {
+  const admin = await requireAdmin();
+  const id = String(form.get("userId"));
+  await db.user.update({ where: { id }, data: { emailVerifiedAt: new Date() } });
+  await audit(admin.id, "admin.email_confirmed", id);
+  revalidatePath(`/admin/users/${id}`);
+}

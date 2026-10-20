@@ -1,0 +1,13 @@
+name: Daily jobs
+
+on:
+  schedule:
+    - cron: "0 8 * * *"
+  workflow_dispatch:
+
+jobs:
+  cron:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Renewal reminders and clean-up
+        run: curl --fail-with-body -sS -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" https://furlong.club/api/cron/daily

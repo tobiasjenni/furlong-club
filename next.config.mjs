@@ -20,6 +20,8 @@ const csp = [
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   poweredByHeader: false,
+  // Lets the Cloudflare build resolve Prisma to its WebAssembly (workerd) build.
+  serverExternalPackages: ["@prisma/client", ".prisma/client"],
   async headers() {
     return [
       {
