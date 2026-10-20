@@ -21,7 +21,7 @@ export default async function DepositApprovals({ searchParams }: { searchParams:
       {payments.length ? <table className="table"><thead><tr><th>Reported</th><th>Member</th><th>Amount</th><th>Credit</th><th>Transaction</th><th /></tr></thead>
         <tbody>{payments.map(payment => <tr key={payment.id}><td>{dateTime(payment.submittedAt)}</td>
           <td><Link href={`/admin/users/${payment.userId}`} className="text-gold-300 underline">{payment.user.name || payment.user.email}</Link><span className="muted block text-xs">{payment.user.email}</span></td>
-          <td>{payment.payAmount} {payment.currency}<span className="muted block text-xs">{payment.network}</span></td><td>{usd(payment.amountCents)}</td>
+          <td>{(payment.amountCents / 100).toFixed(2)} {payment.currency}<span className="muted block text-xs">{payment.network}</span></td><td>{usd(payment.amountCents)}</td>
           <td className="max-w-40 break-all font-mono text-xs">{payment.submittedTxHash}</td>
           <td><Link href={`/admin/payments/${payment.id}`} className="btn-gold whitespace-nowrap">Review</Link></td></tr>)}</tbody></table>
         : <p className="muted text-sm">No deposits awaiting approval.</p>}

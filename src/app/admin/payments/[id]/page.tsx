@@ -35,7 +35,7 @@ export default async function PaymentAudit({ params, searchParams }: { params: P
   </section>
   {payment.provider === "manual" && payment.status === "CONFIRMING" && <section className="card space-y-5">
     <h2 className="text-xl">Review deposit for {payment.user.email}</h2>
-    <p className="text-sm">Requested credit: <strong>{usd(payment.amountCents)}</strong>. Verify <strong>{payment.payAmount} {payment.currency}</strong> arrived at the saved receiving address on <strong>{payment.network}</strong>.</p>
+    <p className="text-sm">Requested credit: <strong>{usd(payment.amountCents)}</strong>. Verify <strong>{(payment.amountCents / 100).toFixed(2)} {payment.currency}</strong> arrived at the saved receiving address on <strong>{payment.network}</strong>.</p>
     {transactionUrl(payment.network, payment.submittedTxHash) && <a href={transactionUrl(payment.network, payment.submittedTxHash)!} target="_blank" rel="noreferrer" className="inline-block text-sm text-gold-300 underline">Inspect reported transaction ↗</a>}
     <ReviewDepositForm id={payment.id} submittedHash={payment.submittedTxHash} amount={(payment.amountCents / 100).toFixed(2)} token={payment.currency} network={payment.network} />
   </section>}

@@ -79,7 +79,7 @@ export default async function AdminUser({ params }: { params: Promise<{ id: stri
           {pendingDeposits.map(payment => {
             const explorer = transactionUrl(payment.network, payment.submittedTxHash);
             return <div key={payment.id} className="space-y-4 border-t border-white/10 py-4">
-              <div><p className="font-semibold text-gold-300">{payment.payAmount} {payment.currency} · {payment.network} · {usd(payment.amountCents)} credit</p>
+              <div><p className="font-semibold text-gold-300">{(payment.amountCents / 100).toFixed(2)} {payment.currency} · {payment.network} · {usd(payment.amountCents)} credit</p>
                 <p className="muted mt-1 text-xs">Reported {dateTime(payment.submittedAt)}</p>
                 <p className="mt-2 break-all text-xs">Receiving address: <code>{payment.poolAddress}</code></p>
                 {explorer && <a href={explorer} target="_blank" rel="noreferrer" className="mt-2 inline-block text-xs text-gold-300 underline">Inspect reported transaction ↗</a>}</div>
