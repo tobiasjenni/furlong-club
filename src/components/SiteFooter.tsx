@@ -12,13 +12,13 @@ export function SiteFooter() {
             risk and you can lose the money you stake. Only bet what you can afford to lose.
           </p>
           <p className="muted max-w-md">
-            Rob is a fictional character and the brand mascot of {brand.name}. The videos are made by our team of racing
-            analysts.
+            {brand.host.name} is a fictional character and the host of {brand.name}; his portrait is AI-generated. The videos
+            are made by our team of racing analysts.
           </p>
         </div>
         <div className="space-y-2">
           <p className="font-semibold text-cream">Company</p>
-          <Link href="/about-rob" className="muted block hover:text-gold-300">Meet Rob</Link>
+          <Link href={brand.host.page} className="muted block hover:text-gold-300">Meet {brand.host.first}</Link>
           <Link href="/plans" className="muted block hover:text-gold-300">Plans</Link>
           <a href={`mailto:${brand.supportEmail}`} className="muted block hover:text-gold-300">Support</a>
         </div>

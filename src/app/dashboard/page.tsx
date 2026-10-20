@@ -1,3 +1,4 @@
+import { brand } from "@/lib/config";
 import Link from "next/link";
 import { VerifyBanner } from "@/components/VerifyBanner";
 import { VideoCard } from "@/components/VideoCard";
@@ -47,7 +48,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
 
       <section>
         <div className="flex items-end justify-between">
-          <h2 className="text-2xl">Latest from Rob</h2>
+          <h2 className="text-2xl">Latest from {brand.host.first}</h2>
           <Link href="/videos" className="text-sm text-gold-300 hover:underline">All videos →</Link>
         </div>
         <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

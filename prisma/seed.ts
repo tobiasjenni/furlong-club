@@ -12,7 +12,7 @@ async function main() {
       priceCents: 0,
       tier: 0,
       sortOrder: 0,
-      features: ["Intro videos with Rob", "Glossary of racing terms", "Weekly newsletter"],
+      features: ["Intro videos with Harry", "Glossary of racing terms", "Weekly newsletter"],
     },
     {
       slug: "form",
@@ -39,18 +39,33 @@ async function main() {
   }
 
   const videos = [
-    { slug: "welcome-to-the-paddock", title: "Welcome to the paddock", summary: "Meet Rob and learn how the course is laid out.", minTier: 0, durationMin: 6, category: "Fundamentals" },
+    { slug: "welcome-to-the-paddock", title: "Welcome to the paddock", summary: "Meet Harry and learn how the course is laid out.", minTier: 0, durationMin: 6, category: "Fundamentals" },
     { slug: "how-odds-work", title: "How odds really work", summary: "Fractional, decimal and implied probability, explained simply.", minTier: 0, durationMin: 11, category: "Fundamentals" },
     { slug: "reading-a-race-card", title: "Reading a race card", summary: "Form figures, weights, draw and the going, line by line.", minTier: 1, durationMin: 18, category: "Form study" },
     { slug: "the-going-and-the-draw", title: "The going and the draw", summary: "Why ground conditions and stall position change everything.", minTier: 1, durationMin: 14, category: "Form study" },
     { slug: "bankroll-discipline", title: "Bankroll discipline", summary: "Staking plans, limits and knowing when to stop.", minTier: 1, durationMin: 12, category: "Discipline" },
-    { slug: "race-day-saturday", title: "Race day: Saturday card", summary: "Rob walks through this Saturday's feature races.", minTier: 2, durationMin: 22, category: "Race day" },
+    { slug: "race-day-saturday", title: "Race day: Saturday card", summary: "Harry walks through this Saturday's feature races.", minTier: 2, durationMin: 22, category: "Race day" },
   ];
+  // One-off rename of the host (Rob -> Harry) in rows created by earlier seeds. Only touches untouched default copy.
+  const paddock = await db.plan.findUnique({ where: { slug: "paddock" } });
+  if (paddock && Array.isArray(paddock.features) && (paddock.features as string[]).includes("Intro videos with Rob")) {
+    const features = (paddock.features as string[]).map((f) => (f === "Intro videos with Rob" ? "Intro videos with Harry" : f));
+    await db.plan.update({ where: { slug: "paddock" }, data: { features } });
+  }
+  await db.video.updateMany({
+    where: { slug: "welcome-to-the-paddock", summary: "Meet Rob and learn how the course is laid out." },
+    data: { summary: "Meet Harry and learn how the course is laid out." },
+  });
+  await db.video.updateMany({
+    where: { slug: "race-day-saturday", summary: "Rob walks through this Saturday's feature races." },
+    data: { summary: "Harry walks through this Saturday's feature races." },
+  });
+
   for (const v of videos) {
     await db.video.upsert({
       where: { slug: v.slug },
       update: {},
-      create: v, // no source yet: upload Rob's videos in Admin → Videos
+      create: v, // no source yet: upload Harry's videos in Admin → Videos
     });
   }
 
