@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.2.0",
+    "@noble/hashes": "^2.0.1",
     "@prisma/adapter-neon": "^6.16.2",
     "@prisma/client": "6.16.2",
     "bcryptjs": "2.4.3",

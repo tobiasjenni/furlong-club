@@ -15,6 +15,7 @@
     "DATABASE_DRIVER": "neon-http",
     "PAYMENT_PROVIDER": "mock",
     "DEPOSIT_MODE": "manual",
-    "WALLET_ENABLED": "true"
+    "WALLET_ENABLED": "true",
+    "TRADING_REQUESTS_ENABLED": "true"
   }
 }

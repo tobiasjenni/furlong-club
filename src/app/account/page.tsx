@@ -1,3 +1,4 @@
+import { TradingSummary } from "@/components/TradingSummary";
 import { manualDepositLabel } from "@/lib/manual-deposits";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -41,6 +42,7 @@ export default async function AccountPage() {
             <tbody>{payments.map((p) => <tr key={p.id}><td>{date(p.createdAt)}</td><td>{p.planName ?? "Wallet top-up"}</td><td>{usd(p.amountCents)}</td><td>{p.currency} · {p.network}</td><td><span className={`badge ${statusColor[p.status] ?? "bg-white/10 text-cream/70"}`}>{p.provider === "manual" ? manualDepositLabel(p.status, p.providerStatus) : p.status}</span></td></tr>)}</tbody></table>
         )}
       </div>
+      <TradingSummary userId={user.id} />
       <DangerZone />
     </div>
   );

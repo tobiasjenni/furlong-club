@@ -13,12 +13,14 @@ export async function SiteHeader() {
         { href: "/videos", label: "Videos" },
         { href: "/plans", label: "Plans" },
         { href: "/wallet", label: "Wallet" },
+        { href: "/trading", label: "Trading" },
         { href: "/account", label: "Account" },
         ...(user.role === "ADMIN" ? [{ href: "/admin", label: "Admin" }] : []),
       ]
     : [
         { href: "/#how", label: "How it works" },
         { href: "/plans", label: "Plans" },
+        { href: "/trading", label: "Trading" },
         { href: brand.host.page, label: `Meet ${brand.host.first}` },
       ];
   const initials = (user?.name ?? user?.email ?? "?").trim().slice(0, 1).toUpperCase();
@@ -32,7 +34,7 @@ export async function SiteHeader() {
 
         <DesktopNav links={links} />
 
-        <div className="hidden items-center gap-2 md:flex">
+        <div className="hidden items-center gap-2 lg:flex">
           {user ? (
             <>
               <Link href="/account" className="flex h-9 w-9 items-center justify-center rounded-full bg-gold-400 text-sm font-bold text-turf-950" title={user.email}>

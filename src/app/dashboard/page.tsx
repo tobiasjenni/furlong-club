@@ -1,3 +1,4 @@
+import { TradingSummary } from "@/components/TradingSummary";
 import { brand } from "@/lib/config";
 import Link from "next/link";
 import { VerifyBanner } from "@/components/VerifyBanner";
@@ -47,6 +48,8 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
           <Link href="/account" className="btn-ghost mt-4">Account settings</Link>
         </div>
       </div>
+
+      <TradingSummary userId={user.id} />
 
       <section>
         <div className="flex items-end justify-between">

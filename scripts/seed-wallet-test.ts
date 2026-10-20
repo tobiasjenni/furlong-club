@@ -15,6 +15,7 @@ async function seed() {
       passwordHash: await bcrypt.hash(password, 12), ageConfirmedAt: new Date(), emailVerifiedAt: new Date(),
     } });
   }
+  await db.tradingProgram.update({ where: { id: "harry" }, data: { enrollmentEnabled: true } });
   console.log("Wallet test accounts are ready; passwords were not logged.");
 }
 seed().catch(() => { console.error("Could not seed wallet test accounts"); process.exitCode = 1; }).finally(() => db.$disconnect());

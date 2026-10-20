@@ -4,7 +4,7 @@
 
 `DEPOSIT_MODE=manual` enables direct USDT/USDC deposits to the configured `POOL_WALLET_*` addresses without a payment-provider API account. Only networks with an address are offered. Members must be active, email-confirmed and have an unfrozen wallet to create a request. Admins can confirm an email from the member's account while email delivery is unavailable.
 
-A member enters 20–1,000 tokens (up to two decimal places), receives the address/QR code and sends the exact amount. They then enter their transaction ID and select **I have sent this payment**. This reports a claim; it does not prove receipt or issue credit. There may be up to three open requests per member. Unsent requests can be cancelled; late sends against a cancelled request can still be reported.
+A member enters 20–10,000 tokens (up to two decimal places), receives the address/QR code and sends the exact amount. They then enter their transaction ID and select **I have sent this payment**. This reports a claim; it does not prove receipt or issue credit. There may be up to three open requests per member. Unsent requests can be cancelled; late sends against a cancelled request can still be reported.
 
 Admin **Deposit approvals** shows reported deposits, oldest first. A notice on every admin page polls the protected counter every 30 seconds while visible; the queue refreshes automatically. Each member's **Users & CRM → account → Crypto deposit approvals** and each payment detail also provide approve/reject controls.
 
@@ -44,7 +44,7 @@ No merchant account or real receiving wallet is created automatically by this ch
 
 ## Customer flow
 
-The wallet's available amount is USD membership credit, not a claim to a displayed USDT/USDC token quantity. Top-ups are $20–$1,000 with two-decimal USD precision, subject to provider minimums. Each deposit has its own invoice/payment address; never instruct users to send directly to the pooled wallet. Direct pooled transfers cannot be attributed to a user by this implementation.
+The wallet's available amount is USD membership credit, not a claim to a displayed USDT/USDC token quantity. Top-ups are $20–$10,000 with two-decimal USD precision, subject to provider minimums. Each deposit has its own invoice/payment address; never instruct users to send directly to the pooled wallet. Direct pooled transfers cannot be attributed to a user by this implementation.
 
 1. A verified, active user chooses an amount, token and network. The server creates a payment record and snapshots its pooled receiving address and membership terms where applicable.
 2. The user receives the exact provider quote, network warning and one-time payment address/QR. The quote is denominated in tokens and can differ from the USD credit amount. Sending-wallet network fees must not be subtracted from the quoted amount.

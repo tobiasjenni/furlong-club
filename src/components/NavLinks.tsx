@@ -13,7 +13,7 @@ function isActive(pathname: string, href: string) {
 export function DesktopNav({ links }: { links: NavLink[] }) {
   const pathname = usePathname();
   return (
-    <nav className="hidden items-center gap-1 text-sm md:flex">
+    <nav className="hidden items-center gap-1 text-sm lg:flex">
       {links.map((l) => {
         const active = isActive(pathname, l.href);
         return (
@@ -55,7 +55,7 @@ export function MobileMenu({ links, children }: { links: NavLink[]; children: Re
   }, []);
 
   return (
-    <details ref={ref} className="group relative md:hidden">
+    <details ref={ref} className="group relative lg:hidden">
       <summary className="flex h-10 w-10 cursor-pointer list-none items-center justify-center rounded-full border border-white/15 [&::-webkit-details-marker]:hidden" aria-label="Menu">
         <svg viewBox="0 0 24 24" className="h-5 w-5 group-open:hidden" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
         <svg viewBox="0 0 24 24" className="hidden h-5 w-5 group-open:block" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 6l12 12M18 6 6 18" /></svg>

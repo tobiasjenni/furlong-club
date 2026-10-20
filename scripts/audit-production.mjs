@@ -16,7 +16,7 @@ try {
   if (!settings.success) throw new Error('Worker configuration inventory was unsuccessful');
   const bindings = settings.result.bindings ?? [];
   const secretNames = bindings.filter(b => b.type === 'secret_text').map(b => b.name).sort();
-  const flags = Object.fromEntries(bindings.filter(b => b.type === 'plain_text' && ['APP_ENV','PAYMENT_PROVIDER','WALLET_ENABLED','DATABASE_DRIVER'].includes(b.name)).map(b => [b.name,b.text]));
+  const flags = Object.fromEntries(bindings.filter(b => b.type === 'plain_text' && ['APP_ENV','PAYMENT_PROVIDER','WALLET_ENABLED','DATABASE_DRIVER','DEPOSIT_MODE','TRADING_REQUESTS_ENABLED'].includes(b.name)).map(b => [b.name,b.text]));
   const counts = await db.$queryRaw`SELECT
     (SELECT count(*)::int FROM "User") AS users,
     (SELECT count(*)::int FROM "User" WHERE role='ADMIN' AND status='ACTIVE') AS admins,
@@ -33,10 +33,10 @@ try {
   if (tables[0].walletMigrationApplied) {
     ledger = await db.$queryRaw`SELECT
       (SELECT count(*)::int FROM "User" u WHERE u."balanceCents"<>(SELECT COALESCE(sum(j."userDeltaCents"),0) FROM "WalletJournal" j WHERE j."userId"=u.id)) AS "balanceMismatches",
-      (SELECT count(*)::int FROM "WalletJournal" WHERE "userDeltaCents"::bigint+"clearingDeltaCents"::bigint+"revenueDeltaCents"::bigint<>0) AS "unbalancedPostings"`;
+      (SELECT count(*)::int FROM "WalletJournal" WHERE "userDeltaCents"::bigint+"clearingDeltaCents"::bigint+"revenueDeltaCents"::bigint+"lockedDeltaCents"::bigint+"tradingResultDeltaCents"::bigint<>0) AS "unbalancedPostings"`;
   }
   const routes = [];
-  for (const path of ['/','/plans','/login','/signup','/legal/terms','/icon.svg','/robots.txt']) {
+  for (const path of ['/','/trading','/plans','/login','/signup','/legal/terms','/icon.svg','/robots.txt']) {
     const result = await fetch(`https://furlong.club${path}`, { signal: AbortSignal.timeout(20000) });
     routes.push({path,status:result.status});
   }

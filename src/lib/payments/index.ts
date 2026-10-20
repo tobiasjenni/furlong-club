@@ -65,7 +65,7 @@ export async function createCheckout(userId: string, planId: string, option: Che
 }
 
 export async function createTopup(userId: string, amountCents: number, option: CheckoutOption) {
-  if (!Number.isInteger(amountCents) || amountCents < 2000 || amountCents > 100000) throw new Error("Top-up must be between $20 and $1,000");
+  if (!Number.isInteger(amountCents) || amountCents < 2000 || amountCents > 1000000) throw new Error("Top-up must be between $20 and $10,000");
   return invoice(userId, option, amountCents);
 }
 
