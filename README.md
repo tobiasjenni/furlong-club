@@ -38,13 +38,39 @@ With `EMAIL_PROVIDER=console`, verification and reset links are printed in the s
 - `npm audit --omit=dev` is clean and runs in CI.
 
 ## Scheduled job
-`GET /api/cron/daily` with `Authorization: Bearer $CRON_SECRET` sends renewal reminders three days before a plan ends, expires unpaid invoices and old tokens. `vercel.json` schedules it daily on Vercel.
+`npm run daily` (or `GET /api/cron/daily` with `Authorization: Bearer $CRON_SECRET`) sends renewal reminders three days before a plan ends, expires unpaid invoices and old tokens. GitHub Actions runs it every morning.
 
 ## Going live checklist
 - Postgres (Neon, Supabase, RDS) and hosting (Vercel or any Node host)
 - `PAYMENT_PROVIDER=nowpayments` with API key and IPN secret; set `APP_URL` to the public URL
 - Private video hosting (Vimeo private embeds, Bunny Stream or Mux signed URLs) so paid videos can't be shared
-- Resend account and a verified sending domain (`EMAIL_PROVIDER=resend`)
+- Resend account and a verified sending domain (`RESEND_API_KEY`)
 - Bunny Stream library with token authentication on (`BUNNY_LIBRARY_ID`, `BUNNY_TOKEN_KEY`)
 - `CRON_SECRET` set and the daily job scheduled
 - Replace placeholder legal pages with reviewed text
+
+## Deploying to Cloudflare (furlong.club)
+The app runs on Cloudflare Workers through the OpenNext adapter, with a Neon Postgres database reached over Neon's HTTP driver (`DATABASE_DRIVER=neon-http`). Every push to `main` runs `.github/workflows/deploy.yml`, which:
+1. applies migrations,
+2. seeds plans and the admin account (plans and videos are only created, never overwritten),
+3. builds with `opennextjs-cloudflare`,
+4. uploads Worker secrets,
+5. deploys to `furlong.club` and `www.furlong.club`.
+
+GitHub repository secrets (Settings → Secrets and variables → Actions):
+
+| Secret | What it is |
+| --- | --- |
+| `CLOUDFLARE_API_TOKEN` | API token from the "Edit Cloudflare Workers" template, with the furlong.club zone included |
+| `CLOUDFLARE_ACCOUNT_ID` | Shown on the Cloudflare dashboard overview |
+| `DATABASE_URL` | Neon connection string (`postgresql://…neon.tech/…?sslmode=require`) |
+| `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD` | First admin login |
+
+`AUTH_SECRET` and `CRON_SECRET` are generated on the first deploy and kept on the Worker (add a GitHub secret with the same name to set them yourself).
+| `RESEND_API_KEY`, `NOWPAYMENTS_API_KEY`, `NOWPAYMENTS_IPN_SECRET`, `BUNNY_TOKEN_KEY` | Optional, once those accounts exist |
+
+Non-secret settings live in `wrangler.jsonc` under `vars`. While `PAYMENT_PROVIDER` is `mock`, a "Test mode" banner shows on every page and no real crypto moves. To go live with payments, switch it to `nowpayments`. Emails go out through Resend as soon as the `RESEND_API_KEY` secret exists. Until then, admins can confirm emails by hand and get invite and reset links to pass on themselves.
+
+The Worker needs the Workers Paid plan ($5/month), because password hashing and the database engine use more CPU per request than the free plan's 10 ms allows. `.github/workflows/daily.yml` runs `npm run daily` (renewal reminders, clean-up) every morning against the production database.
+
+Local Workers preview: put `DATABASE_URL`, `DATABASE_DRIVER=neon-http` and `AUTH_SECRET` in `.dev.vars`, then run `npm run cf:preview`.

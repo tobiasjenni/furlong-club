@@ -1,4 +1,5 @@
 const isProd = process.env.NODE_ENV === "production";
+const isHttps = (process.env.APP_URL ?? "").startsWith("https://");
 
 // Next.js injects inline bootstrap scripts, so script-src needs 'unsafe-inline' unless we move to nonces.
 const csp = [
@@ -14,12 +15,14 @@ const csp = [
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "object-src 'none'",
-  ...(isProd ? ["upgrade-insecure-requests"] : []),
+  ...(isHttps ? ["upgrade-insecure-requests"] : []),
 ].join("; ");
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   poweredByHeader: false,
+  // Lets the Cloudflare build resolve Prisma to its WebAssembly (workerd) build.
+  serverExternalPackages: ["@prisma/client", ".prisma/client"],
   async headers() {
     return [
       {
@@ -30,7 +33,7 @@ const nextConfig = {
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
           { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), payment=()" },
-          ...(isProd ? [{ key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" }] : []),
+          ...(isHttps ? [{ key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" }] : []),
         ],
       },
     ];

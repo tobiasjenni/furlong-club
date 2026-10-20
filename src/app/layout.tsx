@@ -19,6 +19,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${display.variable} ${sans.variable}`}>
       <body className="flex min-h-screen flex-col">
+        {process.env.NODE_ENV === "production" && process.env.PAYMENT_PROVIDER === "mock" && (
+          <div className="bg-gold-400 px-4 py-1.5 text-center text-xs font-semibold text-turf-950">
+            Test mode: payments are simulated and no real crypto is moved.
+          </div>
+        )}
         <SiteHeader />
         <main className="flex-1">{children}</main>
         <SiteFooter />

@@ -3,6 +3,7 @@ import { logout } from "@/app/actions/auth";
 import { currentUser } from "@/lib/auth";
 import { brand } from "@/lib/config";
 import { Logo } from "./Logo";
+import { DesktopNav, MobileMenu } from "./NavLinks";
 
 export async function SiteHeader() {
   const user = await currentUser();
@@ -10,6 +11,7 @@ export async function SiteHeader() {
     ? [
         { href: "/dashboard", label: "Dashboard" },
         { href: "/videos", label: "Videos" },
+        { href: "/plans", label: "Plans" },
         { href: "/wallet", label: "Wallet" },
         { href: "/account", label: "Account" },
         ...(user.role === "ADMIN" ? [{ href: "/admin", label: "Admin" }] : []),
@@ -19,28 +21,28 @@ export async function SiteHeader() {
         { href: "/plans", label: "Plans" },
         { href: "/about-rob", label: "Meet Rob" },
       ];
+  const initials = (user?.name ?? user?.email ?? "?").trim().slice(0, 1).toUpperCase();
 
   return (
     <header className="sticky top-0 z-40 border-b border-white/10 bg-turf-950/85 backdrop-blur">
       <div className="container-page flex h-16 items-center justify-between gap-4">
-        <Link href="/" className="flex items-center gap-2.5" aria-label={`${brand.name} home`}>
+        <Link href={user ? "/dashboard" : "/"} className="flex items-center gap-2.5" aria-label={`${brand.name} home`}>
           <Logo className="h-8 w-8" />
           <span className="font-display text-lg font-semibold">{brand.name}</span>
         </Link>
 
-        <nav className="hidden items-center gap-6 text-sm md:flex">
-          {links.map((l) => (
-            <Link key={l.href} href={l.href} className="text-cream/75 hover:text-gold-300">
-              {l.label}
-            </Link>
-          ))}
-        </nav>
+        <DesktopNav links={links} />
 
         <div className="hidden items-center gap-2 md:flex">
           {user ? (
-            <form action={logout}>
-              <button className="btn-ghost">Sign out</button>
-            </form>
+            <>
+              <Link href="/account" className="flex h-9 w-9 items-center justify-center rounded-full bg-gold-400 text-sm font-bold text-turf-950" title={user.email}>
+                {initials}
+              </Link>
+              <form action={logout}>
+                <button className="btn-ghost">Sign out</button>
+              </form>
+            </>
           ) : (
             <>
               <Link href="/login" className="btn-ghost">Sign in</Link>
@@ -49,29 +51,21 @@ export async function SiteHeader() {
           )}
         </div>
 
-        <details className="group relative md:hidden">
-          <summary className="flex h-10 w-10 cursor-pointer list-none items-center justify-center rounded-full border border-white/15" aria-label="Menu">
-            <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
-          </summary>
-          <div className="absolute right-0 mt-2 w-56 rounded-2xl border border-white/10 bg-turf-900 p-2 shadow-2xl">
-            {links.map((l) => (
-              <Link key={l.href} href={l.href} className="block rounded-xl px-3 py-2.5 text-sm hover:bg-white/5">
-                {l.label}
-              </Link>
-            ))}
-            <div className="my-2 border-t border-white/10" />
-            {user ? (
+        <MobileMenu links={links}>
+          {user ? (
+            <>
+              <p className="truncate px-3 pb-2 text-xs text-cream/50">{user.email}</p>
               <form action={logout}>
-                <button className="w-full rounded-xl px-3 py-2.5 text-left text-sm hover:bg-white/5">Sign out</button>
+                <button className="w-full rounded-xl px-3 py-3 text-left text-sm hover:bg-white/5">Sign out</button>
               </form>
-            ) : (
-              <>
-                <Link href="/login" className="block rounded-xl px-3 py-2.5 text-sm hover:bg-white/5">Sign in</Link>
-                <Link href="/signup" className="btn-gold mt-1 w-full">Join free</Link>
-              </>
-            )}
-          </div>
-        </details>
+            </>
+          ) : (
+            <>
+              <Link href="/login" className="block rounded-xl px-3 py-3 text-sm hover:bg-white/5">Sign in</Link>
+              <Link href="/signup" className="btn-gold mt-1 w-full">Join free</Link>
+            </>
+          )}
+        </MobileMenu>
       </div>
     </header>
   );

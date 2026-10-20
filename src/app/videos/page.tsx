@@ -9,7 +9,7 @@ export const metadata = { title: "Videos" };
 export default async function VideosPage() {
   const user = await requireUser();
   const [tier, videos] = await Promise.all([
-    userTier(user.id),
+    user.role === "ADMIN" ? Infinity : userTier(user.id),
     db.video.findMany({ where: { published: true }, orderBy: [{ category: "asc" }, { publishedAt: "desc" }] }),
   ]);
   const categories = [...new Set(videos.map((v) => v.category))];

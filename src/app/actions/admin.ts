@@ -1,12 +1,17 @@
 "use server";
 
+import crypto from "node:crypto";
+import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { audit } from "@/lib/audit";
 import { requireAdmin } from "@/lib/auth";
+import { appUrl } from "@/lib/config";
 import { db } from "@/lib/db";
+import { type Email, emailDelivers, inviteMessage, resetPasswordMessage, sendEmail } from "@/lib/email";
 import { grantSubscription } from "@/lib/subscriptions";
+import { issueToken } from "@/lib/tokens";
 
 export async function addNote(form: FormData) {
   const admin = await requireAdmin();
@@ -115,4 +120,59 @@ export async function savePlan(form: FormData) {
   });
   await audit(admin.id, "admin.plan_updated", id);
   revalidatePath("/admin/plans");
+}
+
+export async function confirmEmail(form: FormData) {
+  const admin = await requireAdmin();
+  const id = String(form.get("userId"));
+  await db.user.update({ where: { id }, data: { emailVerifiedAt: new Date() } });
+  await audit(admin.id, "admin.email_confirmed", id);
+  revalidatePath(`/admin/users/${id}`);
+}
+
+export type AdminFormState = { error?: string; ok?: string; link?: string } | null;
+
+// Without an email provider the admin gets the link to pass on by hand.
+async function deliver(email: Email, link: string): Promise<AdminFormState> {
+  await sendEmail(email);
+  return emailDelivers() ? { ok: `Email sent to ${email.to}.` } : { ok: "Email isn't connected yet, so share this link yourself:", link };
+}
+
+export async function inviteUser(_: AdminFormState, form: FormData): Promise<AdminFormState> {
+  const admin = await requireAdmin();
+  const parsed = z
+    .object({ email: z.string().trim().toLowerCase().email("Enter a valid email").max(254), name: z.string().trim().max(80) })
+    .safeParse(Object.fromEntries(form));
+  if (!parsed.success) return { error: parsed.error.issues[0].message };
+  const { email, name } = parsed.data;
+  if (await db.user.findUnique({ where: { email } })) return { error: "A user with this email already exists." };
+  const user = await db.user.create({
+    data: {
+      email,
+      name: name || null,
+      // Unusable until they set their own password from the invite link.
+      passwordHash: await bcrypt.hash(crypto.randomBytes(32).toString("hex"), 12),
+      ageConfirmedAt: new Date(),
+    },
+  });
+  await audit(admin.id, "admin.user_invited", user.id, { email });
+  const token = await issueToken(user.id, "RESET_PASSWORD", 3 * 24 * 60 * 60 * 1000);
+  revalidatePath("/admin/users");
+  return deliver(inviteMessage(email, token), `${appUrl}/reset-password?token=${token}`);
+}
+
+export async function sendResetLink(_: AdminFormState, form: FormData): Promise<AdminFormState> {
+  const admin = await requireAdmin();
+  const user = await db.user.findUniqueOrThrow({ where: { id: String(form.get("userId")) } });
+  const token = await issueToken(user.id, "RESET_PASSWORD");
+  await audit(admin.id, "admin.reset_link_sent", user.id);
+  return deliver(resetPasswordMessage(user.email, token), `${appUrl}/reset-password?token=${token}`);
+}
+
+export async function signOutUser(form: FormData) {
+  const admin = await requireAdmin();
+  const id = String(form.get("userId"));
+  await db.user.update({ where: { id }, data: { sessionVersion: { increment: 1 } } });
+  await audit(admin.id, "admin.user_signed_out", id);
+  revalidatePath(`/admin/users/${id}`);
 }

@@ -1,6 +1,6 @@
 "use client";
 import { useActionState } from "react";
-import { changePassword, updateProfile } from "@/app/actions/auth";
+import { changeEmail, changePassword, updateProfile } from "@/app/actions/auth";
 import { FormMessage } from "@/components/FormMessage";
 import { SubmitButton } from "@/components/SubmitButton";
 
@@ -25,6 +25,18 @@ export function PasswordForm() {
       <div><label className="label" htmlFor="next">New password</label><input className="input" id="next" name="next" type="password" autoComplete="new-password" minLength={10} required /></div>
       <FormMessage state={state} />
       <SubmitButton className="btn-ghost">Change password</SubmitButton>
+    </form>
+  );
+}
+
+export function EmailForm({ email }: { email: string }) {
+  const [state, action] = useActionState(changeEmail, null);
+  return (
+    <form action={action} className="space-y-4">
+      <div><label className="label" htmlFor="newEmail">New email</label><input className="input" id="newEmail" name="email" type="email" placeholder={email} autoComplete="email" required /></div>
+      <div><label className="label" htmlFor="emailPassword">Your password</label><input className="input" id="emailPassword" name="password" type="password" autoComplete="current-password" required /></div>
+      <FormMessage state={state} />
+      <SubmitButton className="btn-ghost">Change email</SubmitButton>
     </form>
   );
 }

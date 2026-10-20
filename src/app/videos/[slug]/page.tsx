@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { Disclaimer } from "@/components/Disclaimer";
+import { RobMascot } from "@/components/RobMascot";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { date } from "@/lib/format";
@@ -19,7 +20,11 @@ export default async function VideoPage({ params }: { params: Promise<{ slug: st
       <Link href="/videos" className="text-sm text-gold-300 hover:underline">← All videos</Link>
       <div className="aspect-video overflow-hidden rounded-2xl border border-white/10 bg-black">
         {!source ? (
-          <div className="flex h-full items-center justify-center text-sm text-cream/60">This video is being prepared. Check back soon.</div>
+          <div className="silk-stripes flex h-full flex-col items-center justify-center gap-3 bg-turf-900 p-6 text-center">
+            <RobMascot className="h-24 w-24 sm:h-32 sm:w-32" />
+            <p className="font-display text-xl">Rob is still in the edit suite</p>
+            <p className="max-w-sm text-sm text-cream/60">This video is being prepared and will appear here as soon as it&apos;s ready.</p>
+          </div>
         ) : source.kind === "file" ? (
           <video src={source.src} controls controlsList="nodownload" className="h-full w-full" />
         ) : (

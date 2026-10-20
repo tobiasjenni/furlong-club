@@ -1,7 +1,7 @@
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { date, usd } from "@/lib/format";
-import { PasswordForm, ProfileForm } from "./AccountForms";
+import { EmailForm, PasswordForm, ProfileForm } from "./AccountForms";
 import { DangerZone } from "./DangerZone";
 
 export const metadata = { title: "Account" };
@@ -21,8 +21,9 @@ export default async function AccountPage() {
   return (
     <div className="container-page space-y-6 py-10">
       <h1 className="text-3xl md:text-4xl">Account</h1>
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-3">
         <div className="card"><h2 className="mb-4 text-xl">Profile</h2><p className="muted mb-4 text-sm">{user.email} · {user.emailVerifiedAt ? "confirmed" : "not confirmed yet"}</p><ProfileForm name={user.name ?? ""} country={user.country ?? ""} marketing={user.marketingOptIn} /></div>
+        <div className="card"><h2 className="mb-4 text-xl">Email</h2><EmailForm email={user.email} /></div>
         <div className="card"><h2 className="mb-4 text-xl">Password</h2><PasswordForm /></div>
       </div>
       <div className="card overflow-x-auto">

@@ -1,0 +1,21 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "furlong-club",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2025-09-01",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": { "directory": ".open-next/assets", "binding": "ASSETS" },
+  "routes": [
+    { "pattern": "furlong.club", "custom_domain": true },
+    { "pattern": "www.furlong.club", "custom_domain": true }
+  ],
+  "observability": { "enabled": true },
+  // Non-secret settings. Secrets (DATABASE_URL, AUTH_SECRET, CRON_SECRET, RESEND_API_KEY, ...) are pushed by the deploy workflow.
+  "vars": {
+    "APP_URL": "https://furlong.club",
+    "DATABASE_DRIVER": "neon-http",
+    "PAYMENT_PROVIDER": "mock",
+    "ALLOW_MOCK_PAYMENTS": "true",
+    "WALLET_ENABLED": "false"
+  }
+}

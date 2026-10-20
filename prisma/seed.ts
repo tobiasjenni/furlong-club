@@ -34,7 +34,8 @@ async function main() {
     },
   ];
   for (const p of plans) {
-    await db.plan.upsert({ where: { slug: p.slug }, update: p, create: p });
+    // Only create: prices and copy edited in the admin panel must survive redeploys.
+    await db.plan.upsert({ where: { slug: p.slug }, update: {}, create: p });
   }
 
   const videos = [
@@ -49,7 +50,7 @@ async function main() {
     await db.video.upsert({
       where: { slug: v.slug },
       update: {},
-      create: { ...v, embedUrl: "https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ" },
+      create: v, // no source yet: upload Rob's videos in Admin → Videos
     });
   }
 
@@ -58,7 +59,7 @@ async function main() {
   if (email && password) {
     await db.user.upsert({
       where: { email: email.toLowerCase() },
-      update: { role: "ADMIN", status: "ACTIVE" },
+      update: { role: "ADMIN", status: "ACTIVE", emailVerifiedAt: new Date() },
       create: {
         email: email.toLowerCase(),
         passwordHash: await bcrypt.hash(password, 12),

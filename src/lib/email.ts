@@ -1,10 +1,11 @@
 import { appUrl, brand } from "./config";
 
-type Email = { to: string; subject: string; text: string; html: string };
+export type Email = { to: string; subject: string; text: string; html: string };
 
 // EMAIL_PROVIDER=console prints emails to the server log (development). EMAIL_PROVIDER=resend sends through Resend.
 export async function sendEmail(email: Email) {
-  const provider = process.env.EMAIL_PROVIDER ?? "console";
+  // Resend is used as soon as its key is configured; otherwise emails are only logged.
+  const provider = process.env.EMAIL_PROVIDER || (process.env.RESEND_API_KEY ? "resend" : "console");
   if (provider === "resend") {
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
@@ -49,6 +50,16 @@ export function renewalReminderMessage(to: string, planName: string, endsAt: Dat
   const when = new Intl.DateTimeFormat("en-GB", { dateStyle: "long" }).format(endsAt);
   const body = `Your ${planName} access ends on ${when}. Plans don't renew automatically, so if you'd like to keep watching, you can extend it for another period.`;
   return { to, subject: `Your ${planName} access ends on ${when}`, text: `${body}\n\n${link}`, html: layout("Your plan is ending soon", body, { href: link, label: `Extend ${planName}` }) };
+}
+
+export function inviteMessage(to: string, token: string): Email {
+  const link = `${appUrl}/reset-password?token=${token}`;
+  const body = `You've been given a ${brand.name} account. Choose a password to sign in. The link is valid for 3 days.`;
+  return { to, subject: `Your ${brand.name} account is ready`, text: `${body}\n\n${link}`, html: layout("Welcome to the club", body, { href: link, label: "Choose a password" }) };
+}
+
+export function emailDelivers() {
+  return Boolean(process.env.RESEND_API_KEY) || process.env.EMAIL_PROVIDER === "resend";
 }
 
 export function passwordChangedMessage(to: string): Email {
