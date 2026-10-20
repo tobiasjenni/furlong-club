@@ -164,7 +164,7 @@ export async function closeAccount(_: FormState, form: FormData): Promise<FormSt
   if (form.get("confirm") !== "CLOSE") return { error: 'Type CLOSE to confirm.' };
   if (!(await bcrypt.compare(String(form.get("password") ?? ""), user.passwordHash))) return { error: "Password is incorrect." };
   const closed = await db.$queryRaw<{ result: string }[]>`SELECT wallet_close_account(${user.id}) AS result`;
-  if (closed[0]?.result !== "closed") return { error: "Please contact support to resolve your wallet balance or pending deposits before closing your account." };
+  if (closed[0]?.result !== "closed") return { error: "Please contact support to resolve your wallet balance, pending deposits and any open trading allocations or payouts before closing your account." };
   await audit(user.id, "user.closed_account", user.id);
   await revokeSessions(user.id);
   redirect("/?closed=1");

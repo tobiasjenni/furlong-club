@@ -23,6 +23,7 @@ export default async function AccountPage() {
   return (
     <div className="container-page space-y-6 py-10">
       <h1 className="text-3xl md:text-4xl">Account</h1>
+      <TradingSummary userId={user.id} />
       <div className="grid gap-4 md:grid-cols-3">
         <div className="card"><h2 className="mb-4 text-xl">Profile</h2><p className="muted mb-4 text-sm">{user.email} · {user.emailVerifiedAt ? "confirmed" : "not confirmed yet"}</p><ProfileForm name={user.name ?? ""} country={user.country ?? ""} marketing={user.marketingOptIn} /></div>
         <div className="card"><h2 className="mb-4 text-xl">Email</h2><EmailForm email={user.email} /></div>
@@ -42,7 +43,6 @@ export default async function AccountPage() {
             <tbody>{payments.map((p) => <tr key={p.id}><td>{date(p.createdAt)}</td><td>{p.planName ?? "Wallet top-up"}</td><td>{usd(p.amountCents)}</td><td>{p.currency} · {p.network}</td><td><span className={`badge ${statusColor[p.status] ?? "bg-white/10 text-cream/70"}`}>{p.provider === "manual" ? manualDepositLabel(p.status, p.providerStatus) : p.status}</span></td></tr>)}</tbody></table>
         )}
       </div>
-      <TradingSummary userId={user.id} />
       <DangerZone />
     </div>
   );

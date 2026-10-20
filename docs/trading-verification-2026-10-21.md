@@ -30,6 +30,8 @@ The isolated member/admin accounts exercised a $500 USDC/Ethereum request, admin
 
 One page stream dropped during preview navigation and showed a connection-closed error. A reload restored the page. No financial action was pending or repeated during that navigation. This check does not constitute a load or availability guarantee.
 
+The member dashboard, mobile menu and account profile were checked at a phone-sized viewport. The page width matched the viewport with no horizontal overflow. The locked amount and exact UTC deadline are visible in both the member and admin profiles. The member summary is placed directly below the Account heading so it is easy to find.
+
 ## Remaining operational limits
 
 Real enrollment must wait for finalized trading terms, final operator/strategy details and appropriate operational review. The software does not verify performance, reserves, solvency or legal authorization. An admin must independently verify every real deposit, actual result and external payout. Restricted database roles, backups/recovery, operator access protection and monitoring remain deployment responsibilities. Mistaken finalized results need an explicit compensating correction design; immutable records must not be edited to conceal errors. No email notification provider or automated payout service is connected.
