@@ -5,12 +5,12 @@ import { LoginForm } from "./LoginForm";
 
 export const metadata = { title: "Sign in" };
 
-export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string }> }) {
+export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string; reset?: string }> }) {
   if (await currentUser()) redirect("/dashboard");
-  const { next } = await searchParams;
+  const { next, reset } = await searchParams;
   return (
     <AuthShell title="Welcome back" subtitle="Sign in to watch your videos and manage your plan.">
-      <LoginForm next={next} />
+      <LoginForm next={next} notice={reset ? "Password updated. Please sign in with your new password." : undefined} />
     </AuthShell>
   );
 }

@@ -13,6 +13,8 @@ export default async function AdminUsers({ searchParams }: { searchParams: Promi
     ...(filter === "subscribers" ? { subscriptions: { some: { status: "ACTIVE", endsAt: { gt: now } } } } : {}),
     ...(filter === "free" ? { subscriptions: { none: { status: "ACTIVE", endsAt: { gt: now } } } } : {}),
     ...(filter === "suspended" ? { status: "SUSPENDED" } : {}),
+    ...(filter === "closed" ? { status: "CLOSED" } : {}),
+    ...(filter === "unverified" ? { emailVerifiedAt: null } : {}),
     ...(filter === "marketing" ? { marketingOptIn: true } : {}),
   };
   const [users, total] = await Promise.all([
@@ -25,7 +27,7 @@ export default async function AdminUsers({ searchParams }: { searchParams: Promi
     }),
     db.user.count({ where }),
   ]);
-  const filters = ["all", "subscribers", "free", "marketing", "suspended"];
+  const filters = ["all", "subscribers", "free", "marketing", "unverified", "suspended", "closed"];
   const pageNum = skip / take + 1;
 
   return (
@@ -48,7 +50,7 @@ export default async function AdminUsers({ searchParams }: { searchParams: Promi
                 <td>{u.name}</td>
                 <td>{u.subscriptions[0]?.plan.name ?? <span className="muted">Free</span>}</td>
                 <td className="text-xs">{u.tags.join(", ")}</td>
-                <td>{u.status === "ACTIVE" ? "Active" : <span className="text-red-300">Suspended</span>}</td>
+                <td>{u.status === "ACTIVE" ? "Active" : <span className="text-red-300">{u.status === "CLOSED" ? "Closed" : "Suspended"}</span>}</td>
                 <td>{date(u.createdAt)}</td>
                 <td>{date(u.lastLoginAt)}</td>
               </tr>

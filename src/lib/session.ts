@@ -3,7 +3,8 @@ import { SignJWT, jwtVerify } from "jose";
 export const SESSION_COOKIE = "fc_session";
 const MAX_AGE = 60 * 60 * 24 * 14;
 
-export type SessionPayload = { uid: string; role: "USER" | "ADMIN" };
+// sv is the user's sessionVersion; bumping it in the database signs out every existing session.
+export type SessionPayload = { uid: string; role: "USER" | "ADMIN"; sv: number };
 
 function key() {
   const secret = process.env.AUTH_SECRET;
@@ -22,8 +23,9 @@ export async function signSession(payload: SessionPayload) {
 export async function verifySession(token: string | undefined): Promise<SessionPayload | null> {
   if (!token) return null;
   try {
-    const { payload } = await jwtVerify(token, key());
-    return { uid: String(payload.uid), role: payload.role === "ADMIN" ? "ADMIN" : "USER" };
+    const { payload } = await jwtVerify(token, key(), { algorithms: ["HS256"] });
+    if (typeof payload.uid !== "string") return null;
+    return { uid: payload.uid, role: payload.role === "ADMIN" ? "ADMIN" : "USER", sv: Number(payload.sv ?? 0) };
   } catch {
     return null;
   }

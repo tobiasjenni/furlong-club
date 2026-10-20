@@ -21,7 +21,7 @@ export async function grantSubscription(userId: string, planId: string, days: nu
   });
   const ms = days * 24 * 60 * 60 * 1000;
   if (existing) {
-    return db.subscription.update({ where: { id: existing.id }, data: { endsAt: new Date(existing.endsAt.getTime() + ms) } });
+    return db.subscription.update({ where: { id: existing.id }, data: { endsAt: new Date(existing.endsAt.getTime() + ms), reminderSentAt: null } });
   }
   return db.subscription.create({ data: { userId, planId, endsAt: new Date(Date.now() + ms), source } });
 }

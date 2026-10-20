@@ -10,7 +10,7 @@ export const currentUser = cache(async () => {
   const session = await verifySession(store.get(SESSION_COOKIE)?.value);
   if (!session) return null;
   const user = await db.user.findUnique({ where: { id: session.uid } });
-  if (!user || user.status !== "ACTIVE") return null;
+  if (!user || user.status !== "ACTIVE" || user.sessionVersion !== session.sv) return null;
   return user;
 });
 
@@ -27,11 +27,18 @@ export async function requireAdmin() {
   return user;
 }
 
-export async function startSession(user: { id: string; role: "USER" | "ADMIN" }) {
-  const token = await signSession({ uid: user.id, role: user.role });
+export async function startSession(user: { id: string; role: "USER" | "ADMIN"; sessionVersion: number }) {
+  const token = await signSession({ uid: user.id, role: user.role, sv: user.sessionVersion });
   (await cookies()).set(SESSION_COOKIE, token, sessionCookieOptions);
 }
 
 export async function endSession() {
   (await cookies()).delete(SESSION_COOKIE);
+}
+
+// Signs the user out everywhere. Pass keepCurrent to re-issue this browser's session afterwards.
+export async function revokeSessions(userId: string, keepCurrent = false) {
+  const user = await db.user.update({ where: { id: userId }, data: { sessionVersion: { increment: 1 } } });
+  if (keepCurrent) await startSession(user);
+  else await endSession();
 }
