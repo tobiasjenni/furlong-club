@@ -18,7 +18,7 @@ export default async function PayPage({ params, searchParams }: { params: Promis
   const payment = await db.payment.findFirst({ where: { id: (await params).id, userId: user.id }, include: { plan: true } });
   if (!payment) notFound();
   if (payment.status === "PENDING" && payment.expiresAt && payment.expiresAt < new Date()) {
-    await db.payment.updateMany({ where: { id: payment.id, status: "PENDING" }, data: { status: "EXPIRED" } });
+    await db.$executeRaw`UPDATE "Payment" SET status='EXPIRED', "updatedAt"=(CURRENT_TIMESTAMP AT TIME ZONE 'UTC') WHERE id=${payment.id} AND status='PENDING'`;
     // Another notification may have completed this invoice while it was being read. Reload it.
     const latest = await db.payment.findUniqueOrThrow({ where: { id: payment.id } });
     Object.assign(payment, latest);

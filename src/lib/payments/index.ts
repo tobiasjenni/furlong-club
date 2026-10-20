@@ -47,7 +47,8 @@ async function invoice(userId: string, option: CheckoutOption, amountCents: numb
     });
     return await db.payment.update({ where: { id: payment.id }, data: created });
   } catch (err) {
-    await db.payment.updateMany({ where: { id: payment.id, status: "PENDING", providerRef: null }, data: { status: "FAILED" } });
+    await db.$executeRaw`UPDATE "Payment" SET status='FAILED', "updatedAt"=(CURRENT_TIMESTAMP AT TIME ZONE 'UTC')
+      WHERE id=${payment.id} AND status='PENDING' AND "providerRef" IS NULL`;
     throw err;
   }
 }
@@ -85,8 +86,10 @@ export async function reconcilePayment(payment: { provider: string; providerRef:
   return applyPaymentStatus(payment.provider, await provider.getPayment(payment.providerRef), source);
 }
 
-export function expireStalePayments() {
-  return db.payment.updateMany({ where: { status: "PENDING", expiresAt: { lt: new Date() } }, data: { status: "EXPIRED" } });
+export async function expireStalePayments() {
+  const count = await db.$executeRaw`UPDATE "Payment" SET status='EXPIRED', "updatedAt"=(CURRENT_TIMESTAMP AT TIME ZONE 'UTC')
+    WHERE status='PENDING' AND "expiresAt" < (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')`;
+  return { count };
 }
 
 export async function reconcileRecentPayments() {
