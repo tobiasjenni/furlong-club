@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { requireAdmin } from "@/lib/auth";
 
+export const metadata = { title: { default: "Admin", template: "%s · Admin" }, robots: { index: false } };
+
 const nav = [
   { href: "/admin", label: "Overview" },
   { href: "/admin/users", label: "Users & CRM" },
