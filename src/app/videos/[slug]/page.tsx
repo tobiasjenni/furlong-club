@@ -1,7 +1,8 @@
+import { brand } from "@/lib/config";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { Disclaimer } from "@/components/Disclaimer";
-import { RobMascot } from "@/components/RobMascot";
+import { HostPortrait } from "@/components/HostPortrait";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { date } from "@/lib/format";
@@ -21,8 +22,8 @@ export default async function VideoPage({ params }: { params: Promise<{ slug: st
       <div className="aspect-video overflow-hidden rounded-2xl border border-white/10 bg-black">
         {!source ? (
           <div className="silk-stripes flex h-full flex-col items-center justify-center gap-3 bg-turf-900 p-6 text-center">
-            <RobMascot className="h-24 w-24 sm:h-32 sm:w-32" />
-            <p className="font-display text-xl">Rob is still in the edit suite</p>
+            <HostPortrait className="h-24 w-24 sm:h-32 sm:w-32" rounded="rounded-full" />
+            <p className="font-display text-xl">{brand.host.first} is still in the edit suite</p>
             <p className="max-w-sm text-sm text-cream/60">This video is being prepared and will appear here as soon as it&apos;s ready.</p>
           </div>
         ) : source.kind === "file" ? (
