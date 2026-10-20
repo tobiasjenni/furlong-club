@@ -26,7 +26,7 @@ export async function startCheckout(_: FormState, form: FormData): Promise<FormS
   redirect(`/checkout/pay/${paymentId}`);
 }
 
-// Only available with the mock provider outside production, to test the full flow locally.
+// Available only in development or in the explicitly enabled, isolated staging environment.
 export async function simulatePayment(form: FormData) {
   const user = await requireUser();
   if (!mockPaymentsAllowed()) return;

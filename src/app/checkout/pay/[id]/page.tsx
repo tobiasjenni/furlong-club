@@ -69,7 +69,7 @@ export default async function PayPage({ params, searchParams }: { params: Promis
       {payment.provider === "nowpayments" && <form action={refreshMyPayment}><input type="hidden" name="id" value={payment.id} /><button className="btn-ghost w-full">Check payment status</button></form>}
       {!open && !settled && <Link href={topup ? "/wallet" : `/checkout/${payment.plan!.slug}`} className="btn-gold w-full">Start a new payment</Link>}
       {mock && !settled && mockPaymentsAllowed() && <form action={simulatePayment} className="rounded-xl border border-dashed border-gold-400/40 p-3">
-        <input type="hidden" name="id" value={payment.id} /><button className="btn-ghost w-full">Simulate completed payment (local only)</button>
+        <input type="hidden" name="id" value={payment.id} /><button className="btn-ghost w-full">Simulate completed payment (test only)</button>
       </form>}
       <p className="muted text-xs">Need help? Email <a className="text-gold-300 underline" href="mailto:support@furlong.club">support@furlong.club</a> and include your payment reference.</p>
     </section>
