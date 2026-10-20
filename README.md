@@ -11,7 +11,7 @@ Horse racing education and tip-video membership site. Next.js 15 + TypeScript + 
   - `nowpayments` provider with signed IPN webhook at `/api/payments/webhook/nowpayments`
 - Admin back office: stats, user search and filters, CRM notes and tags, role/suspend, grant or cancel access, payments list, video CRUD, plan editing, CSV export
 - Wallet page with balance and history; deposit/withdraw are placeholders (disabled) until KYC and licensing are in place
-- Rob is an illustrated mascot with a visible "fictional character" disclosure; 18+ and responsible gambling notices site-wide; no return claims
+- The host, Harry Whitcombe, is a fictional character with an AI-generated portrait and a visible "fictional character" disclosure; 18+ and responsible gambling notices site-wide; no return claims
 
 ## Run locally
 ```bash

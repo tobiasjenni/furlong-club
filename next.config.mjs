@@ -21,6 +21,9 @@ const csp = [
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   poweredByHeader: false,
+  async redirects() {
+    return [{ source: "/about-rob", destination: "/meet-harry", permanent: true }];
+  },
   // Lets the Cloudflare build resolve Prisma to its WebAssembly (workerd) build.
   serverExternalPackages: ["@prisma/client", ".prisma/client"],
   async headers() {
