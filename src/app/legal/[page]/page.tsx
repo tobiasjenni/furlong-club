@@ -10,7 +10,7 @@ const pages: Record<string, { title: string; body: string[] }> = {
       "You must be 18 or over, and of legal age to gamble where you live, to use the service.",
       "Subscriptions are paid in advance in stablecoins and run for the stated period. Crypto payments are final once confirmed on-chain.",
       `${brand.name} does not place bets on your behalf and does not hold funds for betting.`,
-      "Rob is a fictional character used as the brand mascot.",
+      `${brand.host.name} is a fictional character used as the host of ${brand.name}. His portrait is AI-generated and does not show a real person.`,
     ],
   },
   privacy: {
