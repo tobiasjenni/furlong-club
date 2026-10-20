@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { Disclaimer } from "@/components/Disclaimer";
 import { PlanCard } from "@/components/PlanCard";
 import { HostPortrait } from "@/components/HostPortrait";
 import { brand } from "@/lib/config";
@@ -102,7 +101,6 @@ export default async function Home() {
             <PlanCard key={p.id} plan={p} highlight={p.tier === 1} cta={{ href: p.priceCents ? `/checkout/${p.slug}` : "/signup", label: p.priceCents ? `Get ${p.name}` : "Join free" }} />
           ))}
         </div>
-        <div className="mt-8"><Disclaimer /></div>
       </section>
 
       <section id="faq" className="container-page max-w-3xl pb-8">

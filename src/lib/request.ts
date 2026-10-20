@@ -4,7 +4,9 @@ import { headers } from "next/headers";
 // overwrites (not appends to) these headers so clients can't spoof them.
 export async function clientIp() {
   const h = await headers();
-  return h.get("x-real-ip") ?? h.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+  return process.env.DATABASE_DRIVER === "neon-http"
+    ? h.get("cf-connecting-ip") ?? "unknown"
+    : h.get("x-real-ip") ?? h.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
 }
 
 // Only allow same-site relative paths, so ?next= can't send people to another site.

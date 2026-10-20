@@ -1,4 +1,3 @@
-import { Disclaimer } from "@/components/Disclaimer";
 import { PlanCard } from "@/components/PlanCard";
 import { currentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -26,7 +25,6 @@ export default async function PlansPage() {
           return <PlanCard key={p.id} plan={p} highlight={p.tier === 1} cta={cta} />;
         })}
       </div>
-      <div className="mt-8"><Disclaimer /></div>
     </div>
   );
 }

@@ -15,6 +15,7 @@ export async function sendEmail(email: Email) {
     if (!res.ok) throw new Error(`Resend error ${res.status}: ${await res.text()}`);
     return;
   }
+  if (process.env.NODE_ENV === "production") throw new Error("Email delivery is not configured");
   console.log(`\n[email] to=${email.to} subject="${email.subject}"\n${email.text}\n`);
 }
 
@@ -59,7 +60,7 @@ export function inviteMessage(to: string, token: string): Email {
 }
 
 export function emailDelivers() {
-  return Boolean(process.env.RESEND_API_KEY) || process.env.EMAIL_PROVIDER === "resend";
+  return Boolean(process.env.RESEND_API_KEY) && process.env.EMAIL_PROVIDER !== "console";
 }
 
 export function passwordChangedMessage(to: string): Email {

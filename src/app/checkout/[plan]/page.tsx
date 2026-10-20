@@ -1,5 +1,4 @@
 import { notFound } from "next/navigation";
-import { Disclaimer } from "@/components/Disclaimer";
 import { requireUser } from "@/lib/auth";
 import { checkoutOptions } from "@/lib/config";
 import { db } from "@/lib/db";
@@ -33,7 +32,6 @@ export default async function CheckoutPage({ params }: { params: Promise<{ plan:
         {walletEnabled && <WalletPurchase planId={plan.id} priceCents={plan.priceCents} balanceCents={user.balanceCents} requestKey={crypto.randomUUID()} disabled={!user.emailVerifiedAt || user.walletFrozen} />}
         <h2 className="text-xl">Pay directly with crypto</h2>
         <CheckoutForm plan={plan.slug} options={checkoutOptions.map((o) => ({ label: o.label, enabled: paymentsReady(o) }))} />
-        <Disclaimer compact />
       </div>
     </div>
   );

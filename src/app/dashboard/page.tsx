@@ -1,6 +1,7 @@
 import { brand } from "@/lib/config";
 import Link from "next/link";
 import { VerifyBanner } from "@/components/VerifyBanner";
+import { emailDelivers } from "@/lib/email";
 import { VideoCard } from "@/components/VideoCard";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -24,7 +25,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
         <h1 className="text-3xl md:text-4xl">{user.name ?? user.email}</h1>
       </div>
 
-      {!user.emailVerifiedAt && <VerifyBanner email={user.email} />}
+      {!user.emailVerifiedAt && <VerifyBanner email={user.email} deliveryAvailable={emailDelivers()} />}
       {walletPurchase && <p role="status" className="card text-emerald-300">Purchase complete. Your membership and wallet balance have been updated.</p>}
 
       <div className="grid gap-4 md:grid-cols-3">

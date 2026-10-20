@@ -1,4 +1,3 @@
-import { Disclaimer } from "@/components/Disclaimer";
 import { VideoCard } from "@/components/VideoCard";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -28,7 +27,6 @@ export default async function VideosPage() {
           </div>
         </section>
       ))}
-      <Disclaimer />
     </div>
   );
 }

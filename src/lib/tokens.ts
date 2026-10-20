@@ -11,16 +11,22 @@ const hash = (token: string) => crypto.createHash("sha256").update(token).digest
 
 // Only the hash is stored, so a database leak doesn't expose usable links.
 export async function issueToken(userId: string, type: TokenType, ttlMs = lifetimes[type]) {
-  await db.authToken.deleteMany({ where: { userId, type, usedAt: null } });
   const token = crypto.randomBytes(32).toString("base64url");
-  await db.authToken.create({ data: { userId, type, tokenHash: hash(token), expiresAt: new Date(Date.now() + ttlMs) } });
+  const id = crypto.randomUUID();
+  const expiresAt = new Date(Date.now() + ttlMs);
+  await db.$executeRaw`WITH removed AS (
+    DELETE FROM "AuthToken" WHERE "userId"=${userId} AND type=${type}::"TokenType" AND "usedAt" IS NULL
+  ) INSERT INTO "AuthToken" (id,"userId",type,"tokenHash","expiresAt")
+    VALUES (${id},${userId},${type}::"TokenType",${hash(token)},${expiresAt})`;
   return token;
 }
 
 // Single use: returns the userId and marks the token used, or null if it is unknown, used or expired.
 export async function consumeToken(token: string, type: TokenType) {
-  const record = await db.authToken.findUnique({ where: { tokenHash: hash(token) } });
-  if (!record || record.type !== type || record.usedAt || record.expiresAt < new Date()) return null;
-  const claimed = await db.authToken.updateMany({ where: { id: record.id, usedAt: null }, data: { usedAt: new Date() } });
-  return claimed.count === 1 ? record.userId : null;
+  if (!/^[A-Za-z0-9_-]{43}$/.test(token)) return null;
+  const claimed = await db.$queryRaw<{ userId: string }[]>`UPDATE "AuthToken"
+    SET "usedAt"=(CURRENT_TIMESTAMP AT TIME ZONE 'UTC')
+    WHERE "tokenHash"=${hash(token)} AND type=${type}::"TokenType" AND "usedAt" IS NULL
+      AND "expiresAt">(CURRENT_TIMESTAMP AT TIME ZONE 'UTC') RETURNING "userId"`;
+  return claimed[0]?.userId ?? null;
 }

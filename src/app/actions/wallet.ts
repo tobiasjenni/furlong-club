@@ -15,7 +15,7 @@ export async function startTopup(_: FormState, form: FormData): Promise<FormStat
   const user = await requireUser();
   if (!walletEnabled || user.walletFrozen) return { error: "Wallet top-ups are currently unavailable." };
   if (!user.emailVerifiedAt) return { error: "Please verify your email before adding funds." };
-  if (!rateLimit(`topup:${user.id}`, 10, 3600000)) return { error: "Too many attempts. Please try again later." };
+  if (!await rateLimit(`topup:${user.id}`, 10, 3600000)) return { error: "Too many attempts. Please try again later." };
   const option = checkoutOptions[Number(form.get("option"))];
   const input = String(form.get("amount") ?? "");
   const amount = /^\d{1,4}(\.\d{1,2})?$/.test(input) ? decimal(input)?.times(100) : null;
@@ -30,7 +30,7 @@ export async function startTopup(_: FormState, form: FormData): Promise<FormStat
 export async function buyWithWallet(_: FormState, form: FormData): Promise<FormState> {
   const user = await requireUser();
   if (!walletEnabled) return { error: "Wallet payments are not yet enabled." };
-  if (!rateLimit(`wallet-buy:${user.id}`, 20, 60000)) return { error: "Please wait a minute and try again." };
+  if (!await rateLimit(`wallet-buy:${user.id}`, 20, 60000)) return { error: "Please wait a minute and try again." };
   const parsed = z.object({ planId: z.string().min(1).max(100), requestKey: z.string().uuid(), priceCents: z.coerce.number().int().positive().max(10000000) }).safeParse(Object.fromEntries(form));
   if (!parsed.success) return { error: "Please reload this page and try again." };
   const { planId, requestKey, priceCents } = parsed.data;
@@ -53,7 +53,7 @@ export async function buyWithWallet(_: FormState, form: FormData): Promise<FormS
 export async function refreshMyPayment(form: FormData) {
   const user = await requireUser();
   const payment = await db.payment.findFirst({ where: { id: String(form.get("id")), userId: user.id } });
-  if (!payment || !rateLimit(`payment-refresh:${payment.id}`, 3, 60000)) return;
+  if (!payment || !await rateLimit(`payment-refresh:${payment.id}`, 3, 60000)) return;
   try { await reconcilePayment(payment, "user-refresh"); }
   catch { redirect(`/checkout/pay/${payment.id}?refresh=unavailable`); }
   revalidatePath(`/checkout/pay/${payment.id}`); revalidatePath("/wallet");
@@ -62,7 +62,7 @@ export async function refreshMyPayment(form: FormData) {
 export async function refreshAdminPayment(form: FormData) {
   await requireAdmin();
   const payment = await db.payment.findUnique({ where: { id: String(form.get("id")) } });
-  if (!payment || !rateLimit(`payment-refresh:${payment.id}`, 3, 60000)) return;
+  if (!payment || !await rateLimit(`payment-refresh:${payment.id}`, 3, 60000)) return;
   try { await reconcilePayment(payment, "admin-refresh"); }
   catch { redirect(`/admin/payments/${payment.id}?refresh=unavailable`); }
   revalidatePath(`/admin/payments/${payment.id}`); revalidatePath("/admin/wallet");

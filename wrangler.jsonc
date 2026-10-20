@@ -14,7 +14,9 @@
   "vars": {
     "APP_URL": "https://furlong.club",
     "DATABASE_DRIVER": "neon-http",
-    "PAYMENT_PROVIDER": "mock",
-    "WALLET_ENABLED": "false"
+    "APP_ENV": "production",
+    "ENABLE_TEST_PAYMENTS": "false",
+    "PAYMENT_PROVIDER": "nowpayments",
+    "WALLET_ENABLED": "true"
   }
 }

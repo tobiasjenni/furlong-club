@@ -91,6 +91,14 @@ model AuthToken {
   @@index([userId, type])
 }
 
+model RateLimit {
+  key     String   @id
+  hits    Int
+  resetAt DateTime
+
+  @@index([resetAt])
+}
+
 model Plan {
   id            String          @id @default(cuid())
   slug          String          @unique

@@ -28,9 +28,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${display.variable} ${sans.variable}`}>
       <body className="flex min-h-screen flex-col">
-        {process.env.NODE_ENV === "production" && process.env.PAYMENT_PROVIDER === "mock" && (
+        {walletTestMode() && (
           <div className="bg-gold-400 px-4 py-1.5 text-center text-xs font-semibold text-turf-950">
-            {walletTestMode() ? "Wallet test site · All balances and payments are simulated. Do not send real cryptocurrency." : "Test mode: payments are simulated and no real crypto is moved."}
+            Wallet test site · All balances and payments are simulated. Do not send real cryptocurrency.
           </div>
         )}
         <SiteHeader />
