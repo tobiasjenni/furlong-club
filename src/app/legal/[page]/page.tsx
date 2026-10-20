@@ -32,6 +32,12 @@ const pages: Record<string, { title: string; body: string[] }> = {
   },
 };
 
+export const dynamicParams = false;
+
+export async function generateMetadata({ params }: { params: Promise<{ page: string }> }) {
+  return { title: pages[(await params).page]?.title ?? "Not found" };
+}
+
 export function generateStaticParams() {
   return Object.keys(pages).map((page) => ({ page }));
 }
