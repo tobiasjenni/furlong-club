@@ -28,20 +28,25 @@ try {
     (SELECT count(*)::int FROM "Payment") AS payments,
     (SELECT count(*)::int FROM "Payment" WHERE provider='mock') AS "mockPayments"`;
   const tables = await db.$queryRaw`SELECT to_regclass('public."WalletJournal"') IS NOT NULL AS "walletMigrationApplied",
-    to_regclass('public."RateLimit"') IS NOT NULL AS "hardeningMigrationApplied"`;
+    to_regclass('public."RateLimit"') IS NOT NULL AS "hardeningMigrationApplied",
+    to_regclass('public."TradingAllocation"') IS NOT NULL AS "tradingMigrationApplied"`;
   let ledger;
   if (tables[0].walletMigrationApplied) {
     ledger = await db.$queryRaw`SELECT
       (SELECT count(*)::int FROM "User" u WHERE u."balanceCents"<>(SELECT COALESCE(sum(j."userDeltaCents"),0) FROM "WalletJournal" j WHERE j."userId"=u.id)) AS "balanceMismatches",
-      (SELECT count(*)::int FROM "WalletJournal" WHERE "userDeltaCents"::bigint+"clearingDeltaCents"::bigint+"revenueDeltaCents"::bigint+"lockedDeltaCents"::bigint+"tradingResultDeltaCents"::bigint<>0) AS "unbalancedPostings"`;
+      (SELECT count(*)::int FROM "WalletJournal" WHERE "userDeltaCents"::bigint+"clearingDeltaCents"::bigint+"revenueDeltaCents"::bigint+"lockedDeltaCents"::bigint+"tradingResultDeltaCents"::bigint<>0) AS "unbalancedPostings",
+      (SELECT count(*)::int FROM "User" u WHERE
+        (SELECT COALESCE(sum("lockedDeltaCents"),0) FROM "WalletJournal" WHERE "userId"=u.id)<>
+        (SELECT COALESCE(sum("principalCents"),0) FROM "TradingAllocation" WHERE "userId"=u.id AND status IN ('ACTIVE','PAYOUT_READY'))) AS "lockedPrincipalMismatches"`;
   }
+  const trading = await db.tradingProgram.findUnique({ where: { id: 'harry' }, select: { enrollmentEnabled: true } });
   const routes = [];
   for (const path of ['/','/trading','/plans','/login','/signup','/legal/terms','/icon.svg','/robots.txt']) {
     const result = await fetch(`https://furlong.club${path}`, { signal: AbortSignal.timeout(20000) });
     routes.push({path,status:result.status});
   }
-  console.log('RELEASE_AUDIT ' + JSON.stringify({flags,secretNames,database:counts[0],migrations:tables[0],ledger:ledger?.[0],routes}));
-  if (!counts[0].admins || counts[0].negativeBalances || ledger?.[0].balanceMismatches || ledger?.[0].unbalancedPostings || routes.some(r=>r.status!==200)) process.exitCode=1;
+  console.log('RELEASE_AUDIT ' + JSON.stringify({flags,secretNames,database:counts[0],migrations:tables[0],ledger:ledger?.[0],trading,routes}));
+  if (!counts[0].admins || counts[0].negativeBalances || ledger?.[0].balanceMismatches || ledger?.[0].unbalancedPostings || ledger?.[0].lockedPrincipalMismatches || trading?.enrollmentEnabled || flags.TRADING_REQUESTS_ENABLED!=='false' || routes.some(r=>r.status!==200)) process.exitCode=1;
 } catch (error) {
   // Database/driver error objects may embed a connection string. Keep logs redacted.
   console.error('Production audit failed. Inspect database connectivity and Worker access securely.');
