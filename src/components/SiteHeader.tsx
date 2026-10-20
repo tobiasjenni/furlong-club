@@ -27,7 +27,7 @@ export async function SiteHeader() {
     <header className="sticky top-0 z-40 border-b border-white/10 bg-turf-950/85 backdrop-blur">
       <div className="container-page flex h-16 items-center justify-between gap-4">
         <Link href={user ? "/dashboard" : "/"} className="flex items-center gap-2.5" aria-label={`${brand.name} home`}>
-          <Logo className="h-8 w-8" />
+          <Logo className="h-9 w-9" />
           <span className="font-display text-lg font-semibold">{brand.name}</span>
         </Link>
 

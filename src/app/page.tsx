@@ -13,6 +13,21 @@ const steps = [
   { title: "Race-day breakdowns", body: "Members get Harry's take on the day's feature races before the off." },
 ];
 
+const highlights = [
+  { value: "UK", label: "Racing covered" },
+  { value: "Weekly", label: "New breakdowns" },
+  { value: "30 days", label: "Plans, no auto-renew" },
+  { value: "18+", label: "Responsible gambling first" },
+];
+
+const faqs = [
+  { q: "Is Furlong Club a bookmaker?", a: "No. We teach you how to read a race and share our opinion on the day's cards. We never take bets, hold your money or bet on your behalf. If you choose to bet, you do it yourself with a licensed bookmaker." },
+  { q: "Who is Harry Whitcombe?", a: "Harry is our fictional host with an AI-generated portrait. The analysis behind the videos comes from our team of racing analysts." },
+  { q: "How do I pay?", a: "Paid plans are paid upfront in USDT or USDC and run for 30 days. They do not renew automatically, so you are never charged without choosing to." },
+  { q: "Can I cancel?", a: "There is nothing to cancel: when your 30 days end, your plan simply stops. You keep your free account and the intro videos." },
+  { q: "Do you guarantee winnings?", a: "No one can. Our videos are education and opinion, not advice. Only bet what you can afford to lose, and stop if it stops being fun." },
+];
+
 export default async function Home() {
   const plans = await db.plan.findMany({ where: { active: true }, orderBy: { sortOrder: "asc" } });
   return (
@@ -39,6 +54,17 @@ export default async function Home() {
             <p className="muted mt-3 text-center text-xs">Meet {brand.host.name}, our paddock guide. A fictional character with an AI-generated portrait.</p>
           </div>
         </div>
+      </section>
+
+      <section className="border-b border-white/10 bg-turf-900/60">
+        <dl className="container-page grid grid-cols-2 gap-6 py-8 md:grid-cols-4">
+          {highlights.map((h) => (
+            <div key={h.label} className="text-center">
+              <dt className="muted text-xs uppercase tracking-wider">{h.label}</dt>
+              <dd className="mt-1 font-display text-2xl text-gold-300">{h.value}</dd>
+            </div>
+          ))}
+        </dl>
       </section>
 
       <section id="how" className="container-page py-16 md:py-20">
@@ -77,6 +103,21 @@ export default async function Home() {
           ))}
         </div>
         <div className="mt-8"><Disclaimer /></div>
+      </section>
+
+      <section id="faq" className="container-page max-w-3xl pb-8">
+        <h2 className="text-3xl md:text-4xl">Questions, answered</h2>
+        <div className="mt-6 divide-y divide-white/10 rounded-2xl border border-white/10 bg-turf-900/40">
+          {faqs.map((f) => (
+            <details key={f.q} className="group px-5 py-4">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-semibold text-cream">
+                {f.q}
+                <span className="text-gold-400 transition group-open:rotate-45" aria-hidden>+</span>
+              </summary>
+              <p className="muted mt-3 text-sm leading-relaxed">{f.a}</p>
+            </details>
+          ))}
+        </div>
       </section>
     </>
   );
