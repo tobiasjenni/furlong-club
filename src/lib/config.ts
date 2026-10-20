@@ -1,7 +1,8 @@
 export const brand = {
   name: "Furlong Club",
   domain: "furlong.club",
-  mascot: "Rob",
+  // The site's host: a fictional character with an AI-generated portrait.
+  host: { first: "Harry", name: "Harry Whitcombe", page: "/meet-harry" },
   supportEmail: "support@furlong.club",
 };
 
