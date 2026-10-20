@@ -17,6 +17,7 @@
     "APP_ENV": "production",
     "ENABLE_TEST_PAYMENTS": "false",
     "PAYMENT_PROVIDER": "nowpayments",
+    "DEPOSIT_MODE": "manual",
     "WALLET_ENABLED": "true"
   }
 }

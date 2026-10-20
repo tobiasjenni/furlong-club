@@ -3,7 +3,7 @@ import { requireUser } from "@/lib/auth";
 import { checkoutOptions, walletEnabled } from "@/lib/config";
 import { db } from "@/lib/db";
 import { dateTime, usd } from "@/lib/format";
-import { paymentsReady } from "@/lib/payments";
+import { depositsReady, manualDepositLabel, manualDepositsEnabled } from "@/lib/manual-deposits";
 import { TopupForm } from "./TopupForm";
 import { AutoRefresh } from "@/app/checkout/pay/[id]/AutoRefresh";
 
@@ -15,7 +15,7 @@ export default async function WalletPage() {
     db.walletJournal.findMany({ where: { userId: user.id, userDeltaCents: { not: 0 } }, orderBy: [{ createdAt: "desc" }, { id: "desc" }], take: 50 }),
     db.payment.findMany({ where: { userId: user.id, purpose: "WALLET_TOPUP" }, orderBy: { createdAt: "desc" }, take: 20 }),
   ]);
-  const options = checkoutOptions.map((o, value) => ({ label: o.label, value, enabled: paymentsReady(o) }));
+  const options = checkoutOptions.map((o, value) => ({ label: o.label, currency: o.currency, value, enabled: depositsReady(o) }));
   const ready = walletEnabled && options.some(o => o.enabled);
   const pending = payments.filter(p => p.status !== "CONFIRMED" && p.status !== "FAILED" && p.status !== "EXPIRED");
   const pendingCents = pending.reduce((sum, p) => sum + p.amountCents, 0);
@@ -33,21 +33,21 @@ export default async function WalletPage() {
       <section className="card space-y-4"><h2 className="text-2xl">Add funds</h2>
         {!ready && <p role="status" className="rounded-xl bg-gold-400/10 p-3 text-sm text-gold-300">Deposits are currently unavailable. Please check back soon.</p>}
         {!user.emailVerifiedAt && <p className="text-sm text-gold-300">Confirm your email from your dashboard before adding funds.</p>}
-        <TopupForm options={options} disabled={!ready || user.walletFrozen || !user.emailVerifiedAt} />
+        <TopupForm options={options} manual={manualDepositsEnabled} disabled={!ready || user.walletFrozen || !user.emailVerifiedAt} />
       </section>
     </div>
     <section className="card"><h2 className="text-xl">How deposits work</h2>
       <ol className="mt-4 grid gap-4 text-sm sm:grid-cols-3">
-        <li><span className="text-gold-300">1. Choose and send</span><p className="muted mt-1">Choose your token and network. Send the exact amount to your new payment address.</p></li>
-        <li><span className="text-gold-300">2. Payment completes</span><p className="muted mt-1">The provider confirms your payment and transfers it to the club&apos;s receiving wallet.</p></li>
-        <li><span className="text-gold-300">3. Credit arrives</span><p className="muted mt-1">Your USD credit becomes available and a receipt appears below.</p></li>
+        <li><span className="text-gold-300">1. Choose and send</span><p className="muted mt-1">Choose your token, network and amount. Send the exact amount to the address shown.</p></li>
+        <li><span className="text-gold-300">{manualDepositsEnabled ? "2. Tell us you sent it" : "2. Payment completes"}</span><p className="muted mt-1">{manualDepositsEnabled ? "Enter your transaction ID and confirm that you have sent the transfer. The admin is notified." : "The provider confirms your payment and transfers it to the club's receiving wallet."}</p></li>
+        <li><span className="text-gold-300">3. Credit arrives</span><p className="muted mt-1">{manualDepositsEnabled ? "An admin verifies the receipt and approves it. Your USD credit then becomes available." : "Your USD credit becomes available and a receipt appears below."}</p></li>
       </ol>
     </section>
     <section className="card overflow-x-auto"><h2 className="mb-4 text-xl">Deposit payments</h2>
       {payments.length === 0 ? <p className="muted text-sm">No deposits yet. Start by adding funds above.</p> : <table className="table">
         <thead><tr><th>Date</th><th>Credit</th><th>Pay with</th><th>Progress</th><th>Receipt</th></tr></thead>
         <tbody>{payments.map(p => <tr key={p.id}><td>{dateTime(p.createdAt)}</td><td>{usd(p.amountCents)}</td><td>{p.currency} · {p.network}</td>
-          <td>{p.reviewReason ? "Needs review" : p.status === "CONFIRMED" ? "Credited" : p.settlementStatus === "TRANSFERRING" ? "Transferring to club wallet" : p.status.toLowerCase()}</td>
+          <td>{p.provider === "manual" ? manualDepositLabel(p.status, p.providerStatus) : p.reviewReason ? "Needs review" : p.status === "CONFIRMED" ? "Credited" : p.settlementStatus === "TRANSFERRING" ? "Transferring to club wallet" : p.status.toLowerCase()}</td>
           <td><Link href={`/checkout/pay/${p.id}`} className="text-gold-300 underline">View payment</Link></td></tr>)}</tbody>
       </table>}
     </section>

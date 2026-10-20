@@ -1,3 +1,4 @@
+import { manualDepositLabel } from "@/lib/manual-deposits";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { date, usd } from "@/lib/format";
@@ -37,7 +38,7 @@ export default async function AccountPage() {
         <h2 className="mb-4 text-xl">Payments</h2>
         {payments.length === 0 ? <p className="muted text-sm">No payments yet.</p> : (
           <table className="table"><thead><tr><th>Date</th><th>Plan</th><th>Amount</th><th>Coin</th><th>Status</th></tr></thead>
-            <tbody>{payments.map((p) => <tr key={p.id}><td>{date(p.createdAt)}</td><td>{p.planName ?? "Wallet top-up"}</td><td>{usd(p.amountCents)}</td><td>{p.currency} · {p.network}</td><td><span className={`badge ${statusColor[p.status] ?? "bg-white/10 text-cream/70"}`}>{p.status}</span></td></tr>)}</tbody></table>
+            <tbody>{payments.map((p) => <tr key={p.id}><td>{date(p.createdAt)}</td><td>{p.planName ?? "Wallet top-up"}</td><td>{usd(p.amountCents)}</td><td>{p.currency} · {p.network}</td><td><span className={`badge ${statusColor[p.status] ?? "bg-white/10 text-cream/70"}`}>{p.provider === "manual" ? manualDepositLabel(p.status, p.providerStatus) : p.status}</span></td></tr>)}</tbody></table>
         )}
       </div>
       <DangerZone />

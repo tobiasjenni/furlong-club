@@ -1,5 +1,19 @@
 # Wallet setup and operating guide
 
+## Manual approval mode (current production mode)
+
+`DEPOSIT_MODE=manual` enables direct USDT/USDC deposits to the configured `POOL_WALLET_*` addresses without a payment-provider API account. Only networks with an address are offered. Members must be active, email-confirmed and have an unfrozen wallet to create a request. Admins can confirm an email from the member's account while email delivery is unavailable.
+
+A member enters 20–1,000 tokens (up to two decimal places), receives the address/QR code and sends the exact amount. They then enter their transaction ID and select **I have sent this payment**. This reports a claim; it does not prove receipt or issue credit. There may be up to three open requests per member. Unsent requests can be cancelled; late sends against a cancelled request can still be reported.
+
+Admin **Deposit approvals** shows reported deposits, oldest first. A notice on every admin page polls the protected counter every 30 seconds while visible; the queue refreshes automatically. Each member's **Users & CRM → account → Crypto deposit approvals** and each payment detail also provide approve/reject controls.
+
+Before approving, independently verify the exact token, network, recipient snapshot, confirmed amount, transaction ID, and attribution to that member using the receiving wallet and supporting sender evidence. A public transaction ID alone does not prove the claimant sent it. Record a review note and acknowledge the verification checkbox. Approval adds the requested USD club credit at the explicit fixed rate of $1 per USDT/USDC. If the received amount differs, reject with a member-visible reason and have them submit the correct amount. Rejection adds no credit. Approval does not initiate an on-chain transaction: the money has already arrived directly at the club address.
+
+The database rechecks the active admin role and locks the affected accounts/payment. Review status, receipt reservation, immutable event, balanced journal, cached balance and audit entry commit atomically. Retries cannot credit twice. The same chain transaction cannot fund another credited payment, even across USDT/USDC; provider incoming and payout hashes are also reserved. Batched/multi-recipient transactions require support review rather than separate automatic credits. Existing freezes remain in force. No automatic provider callback can approve a fresh manual deposit.
+
+Staging uses deliberately unusable `TEST_ONLY_*` addresses, no QR/copy controls, and its simulated-money banner. Never send real funds there. Production uses the saved real receiving addresses. No private keys or seed phrases are needed. The automated-provider instructions below remain available for a later switch away from manual deposits.
+
 ## Provider choice and cost
 
 This implementation extends the app's existing NOWPayments integration. It does not require a separate custodial-wallet service, running blockchain nodes, storing private keys, or manually sweeping each customer's deposit address. NOWPayments collects each invoice and sends it to a configured external club wallet in the same token/network. New NOWPayments accounts may default to custody: configure external settlement and confirm that the payment API's `payout_address` override is honored before opening deposits.
