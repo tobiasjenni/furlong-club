@@ -6,8 +6,19 @@ on:
   workflow_dispatch:
 
 jobs:
-  cron:
+  daily:
     runs-on: ubuntu-latest
+    environment: production
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+      APP_URL: https://furlong.club
     steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
       - name: Renewal reminders and clean-up
-        run: curl --fail-with-body -sS -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" https://furlong.club/api/cron/daily
+        run: npm run daily

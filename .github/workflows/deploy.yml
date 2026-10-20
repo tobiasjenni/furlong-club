@@ -32,16 +32,23 @@ jobs:
           SEED_ADMIN_PASSWORD: ${{ secrets.SEED_ADMIN_PASSWORD }}
       - name: Build for Cloudflare Workers
         run: npx opennextjs-cloudflare build
-      - name: Upload Worker secrets
+      - name: Prepare Worker secrets
+        # AUTH_SECRET and CRON_SECRET are generated on the first deploy and then kept on the Worker,
+        # so nobody has to create them by hand (a GitHub secret of the same name overrides them).
         run: |
-          node -e '
-            const s = { DATABASE_URL: process.env.DATABASE_URL, AUTH_SECRET: process.env.AUTH_SECRET, CRON_SECRET: process.env.CRON_SECRET,
+          existing=$(npx wrangler secret list --format json 2>/dev/null) || existing="[]"
+          EXISTING="$existing" node -e '
+            const crypto = require("crypto");
+            let have = new Set();
+            try { have = new Set(JSON.parse(process.env.EXISTING).map((s) => s.name)); } catch {}
+            const generate = (name, given) => given || (have.has(name) ? undefined : crypto.randomBytes(36).toString("base64url"));
+            const s = { DATABASE_URL: process.env.DATABASE_URL,
+                        AUTH_SECRET: generate("AUTH_SECRET", process.env.AUTH_SECRET),
+                        CRON_SECRET: generate("CRON_SECRET", process.env.CRON_SECRET),
                         RESEND_API_KEY: process.env.RESEND_API_KEY, NOWPAYMENTS_API_KEY: process.env.NOWPAYMENTS_API_KEY,
                         NOWPAYMENTS_IPN_SECRET: process.env.NOWPAYMENTS_IPN_SECRET, BUNNY_TOKEN_KEY: process.env.BUNNY_TOKEN_KEY };
             for (const k of Object.keys(s)) if (!s[k]) delete s[k];
-            require("fs").writeFileSync("/tmp/secrets.json", JSON.stringify(s));'
-          npx wrangler secret bulk /tmp/secrets.json
-          rm /tmp/secrets.json
+            require("fs").writeFileSync(`${process.env.RUNNER_TEMP}/secrets.json`, JSON.stringify(s), { mode: 0o600 });'
         env:
           AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
@@ -50,4 +57,7 @@ jobs:
           NOWPAYMENTS_IPN_SECRET: ${{ secrets.NOWPAYMENTS_IPN_SECRET }}
           BUNNY_TOKEN_KEY: ${{ secrets.BUNNY_TOKEN_KEY }}
       - name: Deploy
-        run: npx opennextjs-cloudflare deploy
+        run: npx opennextjs-cloudflare deploy -- --secrets-file "$RUNNER_TEMP/secrets.json"
+      - name: Remove secrets file
+        if: always()
+        run: rm -f "$RUNNER_TEMP/secrets.json"
