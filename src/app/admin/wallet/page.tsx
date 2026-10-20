@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { dateTime, usd } from "@/lib/format";
 import { checkoutOptions, walletEnabled } from "@/lib/config";
 import { paymentsReady, poolAddress } from "@/lib/payments";
+import { depositAddress, depositsReady, manualDepositsEnabled } from "@/lib/manual-deposits";
 
 export default async function AdminWallet() {
   await requireAdmin();
@@ -13,7 +14,7 @@ export default async function AdminWallet() {
       SELECT u.id,u.email,u."balanceCents",COALESCE(SUM(j."userDeltaCents"),0)::bigint AS "ledgerCents"
       FROM "User" u LEFT JOIN "WalletJournal" j ON j."userId"=u.id
       GROUP BY u.id HAVING u."balanceCents" <> COALESCE(SUM(j."userDeltaCents"),0)`,
-    db.payment.groupBy({ by: ["currency", "network"], where: { provider: "nowpayments", settlementStatus: "SETTLED" },
+    db.payment.groupBy({ by: ["currency", "network", "provider"], where: { provider: { in: ["nowpayments", "manual"] }, settlementStatus: "SETTLED" },
       _sum: { receivedAmount: true, outcomeAmount: true }, _count: true }),
     db.payment.findMany({ where: { reviewReason: { not: null } }, orderBy: { updatedAt: "desc" }, take: 100, include: { user: true } }),
     db.walletJournal.findMany({ orderBy: [{ createdAt: "desc" }, { id: "desc" }], take: 100, include: { user: true } }),
@@ -27,14 +28,14 @@ export default async function AdminWallet() {
     <section className="card"><h2 className="text-xl">Receiving wallet setup</h2>
       <p className="muted mt-2 text-sm">Wallet payments are {walletEnabled ? "enabled" : "disabled"}. Configure a receiving address for each enabled token/network. No private keys belong in this app.</p>
       <ul className="mt-4 space-y-3 text-sm">{checkoutOptions.map(o => {
-        let address: string | null; try { address = poolAddress(o); } catch { address = "Invalid address configuration"; }
-        return <li key={o.label}><strong>{o.label}</strong> · {(process.env.PAYMENT_PROVIDER ?? "mock") === "mock" ? "Local simulation only" : paymentsReady(o) ? "Payment provider ready" : "Setup needed"}<code className="muted mt-1 block break-all text-xs">{address ?? `Set POOL_WALLET_${o.currency}_${o.network}`}</code></li>;
+        let address: string | null; try { address = manualDepositsEnabled ? depositAddress(o) : poolAddress(o); } catch { address = "Invalid address configuration"; }
+        return <li key={o.label}><strong>{o.label}</strong> · {manualDepositsEnabled ? depositsReady(o) ? "Manual approval ready" : "Receiving address needed" : paymentsReady(o) ? "Payment provider ready" : "Setup needed"}<code className="muted mt-1 block break-all text-xs">{address ?? `Set POOL_WALLET_${o.currency}_${o.network}`}</code></li>;
       })}</ul>
     </section>
-    <section className="card overflow-x-auto"><h2 className="mb-3 text-xl">Provider-reported pooled transfers</h2>
-      <p className="muted mb-4 text-sm">Gross crypto received and net crypto delivered, grouped by token and network. These are provider settlement records, not the current on-chain wallet balance. Compare transaction hashes and your wallet independently. USD credits and token quantities are separate books.</p>
-      <table className="table"><thead><tr><th>Token / network</th><th>Payments</th><th>Received</th><th>Delivered</th><th>Difference (fees)</th></tr></thead>
-        <tbody>{pools.map(p => <tr key={`${p.currency}:${p.network}`}><td>{p.currency} · {p.network}</td><td>{p._count}</td><td>{p._sum.receivedAmount?.toFixed() ?? "—"}</td><td>{p._sum.outcomeAmount?.toFixed() ?? "—"}</td><td>{p._sum.receivedAmount && p._sum.outcomeAmount ? p._sum.receivedAmount.minus(p._sum.outcomeAmount).toFixed() : "—"}</td></tr>)}</tbody></table>
+    <section className="card overflow-x-auto"><h2 className="mb-3 text-xl">Recorded crypto receipts</h2>
+      <p className="muted mb-4 text-sm">Manual deposits arrive directly in the club wallet and are recorded after an admin verifies them. Automated receipts use provider settlement reports. These totals are historical receipts, not the current on-chain wallet balance. Compare the transactions and receiving wallet independently.</p>
+      <table className="table"><thead><tr><th>Token / network</th><th>Source</th><th>Payments</th><th>Received</th><th>Received by club</th><th>Difference</th></tr></thead>
+        <tbody>{pools.map(p => <tr key={`${p.provider}:${p.currency}:${p.network}`}><td>{p.currency} · {p.network}</td><td>{p.provider === "manual" ? "Admin verified" : "Provider reported"}</td><td>{p._count}</td><td>{p._sum.receivedAmount?.toFixed() ?? "—"}</td><td>{p._sum.outcomeAmount?.toFixed() ?? "—"}</td><td>{p._sum.receivedAmount && p._sum.outcomeAmount ? p._sum.receivedAmount.minus(p._sum.outcomeAmount).toFixed() : "—"}</td></tr>)}</tbody></table>
     </section>
     {drift.length > 0 && <section className="card"><h2 className="text-xl text-red-300">Balance mismatches</h2>{drift.map(d => <p key={d.id} className="mt-3 text-sm">{d.email}: displayed {usd(d.balanceCents)}, ledger {usd(Number(d.ledgerCents))}</p>)}</section>}
     <section className="card overflow-x-auto"><h2 className="mb-4 text-xl">Payments needing review</h2>

@@ -9,6 +9,7 @@ import { db } from "@/lib/db";
 import { dateTime, usd } from "@/lib/format";
 import { AutoRefresh } from "./AutoRefresh";
 import { CopyButton } from "./CopyButton";
+import { ManualDepositPage } from "@/components/ManualDepositPage";
 
 export const metadata = { title: "Payment" };
 const networks: Record<string, string> = { TRC20: "Tron (TRC-20)", ERC20: "Ethereum (ERC-20)", POLYGON: "Polygon" };
@@ -17,6 +18,7 @@ export default async function PayPage({ params, searchParams }: { params: Promis
   const user = await requireUser();
   const payment = await db.payment.findFirst({ where: { id: (await params).id, userId: user.id }, include: { plan: true } });
   if (!payment) notFound();
+  if (payment.provider === "manual") return <ManualDepositPage payment={payment} />;
   if (payment.status === "PENDING" && payment.expiresAt && payment.expiresAt < new Date()) {
     await db.$executeRaw`UPDATE "Payment" SET status='EXPIRED', "updatedAt"=(CURRENT_TIMESTAMP AT TIME ZONE 'UTC') WHERE id=${payment.id} AND status='PENDING'`;
     // Another notification may have completed this invoice while it was being read. Reload it.

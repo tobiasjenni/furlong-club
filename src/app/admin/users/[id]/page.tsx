@@ -4,6 +4,8 @@ import { addNote, cancelSubscription, confirmEmail, grantPlan, signOutUser, upda
 import { ResetLinkForm } from "../AdminForms";
 import { db } from "@/lib/db";
 import { date, dateTime, usd } from "@/lib/format";
+import { ReviewDepositForm } from "@/components/ManualDepositForms";
+import { transactionUrl } from "@/lib/manual-deposits";
 
 export default async function AdminUser({ params }: { params: Promise<{ id: string }> }) {
   await requireAdmin();
@@ -16,6 +18,7 @@ export default async function AdminUser({ params }: { params: Promise<{ id: stri
     },
   });
   if (!user) notFound();
+  const pendingDeposits = await db.payment.findMany({ where: { userId: user.id, provider: "manual", status: "CONFIRMING" }, orderBy: { submittedAt: "asc" }, take: 50 });
   const plans = await db.plan.findMany({ where: { priceCents: { gt: 0 } }, orderBy: { sortOrder: "asc" } });
   const now = new Date();
 
@@ -70,6 +73,20 @@ export default async function AdminUser({ params }: { params: Promise<{ id: stri
         </form>
       </div>
       <div className="space-y-4">
+        <div className="card">
+          <h3 className="mb-3 text-lg">Crypto deposit approvals</h3>
+          {pendingDeposits.length === 0 && <p className="muted text-sm">No reported deposits awaiting approval for this member.</p>}
+          {pendingDeposits.map(payment => {
+            const explorer = transactionUrl(payment.network, payment.submittedTxHash);
+            return <div key={payment.id} className="space-y-4 border-t border-white/10 py-4">
+              <div><p className="font-semibold text-gold-300">{(payment.amountCents / 100).toFixed(2)} {payment.currency} · {payment.network} · {usd(payment.amountCents)} credit</p>
+                <p className="muted mt-1 text-xs">Reported {dateTime(payment.submittedAt)}</p>
+                <p className="mt-2 break-all text-xs">Receiving address: <code>{payment.poolAddress}</code></p>
+                {explorer && <a href={explorer} target="_blank" rel="noreferrer" className="mt-2 inline-block text-xs text-gold-300 underline">Inspect reported transaction ↗</a>}</div>
+              <ReviewDepositForm id={payment.id} submittedHash={payment.submittedTxHash} amount={(payment.amountCents / 100).toFixed(2)} token={payment.currency} network={payment.network} />
+            </div>;
+          })}
+        </div>
         <div className="card">
           <h3 className="mb-3 text-lg">CRM notes</h3>
           <form action={addNote} className="space-y-2">

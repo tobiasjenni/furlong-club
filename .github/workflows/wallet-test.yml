@@ -1,7 +1,7 @@
 name: Deploy wallet test site
 on:
   push:
-    branches: [feat/stablecoin-wallet-ledger]
+    branches: [feat/stablecoin-wallet-ledger, feat/manual-deposit-review]
   workflow_dispatch:
 permissions:
   contents: read
