@@ -19,7 +19,7 @@ export async function SiteHeader() {
     : [
         { href: "/#how", label: "How it works" },
         { href: "/plans", label: "Plans" },
-        { href: "/about-rob", label: "Meet Rob" },
+        { href: brand.host.page, label: `Meet ${brand.host.first}` },
       ];
   const initials = (user?.name ?? user?.email ?? "?").trim().slice(0, 1).toUpperCase();
 
