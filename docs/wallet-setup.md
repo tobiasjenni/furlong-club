@@ -65,6 +65,14 @@ The database functions provide one-statement transactions compatible with the de
 
 ## Checks before opening payments
 
+### Separate hosted test deployment
+
+`.github/workflows/wallet-test.yml` deploys the `feat/stablecoin-wallet-ledger` branch as the separate `furlong-wallet-test` Worker. It uses the existing repository's Cloudflare account/token, plus `WALLET_TEST_DATABASE_URL`, `WALLET_TEST_MEMBER_PASSWORD`, and `WALLET_TEST_ADMIN_PASSWORD` secrets. The database must be a dedicated test database. This workflow never reads the production `DATABASE_URL` or NOWPayments credentials. It applies migrations to the test database and seeds verified fictional test accounts. The two passwords must be at least 20 characters. Do not put credentials in source files or workflow logs.
+
+Staging simulation is gated by all of `APP_ENV=staging`, `ENABLE_TEST_PAYMENTS=true`, and `PAYMENT_PROVIDER=mock`; the production config does not set these test flags. The test site displays a permanent simulated-funds notice and disables indexing. All money in that environment is simulated. A generated test config fills in the account's actual `workers.dev` URL and is excluded from Git. Production deployments and receiving-wallet configuration remain independent.
+
+If the Cloudflare secrets are stored in a protected GitHub environment instead of repository secrets, the test job needs access to that environment through its normal approval policy. Do not copy credentials into code or relax production branch protection to deploy a preview.
+
 - Run `npm test`, `npm run lint`, and `npm run build`. Database tests execute both migrations and financial functions in PGlite. It has a single backend, so also run separate-session competing credits/spends against the target Postgres/Neon environment.
 - In local development, set `WALLET_ENABLED=true`, `PAYMENT_PROVIDER=mock`, verify an account, create a top-up, simulate its completion, buy membership from balance, and inspect admin reconciliation. Mock payment addresses are visibly test-only, cannot be copied/scanned, and simulations are disabled in production even with the old override flag.
 - In a separate provider sandbox, test each enabled token/network, minimum amounts, fees, payout-address overrides, the exact USDC variant and the returned transaction-hash fields. Missing evidence intentionally leaves the invoice for review.

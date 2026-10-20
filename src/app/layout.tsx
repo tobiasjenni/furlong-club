@@ -4,6 +4,7 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { brand } from "@/lib/config";
 import "./globals.css";
+import { walletTestMode } from "@/lib/environment";
 
 const display = Fraunces({ subsets: ["latin"], variable: "--font-display", display: "swap" });
 const sans = Inter({ subsets: ["latin"], variable: "--font-sans", display: "swap" });
@@ -29,7 +30,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="flex min-h-screen flex-col">
         {process.env.NODE_ENV === "production" && process.env.PAYMENT_PROVIDER === "mock" && (
           <div className="bg-gold-400 px-4 py-1.5 text-center text-xs font-semibold text-turf-950">
-            Test mode: payments are simulated and no real crypto is moved.
+            {walletTestMode() ? "Wallet test site · All balances and payments are simulated. Do not send real cryptocurrency." : "Test mode: payments are simulated and no real crypto is moved."}
           </div>
         )}
         <SiteHeader />

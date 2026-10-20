@@ -5,8 +5,9 @@ import { mockProvider } from "./mock";
 import { nowPaymentsProvider } from "./nowpayments";
 import type { PaymentProvider, WebhookEvent } from "./types";
 import { validatePaymentEvent } from "./validation";
+import { walletTestMode } from "../environment";
 
-export function mockPaymentsAllowed() { return process.env.NODE_ENV !== "production"; }
+export function mockPaymentsAllowed() { return process.env.NODE_ENV !== "production" || walletTestMode(); }
 
 export function getProvider(name = process.env.PAYMENT_PROVIDER ?? "mock"): PaymentProvider {
   if (name === "nowpayments") return nowPaymentsProvider();

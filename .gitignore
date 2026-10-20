@@ -6,3 +6,4 @@ next-env.d.ts
 .open-next
 .wrangler
 .dev.vars
+wrangler.test.generated.json

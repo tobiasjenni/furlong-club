@@ -1,0 +1,19 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "furlong-wallet-test",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2025-09-01",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": { "directory": ".open-next/assets", "binding": "ASSETS" },
+  "workers_dev": true,
+  "routes": [],
+  "observability": { "enabled": true },
+  "vars": {
+    "APP_ENV": "staging",
+    "ENABLE_TEST_PAYMENTS": "true",
+    "APP_URL": "https://example.invalid",
+    "DATABASE_DRIVER": "neon-http",
+    "PAYMENT_PROVIDER": "mock",
+    "WALLET_ENABLED": "true"
+  }
+}
