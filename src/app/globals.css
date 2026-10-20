@@ -1,0 +1,27 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html { @apply bg-turf-950 text-cream antialiased; color-scheme: dark; }
+  body { @apply min-h-screen font-sans; }
+  h1, h2, h3 { @apply font-display tracking-tight; }
+  ::selection { @apply bg-gold-400 text-turf-950; }
+}
+
+@layer components {
+  .container-page { @apply mx-auto w-full max-w-6xl px-4 sm:px-6; }
+  .btn { @apply inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-400 disabled:cursor-not-allowed disabled:opacity-50; }
+  .btn-gold { @apply btn bg-gold-400 text-turf-950 hover:bg-gold-300; }
+  .btn-ghost { @apply btn border border-white/15 text-cream hover:border-gold-400/60 hover:text-gold-300; }
+  .btn-danger { @apply btn border border-red-400/40 text-red-300 hover:bg-red-500/10; }
+  .card { @apply rounded-2xl border border-white/10 bg-turf-900/70 p-5 shadow-xl shadow-black/20 backdrop-blur sm:p-6; }
+  .input { @apply w-full rounded-xl border border-white/15 bg-turf-950/60 px-4 py-2.5 text-cream placeholder:text-cream/30 focus:border-gold-400 focus:outline-none focus:ring-1 focus:ring-gold-400; }
+  .label { @apply mb-1.5 block text-sm font-medium text-cream/80; }
+  .badge { @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold; }
+  .muted { @apply text-cream/60; }
+  .table { @apply w-full text-left text-sm; }
+  .table th { @apply border-b border-white/10 px-3 py-2 font-medium text-cream/60; }
+  .table td { @apply border-b border-white/5 px-3 py-2.5 align-top; }
+  .silk-stripes { background-image: repeating-linear-gradient(135deg, rgba(233,196,106,.08) 0 18px, transparent 18px 36px); }
+}

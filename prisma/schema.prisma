@@ -1,0 +1,168 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  EXPIRED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  CONFIRMING
+  CONFIRMED
+  PARTIAL
+  FAILED
+  EXPIRED
+}
+
+enum LedgerType {
+  DEPOSIT
+  WITHDRAWAL
+  ADJUSTMENT
+}
+
+enum LedgerStatus {
+  PENDING
+  COMPLETED
+  REJECTED
+}
+
+model User {
+  id             String         @id @default(cuid())
+  email          String         @unique
+  passwordHash   String
+  name           String?
+  country        String?
+  role           Role           @default(USER)
+  status         UserStatus     @default(ACTIVE)
+  marketingOptIn Boolean        @default(false)
+  ageConfirmedAt DateTime
+  balanceCents   Int            @default(0)
+  lastLoginAt    DateTime?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  subscriptions  Subscription[]
+  payments       Payment[]
+  ledger         LedgerEntry[]
+  notes          CrmNote[]      @relation("NoteSubject")
+  notesWritten   CrmNote[]      @relation("NoteAuthor")
+  tags           String[]       @default([])
+}
+
+model Plan {
+  id            String         @id @default(cuid())
+  slug          String         @unique
+  name          String
+  tagline       String
+  priceCents    Int
+  intervalDays  Int            @default(30)
+  tier          Int
+  features      String[]
+  active        Boolean        @default(true)
+  sortOrder     Int            @default(0)
+  subscriptions Subscription[]
+  payments      Payment[]
+}
+
+model Subscription {
+  id        String             @id @default(cuid())
+  user      User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  plan      Plan               @relation(fields: [planId], references: [id])
+  planId    String
+  status    SubscriptionStatus @default(ACTIVE)
+  startsAt  DateTime           @default(now())
+  endsAt    DateTime
+  source    String             @default("payment") // payment | admin
+  createdAt DateTime           @default(now())
+
+  @@index([userId, status])
+}
+
+model Payment {
+  id          String        @id @default(cuid())
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+  plan        Plan          @relation(fields: [planId], references: [id])
+  planId      String
+  amountCents Int
+  currency    String // USDT | USDC
+  network     String // TRC20 | ERC20 | POLYGON | ...
+  provider    String
+  providerRef String?
+  payAddress  String?
+  payAmount   String?
+  status      PaymentStatus @default(PENDING)
+  expiresAt   DateTime?
+  confirmedAt DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@unique([provider, providerRef])
+  @@index([userId])
+}
+
+model LedgerEntry {
+  id          String       @id @default(cuid())
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+  type        LedgerType
+  status      LedgerStatus @default(PENDING)
+  amountCents Int
+  currency    String
+  network     String?
+  address     String?
+  txHash      String?
+  createdAt   DateTime     @default(now())
+}
+
+model Video {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  title       String
+  summary     String
+  embedUrl    String // YouTube/Vimeo/Bunny/Mux embed URL or direct .mp4
+  thumbnail   String?
+  durationMin Int      @default(0)
+  minTier     Int      @default(0) // 0 = free with an account
+  category    String   @default("Fundamentals")
+  published   Boolean  @default(true)
+  publishedAt DateTime @default(now())
+  createdAt   DateTime @default(now())
+}
+
+model CrmNote {
+  id        String   @id @default(cuid())
+  subject   User     @relation("NoteSubject", fields: [subjectId], references: [id], onDelete: Cascade)
+  subjectId String
+  author    User     @relation("NoteAuthor", fields: [authorId], references: [id])
+  authorId  String
+  body      String
+  createdAt DateTime @default(now())
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  actorId   String?
+  action    String
+  target    String?
+  meta      Json?
+  createdAt DateTime @default(now())
+}
