@@ -9,7 +9,7 @@ for (const path of ['/', '/trading', '/meet-harry', '/plans', '/login', '/signup
   }
   if (path === '/icon.svg' && !body.includes('M21 17H43')) { console.error('Release check failed: outdated brand icon'); failed = true; }
   if (/fictional character|fictional host|not a real person/i.test(body)) { console.error(`Release check failed: outdated Harry description at ${path}`); failed = true; }
-  if (path === '/trading' && !body.includes('Real trading enrollment is closed')) { console.error('Release check failed: draft trading enrollment must remain closed'); failed = true; }
+  if (path === '/trading' && !/real trading enrollment is closed/i.test(body)) { console.error('Release check failed: draft trading enrollment must remain closed'); failed = true; }
   if (path === '/' && !response.headers.get('content-security-policy')) { console.error('Release check failed: missing security policy'); failed = true; }
   console.log(`Release route ${path}: ${response.status}`);
 }
