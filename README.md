@@ -26,10 +26,10 @@ npm test                      # unit tests
 With `EMAIL_PROVIDER=console`, verification and reset links are printed in the server log.
 
 ## Security
-- Passwords: bcrypt (cost 12), 10+ characters. Login takes the same time whether or not the email exists.
+- Passwords: bcrypt (cost 12), 10+ characters with an enforced 72-byte limit for new passwords. Login takes the same time whether or not the email exists.
 - Sessions: signed HttpOnly cookie carrying a session version. Changing or resetting a password, closing the account, or an admin suspending/demoting someone signs out all their devices.
 - Email verification is required before paying. Reset and verification tokens are random, stored only as SHA-256 hashes, single use and short-lived.
-- Rate limits on sign-up, login, password reset, verification emails and checkout. The limiter is in memory, so on serverless or multiple instances move it to Redis (e.g. Upstash).
+- Rate limits on sign-up, login, password reset, verification emails and checkout use shared, atomic PostgreSQL counters across serverless instances. Identifying keys are hashed; expired counters are cleaned daily.
 - Payments: signed NOWPayments notifications trigger an authenticated status lookup. Order, price, token/network, address and exact amounts must match. Only `finished` with pooled transfer evidence fulfills an invoice. Event, balanced posting, balance and membership commit atomically; duplicates cannot double-credit or double-purchase.
 - The mock payment provider and its "simulate" button are disabled in production unless the isolated staging deployment explicitly enables test payments.
 - Paid videos play through signed Bunny Stream links that expire after an hour.
@@ -69,7 +69,7 @@ GitHub repository secrets (Settings → Secrets and variables → Actions):
 `AUTH_SECRET` and `CRON_SECRET` are generated on the first deploy and kept on the Worker (add a GitHub secret with the same name to set them yourself).
 | `RESEND_API_KEY`, `NOWPAYMENTS_API_KEY`, `NOWPAYMENTS_IPN_SECRET`, `BUNNY_TOKEN_KEY` | Optional, once those accounts exist |
 
-Non-secret settings live in `wrangler.jsonc` under `vars`. Mock payments are disabled in production, including when the old `ALLOW_MOCK_PAYMENTS` flag is present. The separate `wrangler.test.jsonc` deployment enables them only with all three settings: `APP_ENV=staging`, `ENABLE_TEST_PAYMENTS=true`, and `PAYMENT_PROVIDER=mock`. To go live, switch to `nowpayments` and complete [wallet setup](docs/wallet-setup.md). Emails go out through Resend as soon as the `RESEND_API_KEY` secret exists. Until then, admins can confirm emails by hand and get invite and reset links to pass on themselves.
+Non-secret settings live in `wrangler.jsonc` under `vars`. Production uses `nowpayments` with simulations explicitly disabled; deposits and direct checkout remain unavailable unless API credentials and a valid receiving address are configured. The separate `wrangler.test.jsonc` deployment enables simulations only with all three settings: `APP_ENV=staging`, `ENABLE_TEST_PAYMENTS=true`, and `PAYMENT_PROVIDER=mock`. Complete [wallet setup](docs/wallet-setup.md) before accepting money. Emails go out through Resend as soon as the `RESEND_API_KEY` secret exists. Until then, admins can confirm emails by hand and get invite and reset links to pass on themselves. Production never logs usable verification or reset links.
 
 The Worker needs the Workers Paid plan ($5/month), because password hashing and the database engine use more CPU per request than the free plan's 10 ms allows. `.github/workflows/daily.yml` runs `npm run daily` (renewal reminders, clean-up) every morning against the production database.
 

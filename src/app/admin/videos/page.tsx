@@ -1,8 +1,10 @@
+import { requireAdmin } from "@/lib/auth";
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { date } from "@/lib/format";
 
 export default async function AdminVideos() {
+  await requireAdmin();
   const videos = await db.video.findMany({ orderBy: { publishedAt: "desc" } });
   return (
     <div className="space-y-4">

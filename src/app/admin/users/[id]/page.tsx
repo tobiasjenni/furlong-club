@@ -1,3 +1,4 @@
+import { requireAdmin } from "@/lib/auth";
 import { notFound } from "next/navigation";
 import { addNote, cancelSubscription, confirmEmail, grantPlan, signOutUser, updateUser } from "@/app/actions/admin";
 import { ResetLinkForm } from "../AdminForms";
@@ -5,6 +6,7 @@ import { db } from "@/lib/db";
 import { date, dateTime, usd } from "@/lib/format";
 
 export default async function AdminUser({ params }: { params: Promise<{ id: string }> }) {
+  await requireAdmin();
   const user = await db.user.findUnique({
     where: { id: (await params).id },
     include: {

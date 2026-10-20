@@ -31,7 +31,7 @@ export default async function WalletPage() {
           <p className="muted mt-4 text-xs">Your balance is Furlong Club credit in USD. It is not a USDT or USDC token balance. Withdrawals and transfers to other members are not supported.</p></div>
       </section>
       <section className="card space-y-4"><h2 className="text-2xl">Add funds</h2>
-        {!ready && <p role="status" className="rounded-xl bg-gold-400/10 p-3 text-sm text-gold-300">Deposits will open once the payment account and receiving wallets are connected.</p>}
+        {!ready && <p role="status" className="rounded-xl bg-gold-400/10 p-3 text-sm text-gold-300">Deposits are currently unavailable. Please check back soon.</p>}
         {!user.emailVerifiedAt && <p className="text-sm text-gold-300">Confirm your email from your dashboard before adding funds.</p>}
         <TopupForm options={options} disabled={!ready || user.walletFrozen || !user.emailVerifiedAt} />
       </section>

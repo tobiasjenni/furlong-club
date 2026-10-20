@@ -14,7 +14,9 @@ import { rateLimit } from "@/lib/rate-limit";
 beforeAll(async () => {
   pg = new PGlite();
   await pg.exec(fs.readFileSync("prisma/migrations/20261020124520_init/migration.sql", "utf8"));
+  await pg.exec(fs.readFileSync("prisma/migrations/20261020160000_wallet/migration.sql", "utf8"));
   await pg.exec(fs.readFileSync("prisma/migrations/20261021010000_release_hardening/migration.sql", "utf8"));
+  await pg.exec(fs.readFileSync("prisma/migrations/20261021013000_account_closure/migration.sql", "utf8"));
   await pg.exec(`INSERT INTO "User" (id,email,"passwordHash","ageConfirmedAt","updatedAt") VALUES ('u','u@example.com','x',now(),now())`);
 }, 30000);
 afterAll(async () => { await pg?.close(); });
@@ -58,5 +60,16 @@ describe("shared rate limits", () => {
     expect(await rateLimit("b", 1, 60000)).toBe(true);
     await pg.exec(`UPDATE "RateLimit" SET "resetAt"=(CURRENT_TIMESTAMP AT TIME ZONE 'UTC')-interval '1 second'`);
     expect(await rateLimit("a", 1, 60000)).toBe(true);
+  });
+});
+
+describe("account closure", () => {
+  it("blocks closure of a frozen wallet, then closes and revokes sessions atomically", async () => {
+    await pg.exec(`UPDATE "User" SET "walletFrozen"=true WHERE id='u'`);
+    expect((await pg.query<{ result: string }>(`SELECT wallet_close_account('u') AS result`)).rows[0].result).toBe("wallet_unresolved");
+    await pg.exec(`UPDATE "User" SET "walletFrozen"=false WHERE id='u'`);
+    expect((await pg.query<{ result: string }>(`SELECT wallet_close_account('u') AS result`)).rows[0].result).toBe("closed");
+    const user = (await pg.query<{ status: string; sessionVersion: number }>(`SELECT status,"sessionVersion" FROM "User" WHERE id='u'`)).rows[0];
+    expect(user).toEqual({ status: "CLOSED", sessionVersion: 1 });
   });
 });

@@ -1,8 +1,10 @@
+import { requireAdmin } from "@/lib/auth";
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { dateTime, usd } from "@/lib/format";
 
 export default async function AdminPayments() {
+  await requireAdmin();
   const payments = await db.payment.findMany({ orderBy: { createdAt: "desc" }, take: 100, include: { user: true, plan: true } });
   return (
     <div className="card overflow-x-auto p-0 sm:p-0">

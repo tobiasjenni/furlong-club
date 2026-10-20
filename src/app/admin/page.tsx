@@ -1,8 +1,10 @@
+import { requireAdmin } from "@/lib/auth";
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { dateTime, usd } from "@/lib/format";
 
 export default async function AdminHome() {
+  await requireAdmin();
   const now = new Date();
   const monthAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
   const [users, newUsers, activeSubs, revenue, pending, recent] = await Promise.all([

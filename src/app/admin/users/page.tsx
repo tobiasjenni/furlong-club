@@ -1,3 +1,4 @@
+import { requireAdmin } from "@/lib/auth";
 import Link from "next/link";
 import type { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
@@ -5,6 +6,7 @@ import { date } from "@/lib/format";
 import { InviteForm } from "./AdminForms";
 
 export default async function AdminUsers({ searchParams }: { searchParams: Promise<{ q?: string; filter?: string; page?: string }> }) {
+  await requireAdmin();
   const { q = "", filter = "all", page = "1" } = await searchParams;
   const take = 25;
   const skip = (Math.max(Number(page) || 1, 1) - 1) * take;

@@ -17,7 +17,7 @@ export function CheckoutForm({ plan, options }: { plan: string; options: { label
         </label>
       ))}
       <FormMessage state={state} />
-      {!options.some(o => o.enabled) && <p className="muted text-sm">Crypto payments will open once the payment account and receiving wallet are connected.</p>}
+      {!options.some(o => o.enabled) && <p className="muted text-sm">Crypto checkout is currently unavailable. Please check back soon.</p>}
       <SubmitButton disabled={!options.some(o => o.enabled)}>Continue to payment</SubmitButton>
     </form>
   );

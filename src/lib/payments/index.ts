@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import type { Payment } from "@prisma/client";
 import { appUrl, type CheckoutOption } from "../config";
 import { db } from "../db";
 import { mockProvider } from "./mock";
@@ -33,12 +34,16 @@ async function invoice(userId: string, option: CheckoutOption, amountCents: numb
   if (!paymentsReady(option)) throw new Error("Payments are not configured for this network");
   const provider = getProvider();
   const pool = provider.name === "mock" ? null : poolAddress(option);
-  const payment = await db.payment.create({ data: {
-    userId, planId: plan?.id, planName: plan?.name, planDays: plan?.intervalDays,
-    purpose: plan ? "SUBSCRIPTION" : "WALLET_TOPUP", amountCents,
-    currency: option.currency, network: option.network, provider: provider.name,
-    poolAddress: pool, settlementStatus: "PENDING",
-  } });
+  // Lock/recheck the account in the same statement that creates the invoice.
+  // Closing the account or freezing its wallet cannot race a stale authenticated page.
+  const rows = await db.$queryRaw<Payment[]>`INSERT INTO "Payment"
+    (id,"userId","planId","planName","planDays",purpose,"amountCents",currency,network,provider,"poolAddress","settlementStatus","updatedAt")
+    SELECT ${crypto.randomUUID()},u.id,${plan?.id ?? null},${plan?.name ?? null},${plan?.intervalDays ?? null}::integer,
+      ${plan ? "SUBSCRIPTION" : "WALLET_TOPUP"},${amountCents}::integer,${option.currency},${option.network},${provider.name},${pool},'PENDING',(CURRENT_TIMESTAMP AT TIME ZONE 'UTC')
+    FROM "User" u WHERE u.id=${userId} AND u.status='ACTIVE' AND u."emailVerifiedAt" IS NOT NULL
+      AND NOT u."walletFrozen" FOR UPDATE OF u RETURNING *`;
+  const payment = rows[0];
+  if (!payment) throw new Error("This account cannot create a payment");
   try {
     const created = await provider.createInvoice({
       paymentId: payment.id, amountUsd: amountCents / 100, currency: option.currency, network: option.network,

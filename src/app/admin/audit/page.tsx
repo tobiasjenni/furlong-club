@@ -1,8 +1,10 @@
+import { requireAdmin } from "@/lib/auth";
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { dateTime } from "@/lib/format";
 
 export default async function AdminAudit({ searchParams }: { searchParams: Promise<{ action?: string }> }) {
+  await requireAdmin();
   const { action = "" } = await searchParams;
   const entries = await db.auditLog.findMany({
     where: action ? { action: { startsWith: action } } : {},

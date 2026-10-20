@@ -7,7 +7,7 @@ import { db } from "@/lib/db";
 export const dynamic = "force-dynamic";
 
 const steps = [
-  { title: "Join free", body: "Create an account with just your email. Intro videos unlock straight away." },
+  { title: "Join free", body: "Create your free account and explore the member area." },
   { title: "Learn the form", body: "Harry walks you through race cards, the going, the draw and staking discipline." },
   { title: "Race-day breakdowns", body: "Members get Harry's take on the day's feature races before the off." },
 ];
@@ -20,7 +20,7 @@ const highlights = [
 ];
 
 const faqs = [
-  { q: "Is Furlong Club a bookmaker?", a: "No. We teach you how to read a race and share our opinion on the day's cards. We never take bets, hold your money or bet on your behalf. If you choose to bet, you do it yourself with a licensed bookmaker." },
+  { q: "Is Furlong Club a bookmaker?", a: "No. We teach you how to read a race and share our opinion on the day's cards. We accept membership payments and club credit, but never take bets or bet on your behalf. If you choose to bet, you do it yourself with a licensed bookmaker." },
   { q: "Who is Harry Whitcombe?", a: "Harry is our fictional host with an AI-generated portrait. The analysis behind the videos comes from our team of racing analysts." },
   { q: "How do I pay?", a: "Paid plans are paid upfront in USDT or USDC and run for 30 days. They do not renew automatically, so you are never charged without choosing to." },
   { q: "Can I cancel?", a: "There is nothing to cancel: when your 30 days end, your plan simply stops. You keep your free account and the intro videos." },

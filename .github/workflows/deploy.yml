@@ -64,11 +64,11 @@ jobs:
         # AUTH_SECRET and CRON_SECRET are generated on the first deploy and then kept on the Worker,
         # so nobody has to create them by hand (a GitHub secret of the same name overrides them).
         run: |
-          existing=$(npx wrangler secret list --format json 2>/dev/null) || existing="[]"
+          existing=$(npx wrangler secret list --format json)
           EXISTING="$existing" node -e '
             const crypto = require("crypto");
             let have = new Set();
-            try { have = new Set(JSON.parse(process.env.EXISTING).map((s) => s.name)); } catch {}
+            have = new Set(JSON.parse(process.env.EXISTING).map((s) => s.name));
             const generate = (name, given) => given || (have.has(name) ? undefined : crypto.randomBytes(36).toString("base64url"));
             const s = { DATABASE_URL: process.env.DATABASE_URL,
                         AUTH_SECRET: generate("AUTH_SECRET", process.env.AUTH_SECRET),

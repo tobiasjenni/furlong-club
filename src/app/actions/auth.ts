@@ -163,8 +163,8 @@ export async function closeAccount(_: FormState, form: FormData): Promise<FormSt
   if (!await rateLimit(`close:${user.id}`, 5, 15 * 60 * 1000)) return { error: "Too many attempts. Please try again later." };
   if (form.get("confirm") !== "CLOSE") return { error: 'Type CLOSE to confirm.' };
   if (!(await bcrypt.compare(String(form.get("password") ?? ""), user.passwordHash))) return { error: "Password is incorrect." };
-  if (user.balanceCents > 0 || user.walletFrozen || await db.payment.count({ where: { userId: user.id, purpose: "WALLET_TOPUP", status: { in: ["PENDING", "CONFIRMING", "PARTIAL"] } } })) return { error: "Please contact support to resolve your wallet balance or pending deposits before closing your account." };
-  await db.user.update({ where: { id: user.id }, data: { status: "CLOSED", closedAt: new Date(), marketingOptIn: false } });
+  const closed = await db.$queryRaw<{ result: string }[]>`SELECT wallet_close_account(${user.id}) AS result`;
+  if (closed[0]?.result !== "closed") return { error: "Please contact support to resolve your wallet balance or pending deposits before closing your account." };
   await audit(user.id, "user.closed_account", user.id);
   await revokeSessions(user.id);
   redirect("/?closed=1");
@@ -179,9 +179,10 @@ export async function changeEmail(_: FormState, form: FormData): Promise<FormSta
   if (email === user.email) return { error: "That's already your email." };
   if (!(await bcrypt.compare(String(form.get("password") ?? ""), user.passwordHash))) return { error: "Password is incorrect." };
   if (await db.user.findUnique({ where: { email } })) return { error: "That email is already used by another account." };
-  await db.user.update({ where: { id: user.id }, data: { email, emailVerifiedAt: null } });
-  // Links sent to the old address must not remain usable after the address changes.
-  await db.$executeRaw`DELETE FROM "AuthToken" WHERE "userId"=${user.id}`;
+  // Update the address and revoke old emailed links atomically on the HTTP driver.
+  await db.$executeRaw`WITH changed AS (
+    UPDATE "User" SET email=${email}, "emailVerifiedAt"=NULL, "updatedAt"=(CURRENT_TIMESTAMP AT TIME ZONE 'UTC') WHERE id=${user.id}
+  ) DELETE FROM "AuthToken" WHERE "userId"=${user.id}`;
   await audit(user.id, "user.email_changed", user.id, { from: user.email, to: email });
   await sendVerification({ id: user.id, email }).catch((err) => console.error("verification email failed", err));
   await revokeSessions(user.id, true);
