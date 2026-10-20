@@ -16,7 +16,13 @@ export type Invoice = {
   expiresAt: Date | null;
 };
 
-export type WebhookEvent = { providerRef: string; status: PaymentStatus };
+export type WebhookEvent = {
+  providerRef: string;
+  status: PaymentStatus;
+  orderId?: string; // our Payment.id, echoed back by the provider
+  priceAmountUsd?: number; // invoice price the provider says was paid for
+  fullyPaid?: boolean; // false when the provider reports less crypto received than invoiced
+};
 
 // Every crypto processor (NOWPayments, Coinbase Commerce, a self-hosted gateway, ...) is wrapped in this interface,
 // so the rest of the app never talks to a provider directly.

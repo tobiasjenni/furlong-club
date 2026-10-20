@@ -15,6 +15,12 @@ enum Role {
 enum UserStatus {
   ACTIVE
   SUSPENDED
+  CLOSED
+}
+
+enum TokenType {
+  VERIFY_EMAIL
+  RESET_PASSWORD
 }
 
 enum SubscriptionStatus {
@@ -45,25 +51,42 @@ enum LedgerStatus {
 }
 
 model User {
-  id             String         @id @default(cuid())
-  email          String         @unique
-  passwordHash   String
-  name           String?
-  country        String?
-  role           Role           @default(USER)
-  status         UserStatus     @default(ACTIVE)
-  marketingOptIn Boolean        @default(false)
-  ageConfirmedAt DateTime
-  balanceCents   Int            @default(0)
-  lastLoginAt    DateTime?
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
-  subscriptions  Subscription[]
-  payments       Payment[]
-  ledger         LedgerEntry[]
-  notes          CrmNote[]      @relation("NoteSubject")
-  notesWritten   CrmNote[]      @relation("NoteAuthor")
-  tags           String[]       @default([])
+  id              String         @id @default(cuid())
+  email           String         @unique
+  passwordHash    String
+  name            String?
+  country         String?
+  role            Role           @default(USER)
+  status          UserStatus     @default(ACTIVE)
+  marketingOptIn  Boolean        @default(false)
+  ageConfirmedAt  DateTime
+  balanceCents    Int            @default(0)
+  emailVerifiedAt DateTime?
+  sessionVersion  Int            @default(0)
+  closedAt        DateTime?
+  lastLoginAt     DateTime?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  subscriptions   Subscription[]
+  payments        Payment[]
+  ledger          LedgerEntry[]
+  notes           CrmNote[]      @relation("NoteSubject")
+  notesWritten    CrmNote[]      @relation("NoteAuthor")
+  tags            String[]       @default([])
+  tokens          AuthToken[]
+}
+
+model AuthToken {
+  id        String    @id @default(cuid())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  type      TokenType
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, type])
 }
 
 model Plan {
@@ -82,16 +105,17 @@ model Plan {
 }
 
 model Subscription {
-  id        String             @id @default(cuid())
-  user      User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId    String
-  plan      Plan               @relation(fields: [planId], references: [id])
-  planId    String
-  status    SubscriptionStatus @default(ACTIVE)
-  startsAt  DateTime           @default(now())
-  endsAt    DateTime
-  source    String             @default("payment") // payment | admin
-  createdAt DateTime           @default(now())
+  id             String             @id @default(cuid())
+  user           User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId         String
+  plan           Plan               @relation(fields: [planId], references: [id])
+  planId         String
+  status         SubscriptionStatus @default(ACTIVE)
+  startsAt       DateTime           @default(now())
+  endsAt         DateTime
+  source         String             @default("payment") // payment | admin
+  reminderSentAt DateTime?
+  createdAt      DateTime           @default(now())
 
   @@index([userId, status])
 }
@@ -134,18 +158,19 @@ model LedgerEntry {
 }
 
 model Video {
-  id          String   @id @default(cuid())
-  slug        String   @unique
-  title       String
-  summary     String
-  embedUrl    String // YouTube/Vimeo/Bunny/Mux embed URL or direct .mp4
-  thumbnail   String?
-  durationMin Int      @default(0)
-  minTier     Int      @default(0) // 0 = free with an account
-  category    String   @default("Fundamentals")
-  published   Boolean  @default(true)
-  publishedAt DateTime @default(now())
-  createdAt   DateTime @default(now())
+  id           String   @id @default(cuid())
+  slug         String   @unique
+  title        String
+  summary      String
+  bunnyVideoId String? // preferred: played through a signed, expiring Bunny Stream embed
+  embedUrl     String? // fallback: YouTube/Vimeo embed URL or direct https .mp4
+  thumbnail    String?
+  durationMin  Int      @default(0)
+  minTier      Int      @default(0) // 0 = free with an account
+  category     String   @default("Fundamentals")
+  published    Boolean  @default(true)
+  publishedAt  DateTime @default(now())
+  createdAt    DateTime @default(now())
 }
 
 model CrmNote {
@@ -165,4 +190,6 @@ model AuditLog {
   target    String?
   meta      Json?
   createdAt DateTime @default(now())
+
+  @@index([createdAt])
 }

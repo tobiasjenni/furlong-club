@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { VerifyBanner } from "@/components/VerifyBanner";
 import { VideoCard } from "@/components/VideoCard";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -20,6 +21,8 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
         <p className="muted text-sm">{welcome ? "Welcome to the club," : "Good to see you,"}</p>
         <h1 className="text-3xl md:text-4xl">{user.name ?? user.email}</h1>
       </div>
+
+      {!user.emailVerifiedAt && <VerifyBanner email={user.email} />}
 
       <div className="grid gap-4 md:grid-cols-3">
         <div className="card">

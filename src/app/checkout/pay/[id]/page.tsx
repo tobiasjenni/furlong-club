@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import QRCode from "qrcode";
 import { simulatePayment } from "@/app/actions/checkout";
+import { mockPaymentsAllowed } from "@/lib/payments";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { dateTime, usd } from "@/lib/format";
@@ -20,6 +21,9 @@ export default async function PayPage({ params }: { params: Promise<{ id: string
   const user = await requireUser();
   const payment = await db.payment.findFirst({ where: { id: (await params).id, userId: user.id }, include: { plan: true } });
   if (!payment) notFound();
+  if (payment.status === "PENDING" && payment.expiresAt && payment.expiresAt < new Date()) {
+    payment.status = (await db.payment.update({ where: { id: payment.id }, data: { status: "EXPIRED" } })).status;
+  }
 
   if (payment.status === "CONFIRMED") {
     return (
@@ -69,7 +73,7 @@ export default async function PayPage({ params }: { params: Promise<{ id: string
         </div>
         {payment.expiresAt && open && <p className="muted text-xs">This address is valid until {dateTime(payment.expiresAt)}. This page updates by itself.</p>}
         {!open && <Link href={`/checkout/${payment.plan.slug}`} className="btn-gold w-full">Start a new payment</Link>}
-        {payment.provider === "mock" && open && (
+        {payment.provider === "mock" && open && mockPaymentsAllowed() && (
           <form action={simulatePayment} className="rounded-xl border border-dashed border-gold-400/40 p-3">
             <input type="hidden" name="id" value={payment.id} />
             <p className="muted mb-2 text-xs">Test mode: no real crypto is moved.</p>

@@ -19,9 +19,14 @@ export default async function EditVideo({ params, searchParams }: { params: Prom
         <div><label className="label">Slug (URL)</label><input name="slug" defaultValue={video?.slug} className="input" required pattern="[a-z0-9-]+" /></div>
         <div><label className="label">Summary</label><textarea name="summary" rows={3} defaultValue={video?.summary} className="input" /></div>
         <div>
-          <label className="label">Video URL</label>
-          <input name="embedUrl" defaultValue={video?.embedUrl} className="input" required placeholder="https://player.vimeo.com/video/… or https://…/file.mp4" />
-          <p className="muted mt-1 text-xs">Use a private Vimeo, Bunny Stream or Mux embed so paid videos can&apos;t be shared outside the site.</p>
+          <label className="label">Bunny Stream video ID (recommended)</label>
+          <input name="bunnyVideoId" defaultValue={video?.bunnyVideoId ?? ""} className="input" placeholder="e.g. 1b2c3d4e-5f60-7a8b-9c0d-112233445566" />
+          <p className="muted mt-1 text-xs">Plays through a signed link that expires after an hour, so paid videos can&apos;t be shared outside the site.</p>
+        </div>
+        <div>
+          <label className="label">Or a video URL</label>
+          <input name="embedUrl" defaultValue={video?.embedUrl ?? ""} className="input" placeholder="https://www.youtube-nocookie.com/embed/… or https://…/file.mp4" />
+          <p className="muted mt-1 text-xs">Fine for free videos. Anyone with this link can watch it.</p>
         </div>
         <div><label className="label">Thumbnail URL (optional)</label><input name="thumbnail" defaultValue={video?.thumbnail ?? ""} className="input" /></div>
         <div className="grid grid-cols-3 gap-3">

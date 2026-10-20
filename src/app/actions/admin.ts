@@ -21,10 +21,14 @@ export async function updateUser(form: FormData) {
   const admin = await requireAdmin();
   const id = String(form.get("userId"));
   const role = form.get("role") === "ADMIN" ? "ADMIN" : "USER";
-  const status = form.get("status") === "SUSPENDED" ? "SUSPENDED" : "ACTIVE";
+  const statusInput = String(form.get("status"));
+  const status = statusInput === "SUSPENDED" || statusInput === "CLOSED" ? statusInput : "ACTIVE";
   const tags = String(form.get("tags") ?? "").split(",").map((t) => t.trim()).filter(Boolean).slice(0, 20);
   if (id === admin.id && (role !== "ADMIN" || status !== "ACTIVE")) return; // can't lock yourself out
-  await db.user.update({ where: { id }, data: { role, status, tags } });
+  const before = await db.user.findUniqueOrThrow({ where: { id } });
+  // Suspending, closing or demoting someone signs them out immediately.
+  const revoke = status !== "ACTIVE" || role !== before.role;
+  await db.user.update({ where: { id }, data: { role, status, tags, ...(revoke ? { sessionVersion: { increment: 1 } } : {}) } });
   await audit(admin.id, "admin.user_updated", id, { role, status, tags });
   revalidatePath(`/admin/users/${id}`);
 }
@@ -47,25 +51,28 @@ export async function cancelSubscription(form: FormData) {
   revalidatePath(`/admin/users/${sub.userId}`);
 }
 
+const httpsUrl = z.string().trim().url().refine((u) => u.startsWith("https://"), "URLs must start with https://");
+
 const videoSchema = z.object({
   title: z.string().trim().min(1).max(160),
   slug: z.string().trim().toLowerCase().regex(/^[a-z0-9-]+$/, "Slug: lowercase letters, numbers and dashes"),
   summary: z.string().trim().max(1000),
-  embedUrl: z.string().trim().url(),
-  thumbnail: z.string().trim().url().optional().or(z.literal("")),
+  bunnyVideoId: z.string().trim().regex(/^[0-9a-f-]{36}$/i, "Bunny video ID should look like 1b2c3d4e-....").optional().or(z.literal("")),
+  embedUrl: httpsUrl.optional().or(z.literal("")),
+  thumbnail: httpsUrl.optional().or(z.literal("")),
   category: z.string().trim().min(1).max(60),
   durationMin: z.coerce.number().int().min(0).max(600),
   minTier: z.coerce.number().int().min(0).max(10),
   published: z.string().optional(),
-});
+}).refine((v) => v.bunnyVideoId || v.embedUrl, "Add a Bunny video ID or a video URL");
 
 export async function saveVideo(form: FormData) {
   const admin = await requireAdmin();
   const id = String(form.get("id") ?? "");
   const parsed = videoSchema.safeParse(Object.fromEntries(form));
   if (!parsed.success) redirect(`/admin/videos/${id || "new"}?error=${encodeURIComponent(parsed.error.issues[0].message)}`);
-  const { published, thumbnail, ...rest } = parsed.data;
-  const data = { ...rest, thumbnail: thumbnail || null, published: published === "on" };
+  const { published, thumbnail, bunnyVideoId, embedUrl, ...rest } = parsed.data;
+  const data = { ...rest, bunnyVideoId: bunnyVideoId || null, embedUrl: embedUrl || null, thumbnail: thumbnail || null, published: published === "on" };
   const video = id ? await db.video.update({ where: { id }, data }) : await db.video.create({ data });
   await audit(admin.id, id ? "admin.video_updated" : "admin.video_created", video.id);
   revalidatePath("/admin/videos");
@@ -92,7 +99,9 @@ export async function savePlan(form: FormData) {
     features: z.string(),
     active: z.string().optional(),
   });
-  const p = schema.parse(Object.fromEntries(form));
+  const parsed = schema.safeParse(Object.fromEntries(form));
+  if (!parsed.success) return;
+  const p = parsed.data;
   await db.plan.update({
     where: { id },
     data: {

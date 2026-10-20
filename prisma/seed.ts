@@ -58,13 +58,14 @@ async function main() {
   if (email && password) {
     await db.user.upsert({
       where: { email: email.toLowerCase() },
-      update: { role: "ADMIN" },
+      update: { role: "ADMIN", status: "ACTIVE" },
       create: {
         email: email.toLowerCase(),
         passwordHash: await bcrypt.hash(password, 12),
         name: "Admin",
         role: "ADMIN",
         ageConfirmedAt: new Date(),
+        emailVerifiedAt: new Date(),
       },
     });
     console.log(`Admin ready: ${email}`);

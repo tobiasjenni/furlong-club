@@ -22,7 +22,7 @@ const statusMap: Record<string, PaymentStatus> = {
   expired: "EXPIRED",
 };
 
-function sortKeys(value: unknown): unknown {
+export function sortKeys(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(sortKeys);
   if (value && typeof value === "object") {
     return Object.fromEntries(
@@ -32,6 +32,21 @@ function sortKeys(value: unknown): unknown {
     );
   }
   return value;
+}
+
+// Returns the parsed body when the HMAC-SHA512 signature over the key-sorted JSON matches, otherwise null.
+export function verifyNowPaymentsSignature(rawBody: string, signature: string | null, secret: string): Record<string, unknown> | null {
+  if (!signature) return null;
+  let body: Record<string, unknown>;
+  try {
+    body = JSON.parse(rawBody);
+  } catch {
+    return null;
+  }
+  const expected = crypto.createHmac("sha512", secret).update(JSON.stringify(sortKeys(body))).digest("hex");
+  const a = Buffer.from(expected);
+  const b = Buffer.from(signature);
+  return a.length === b.length && crypto.timingSafeEqual(a, b) ? body : null;
 }
 
 export function nowPaymentsProvider(): PaymentProvider {
@@ -67,15 +82,19 @@ export function nowPaymentsProvider(): PaymentProvider {
       };
     },
     async parseWebhook(rawBody, headers) {
-      const signature = headers.get("x-nowpayments-sig");
-      if (!signature) return null;
-      const body = JSON.parse(rawBody);
-      const expected = crypto.createHmac("sha512", ipnSecret).update(JSON.stringify(sortKeys(body))).digest("hex");
-      const a = Buffer.from(expected);
-      const b = Buffer.from(signature);
-      if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return null;
-      const status = statusMap[body.payment_status];
-      return status ? { providerRef: String(body.payment_id), status } : null;
+      const body = verifyNowPaymentsSignature(rawBody, headers.get("x-nowpayments-sig"), ipnSecret);
+      if (!body) return null;
+      const status = statusMap[String(body.payment_status)];
+      if (!status) return null;
+      const payAmount = Number(body.pay_amount);
+      const actuallyPaid = Number(body.actually_paid);
+      return {
+        providerRef: String(body.payment_id),
+        status,
+        orderId: body.order_id ? String(body.order_id) : undefined,
+        priceAmountUsd: Number(body.price_amount),
+        fullyPaid: Number.isFinite(payAmount) && Number.isFinite(actuallyPaid) ? actuallyPaid >= payAmount * 0.995 : undefined,
+      };
     },
   };
 }

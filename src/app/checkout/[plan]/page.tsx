@@ -9,7 +9,7 @@ import { CheckoutForm } from "./CheckoutForm";
 export const metadata = { title: "Checkout" };
 
 export default async function CheckoutPage({ params }: { params: Promise<{ plan: string }> }) {
-  await requireUser();
+  const user = await requireUser();
   const plan = await db.plan.findUnique({ where: { slug: (await params).plan } });
   if (!plan || !plan.active || plan.priceCents === 0) notFound();
   return (
@@ -23,6 +23,9 @@ export default async function CheckoutPage({ params }: { params: Promise<{ plan:
         <p className="muted mt-5 text-xs">One-off payment. It does not renew automatically; we&apos;ll email you before it ends.</p>
       </div>
       <div className="card space-y-5">
+        {!user.emailVerifiedAt && (
+          <p className="rounded-xl bg-gold-400/10 p-3 text-sm text-gold-300">Please confirm your email before paying. The link is in your inbox, or resend it from your dashboard.</p>
+        )}
         <CheckoutForm plan={plan.slug} options={checkoutOptions.map((o) => ({ label: o.label }))} />
         <Disclaimer compact />
       </div>

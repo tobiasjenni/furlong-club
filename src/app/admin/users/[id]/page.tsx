@@ -23,12 +23,14 @@ export default async function AdminUser({ params }: { params: Promise<{ id: stri
           <h2 className="text-xl">{user.name ?? "—"}</h2>
           <p className="muted text-sm">{user.email}</p>
           <dl className="mt-4 grid grid-cols-2 gap-2 text-sm">
+            <dt className="muted">Email confirmed</dt><dd>{user.emailVerifiedAt ? date(user.emailVerifiedAt) : "Not yet"}</dd>
             <dt className="muted">Country</dt><dd>{user.country ?? "—"}</dd>
             <dt className="muted">Joined</dt><dd>{dateTime(user.createdAt)}</dd>
             <dt className="muted">Last login</dt><dd>{dateTime(user.lastLoginAt)}</dd>
             <dt className="muted">18+ confirmed</dt><dd>{date(user.ageConfirmedAt)}</dd>
             <dt className="muted">Marketing</dt><dd>{user.marketingOptIn ? "Opted in" : "No"}</dd>
             <dt className="muted">Balance</dt><dd>{usd(user.balanceCents)}</dd>
+            {user.closedAt && <><dt className="muted">Closed by user</dt><dd>{dateTime(user.closedAt)}</dd></>}
           </dl>
         </div>
         <form action={updateUser} className="card space-y-3">
@@ -36,7 +38,7 @@ export default async function AdminUser({ params }: { params: Promise<{ id: stri
           <input type="hidden" name="userId" value={user.id} />
           <div className="grid grid-cols-2 gap-3">
             <div><label className="label">Role</label><select name="role" defaultValue={user.role} className="input"><option>USER</option><option>ADMIN</option></select></div>
-            <div><label className="label">Status</label><select name="status" defaultValue={user.status} className="input"><option>ACTIVE</option><option>SUSPENDED</option></select></div>
+            <div><label className="label">Status</label><select name="status" defaultValue={user.status} className="input"><option>ACTIVE</option><option>SUSPENDED</option><option>CLOSED</option></select></div>
           </div>
           <div><label className="label">Tags (comma separated)</label><input name="tags" defaultValue={user.tags.join(", ")} className="input" placeholder="vip, uk, referral" /></div>
           <button className="btn-gold">Save</button>
