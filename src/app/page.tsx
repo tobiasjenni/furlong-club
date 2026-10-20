@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Disclaimer } from "@/components/Disclaimer";
 import { PlanCard } from "@/components/PlanCard";
-import { RobMascot } from "@/components/RobMascot";
+import { HostPortrait } from "@/components/HostPortrait";
 import { brand } from "@/lib/config";
 import { db } from "@/lib/db";
 
@@ -9,8 +9,8 @@ export const dynamic = "force-dynamic";
 
 const steps = [
   { title: "Join free", body: "Create an account with just your email. Intro videos unlock straight away." },
-  { title: "Learn the form", body: "Rob walks you through race cards, the going, the draw and staking discipline." },
-  { title: "Race-day breakdowns", body: "Members get Rob's take on the day's feature races before the off." },
+  { title: "Learn the form", body: "Harry walks you through race cards, the going, the draw and staking discipline." },
+  { title: "Race-day breakdowns", body: "Members get Harry's take on the day's feature races before the off." },
 ];
 
 export default async function Home() {
@@ -20,13 +20,13 @@ export default async function Home() {
       <section className="silk-stripes relative overflow-hidden border-b border-white/10">
         <div className="container-page grid items-center gap-10 py-14 md:grid-cols-[1.2fr_1fr] md:py-24">
           <div>
-            <p className="badge mb-5 border border-gold-400/40 text-gold-300">Horse racing, explained by Rob</p>
+            <p className="badge mb-5 border border-gold-400/40 text-gold-300">Horse racing, explained by {brand.host.first}</p>
             <h1 className="text-4xl leading-[1.05] sm:text-5xl md:text-6xl">
               Read the race <span className="text-gold-400">before</span> the gates open.
             </h1>
             <p className="mt-5 max-w-xl text-lg text-cream/75">
               {brand.name} is a video club for racing fans. Learn how to study form, judge the going and manage your
-              stake, then watch Rob break down the big races on the card.
+              stake, then watch {brand.host.first} break down the big races on the card.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Link href="/signup" className="btn-gold px-7 py-3 text-base">Join free</Link>
@@ -35,8 +35,8 @@ export default async function Home() {
             <p className="muted mt-4 text-xs">18+ only · Pay with USDT or USDC · Cancel anytime</p>
           </div>
           <div className="relative">
-            <RobMascot className="mx-auto w-full max-w-[340px] drop-shadow-2xl" />
-            <p className="muted mt-3 text-center text-xs">Meet Rob, our illustrated paddock guide. He is a fictional character.</p>
+            <HostPortrait className="mx-auto w-full max-w-[340px] shadow-2xl" />
+            <p className="muted mt-3 text-center text-xs">Meet {brand.host.name}, our paddock guide. A fictional character with an AI-generated portrait.</p>
           </div>
         </div>
       </section>
@@ -56,14 +56,14 @@ export default async function Home() {
 
       <section className="container-page py-6">
         <div className="card grid items-center gap-8 md:grid-cols-[auto_1fr]">
-          <RobMascot className="mx-auto h-40 w-40" />
+          <HostPortrait className="mx-auto h-40 w-40" rounded="rounded-full" />
           <div>
-            <h2 className="text-3xl">Who is Rob?</h2>
+            <h2 className="text-3xl">Who is {brand.host.first}?</h2>
             <p className="mt-3 text-cream/75">
-              Rob is the face of {brand.name}: a flat-capped, binocular-toting regular of British racecourses we created to
+              {brand.host.name} is the face of {brand.name}: a flat-capped, binocular-toting regular of British racecourses we created to
               host our videos. The analysis behind him comes from our team, who have spent years studying UK racing.
             </p>
-            <Link href="/about-rob" className="mt-4 inline-block text-gold-300 hover:underline">Read Rob&apos;s story →</Link>
+            <Link href={brand.host.page} className="mt-4 inline-block text-gold-300 hover:underline">Read {brand.host.first}&apos;s story →</Link>
           </div>
         </div>
       </section>

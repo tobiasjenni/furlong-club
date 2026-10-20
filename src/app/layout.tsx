@@ -10,7 +10,7 @@ const sans = Inter({ subsets: ["latin"], variable: "--font-sans", display: "swap
 
 export const metadata: Metadata = {
   title: { default: `${brand.name} · Learn to read the race`, template: `%s · ${brand.name}` },
-  description: "Horse racing education and race-day tip videos, hosted by Rob, our paddock guide.",
+  description: `Horse racing education and race-day tip videos, hosted by ${brand.host.name}, our paddock guide.`,
 };
 
 export const viewport: Viewport = { themeColor: "#06140f", width: "device-width", initialScale: 1 };
