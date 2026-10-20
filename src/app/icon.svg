@@ -1,20 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-<circle cx="32" cy="32" r="30" fill="#103226" stroke="#e9c46a" stroke-width="2.5"/>
-<circle cx="32" cy="32" r="25.5" fill="none" stroke="#e9c46a" stroke-opacity=".35" stroke-width="1"/>
-<g fill="#e9c46a">
-<path d="M36.4 10.6 l-1.4 5.6
- C29.8 18.2 25 22.8 21 28.8
- L15.4 37.4
- c-1.4 2.1 -.5 4.6 1.8 5.3
- c2.2 .7 4.2 .2 5.9 -1.2
- l3.4 -2.8
- c1.7 -1.4 3.8 -1.5 5.4 -.3
- c1 4.6 .2 9 -2.1 13.4
- L45.2 52.2
- C46.4 43.4 46 34.8 43.6 27
- C42.2 22 40.4 18.2 38.6 15.6 Z"/>
-<path d="M40.2 13.4 c3.2 2.3 5.6 5.8 7.1 10.2 l-2.8 -.6 c2.4 3.4 3.6 7.6 3.9 12.4 l-2.4 -1.4 c1.4 4.4 1.7 9.4 1 15.2 l-.9 1.8 C47.4 43 47 34.6 44.6 26.6 C43.4 22.4 41.8 18.4 40.2 13.4 Z"/>
-</g>
-<circle cx="28.4" cy="24.8" r="1.45" fill="#103226"/>
-<path d="M17.9 39.6 q1.2 -.9 2.3 .1" stroke="#103226" stroke-width="1.1" fill="none" stroke-linecap="round"/>
+  <rect width="64" height="64" rx="16" fill="#06140f"/>
+  <rect x="10" y="4" width="44" height="56" rx="22" fill="none" stroke="#e9c46a" stroke-width="1.75"/>
+  <path d="M21 17H43L44 26H41L38 21H29V30H36L38 27H40V37H38L36 34H29V44L34 46V48H20V46L24 44V21L21 19Z" fill="#e9c46a"/>
 </svg>
