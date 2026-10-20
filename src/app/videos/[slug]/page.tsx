@@ -1,7 +1,6 @@
 import { brand } from "@/lib/config";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { Disclaimer } from "@/components/Disclaimer";
 import { HostPortrait } from "@/components/HostPortrait";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -42,7 +41,6 @@ export default async function VideoPage({ params }: { params: Promise<{ slug: st
         <h1 className="mt-1 text-3xl">{video.title}</h1>
         <p className="mt-3 text-cream/80">{video.summary}</p>
       </div>
-      <Disclaimer compact />
     </div>
   );
 }

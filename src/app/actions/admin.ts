@@ -134,8 +134,9 @@ export type AdminFormState = { error?: string; ok?: string; link?: string } | nu
 
 // Without an email provider the admin gets the link to pass on by hand.
 async function deliver(email: Email, link: string): Promise<AdminFormState> {
+  if (!emailDelivers()) return { ok: "Email isn't connected yet, so share this link yourself:", link };
   await sendEmail(email);
-  return emailDelivers() ? { ok: `Email sent to ${email.to}.` } : { ok: "Email isn't connected yet, so share this link yourself:", link };
+  return { ok: `Email sent to ${email.to}.` };
 }
 
 export async function inviteUser(_: AdminFormState, form: FormData): Promise<AdminFormState> {

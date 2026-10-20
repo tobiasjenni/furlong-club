@@ -1,6 +1,7 @@
 import { brand } from "@/lib/config";
 import Link from "next/link";
 import { VerifyBanner } from "@/components/VerifyBanner";
+import { emailDelivers } from "@/lib/email";
 import { VideoCard } from "@/components/VideoCard";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -9,9 +10,9 @@ import { activeSubscription } from "@/lib/subscriptions";
 
 export const metadata = { title: "Dashboard" };
 
-export default async function Dashboard({ searchParams }: { searchParams: Promise<{ welcome?: string }> }) {
+export default async function Dashboard({ searchParams }: { searchParams: Promise<{ welcome?: string; walletPurchase?: string }> }) {
   const user = await requireUser();
-  const { welcome } = await searchParams;
+  const { welcome, walletPurchase } = await searchParams;
   const sub = await activeSubscription(user.id);
   // Admins can preview every video.
   const tier = user.role === "ADMIN" ? Infinity : sub?.plan.tier ?? 0;
@@ -24,7 +25,8 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
         <h1 className="text-3xl md:text-4xl">{user.name ?? user.email}</h1>
       </div>
 
-      {!user.emailVerifiedAt && <VerifyBanner email={user.email} />}
+      {!user.emailVerifiedAt && <VerifyBanner email={user.email} deliveryAvailable={emailDelivers()} />}
+      {walletPurchase && <p role="status" className="card text-emerald-300">Purchase complete. Your membership and wallet balance have been updated.</p>}
 
       <div className="grid gap-4 md:grid-cols-3">
         <div className="card">
@@ -36,7 +38,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
         <div className="card">
           <p className="muted text-sm">Wallet balance</p>
           <p className="mt-1 font-display text-2xl">{usd(user.balanceCents)}</p>
-          <p className="muted mt-1 text-sm">Deposits and withdrawals are coming soon.</p>
+          <p className="muted mt-1 text-sm">Add funds with USDT or USDC and pay for membership.</p>
           <Link href="/wallet" className="btn-ghost mt-4">Open wallet</Link>
         </div>
         <div className="card">

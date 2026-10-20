@@ -2,7 +2,7 @@ import Link from "next/link";
 import { logout } from "@/app/actions/auth";
 import { currentUser } from "@/lib/auth";
 import { brand } from "@/lib/config";
-import { Logo } from "./Logo";
+import { BrandLogo } from "./Logo";
 import { DesktopNav, MobileMenu } from "./NavLinks";
 
 export async function SiteHeader() {
@@ -26,9 +26,8 @@ export async function SiteHeader() {
   return (
     <header className="sticky top-0 z-40 border-b border-white/10 bg-turf-950/85 backdrop-blur">
       <div className="container-page flex h-16 items-center justify-between gap-4">
-        <Link href={user ? "/dashboard" : "/"} className="flex items-center gap-2.5" aria-label={`${brand.name} home`}>
-          <Logo className="h-9 w-9" />
-          <span className="font-display text-lg font-semibold">{brand.name}</span>
+        <Link href={user ? "/dashboard" : "/"} className="shrink-0 rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-gold-400" aria-label={`${brand.name} home`}>
+          <BrandLogo />
         </Link>
 
         <DesktopNav links={links} />

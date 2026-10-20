@@ -1,12 +1,15 @@
 import Link from "next/link";
 import { brand } from "@/lib/config";
+import { BrandLogo } from "./Logo";
 
 export function SiteFooter() {
   return (
     <footer className="mt-20 border-t border-white/10 bg-turf-950">
       <div className="container-page grid gap-8 py-10 text-sm md:grid-cols-[2fr_1fr_1fr]">
         <div className="space-y-3">
-          <p className="font-display text-base text-cream">{brand.name}</p>
+          <Link href="/" className="inline-flex rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-gold-400" aria-label={`${brand.name} home`}>
+            <BrandLogo />
+          </Link>
           <p className="muted max-w-md">
             Horse racing education and opinion. Nothing here is financial advice or a promise of winnings. Betting involves
             risk and you can lose the money you stake. Only bet what you can afford to lose.

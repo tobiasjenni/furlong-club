@@ -10,7 +10,7 @@ Horse racing education and tip-video membership site. Next.js 15 + TypeScript + 
   - `mock` provider for local testing (a "simulate payment" button appears on the pay page)
   - `nowpayments` provider with signed IPN webhook at `/api/payments/webhook/nowpayments`
 - Admin back office: stats, user search and filters, CRM notes and tags, role/suspend, grant or cancel access, payments list, video CRUD, plan editing, CSV export
-- Wallet page with balance and history; deposit/withdraw are placeholders (disabled) until KYC and licensing are in place
+- Member wallet: USDT/USDC top-ups, USD credit balance, payment receipts and membership purchases from balance. Immutable balanced ledger and pooled settlement trail in admin. Live funding remains disabled until configured; no withdrawals or member-to-member transfers.
 - The host, Harry Whitcombe, is a fictional character with an AI-generated portrait and a visible "fictional character" disclosure; 18+ and responsible gambling notices site-wide; no return claims
 
 ## Run locally
@@ -26,12 +26,12 @@ npm test                      # unit tests
 With `EMAIL_PROVIDER=console`, verification and reset links are printed in the server log.
 
 ## Security
-- Passwords: bcrypt (cost 12), 10+ characters. Login takes the same time whether or not the email exists.
+- Passwords: bcrypt (cost 12), 10+ characters with an enforced 72-byte limit for new passwords. Login takes the same time whether or not the email exists.
 - Sessions: signed HttpOnly cookie carrying a session version. Changing or resetting a password, closing the account, or an admin suspending/demoting someone signs out all their devices.
 - Email verification is required before paying. Reset and verification tokens are random, stored only as SHA-256 hashes, single use and short-lived.
-- Rate limits on sign-up, login, password reset, verification emails and checkout. The limiter is in memory, so on serverless or multiple instances move it to Redis (e.g. Upstash).
-- Payments: NOWPayments IPN signatures are checked (HMAC-SHA512, constant-time). A payment only unlocks a plan if the order id and price match our record and the full amount arrived; otherwise it is marked PARTIAL and logged. Confirmation is idempotent.
-- The mock payment provider and its "simulate" button are disabled in production.
+- Rate limits on sign-up, login, password reset, verification emails and checkout use shared, atomic PostgreSQL counters across serverless instances. Identifying keys are hashed; expired counters are cleaned daily.
+- Payments: signed NOWPayments notifications trigger an authenticated status lookup. Order, price, token/network, address and exact amounts must match. Only `finished` with pooled transfer evidence fulfills an invoice. Event, balanced posting, balance and membership commit atomically; duplicates cannot double-credit or double-purchase.
+- The mock payment provider and its "simulate" button are disabled in production unless the isolated staging deployment explicitly enables test payments.
 - Paid videos play through signed Bunny Stream links that expire after an hour.
 - Headers: Content-Security-Policy, HSTS, frame-ancestors none, nosniff, Permissions-Policy. Admin video and thumbnail URLs must be https.
 - Audit log of logins, failed logins, payments and every admin action (Admin → Audit log). CSV exports are protected against spreadsheet formula injection.
@@ -69,8 +69,14 @@ GitHub repository secrets (Settings → Secrets and variables → Actions):
 `AUTH_SECRET` and `CRON_SECRET` are generated on the first deploy and kept on the Worker (add a GitHub secret with the same name to set them yourself).
 | `RESEND_API_KEY`, `NOWPAYMENTS_API_KEY`, `NOWPAYMENTS_IPN_SECRET`, `BUNNY_TOKEN_KEY` | Optional, once those accounts exist |
 
-Non-secret settings live in `wrangler.jsonc` under `vars`. While `PAYMENT_PROVIDER` is `mock`, a "Test mode" banner shows on every page and no real crypto moves. To go live with payments, switch it to `nowpayments`. Emails go out through Resend as soon as the `RESEND_API_KEY` secret exists. Until then, admins can confirm emails by hand and get invite and reset links to pass on themselves.
+Non-secret settings live in `wrangler.jsonc` under `vars`. Production uses `nowpayments` with simulations explicitly disabled; deposits and direct checkout remain unavailable unless API credentials and a valid receiving address are configured. The separate `wrangler.test.jsonc` deployment enables simulations only with all three settings: `APP_ENV=staging`, `ENABLE_TEST_PAYMENTS=true`, and `PAYMENT_PROVIDER=mock`. Complete [wallet setup](docs/wallet-setup.md) before accepting money. Emails go out through Resend as soon as the `RESEND_API_KEY` secret exists. Until then, admins can confirm emails by hand and get invite and reset links to pass on themselves. Production never logs usable verification or reset links.
 
 The Worker needs the Workers Paid plan ($5/month), because password hashing and the database engine use more CPU per request than the free plan's 10 ms allows. `.github/workflows/daily.yml` runs `npm run daily` (renewal reminders, clean-up) every morning against the production database.
 
 Local Workers preview: put `DATABASE_URL`, `DATABASE_DRIVER=neon-http` and `AUTH_SECRET` in `.dev.vars`, then run `npm run cf:preview`.
+
+## Wallet and pooled payments
+
+See [wallet setup and operating guide](docs/wallet-setup.md) for receiving-wallet configuration, accounting, fees, reconciliation, recovery and sandbox checks. The wallet migration preserves old displayed balances as explicit opening entries; it does not fabricate historical crypto settlement records. Admin sales statistics now use the new ledger and exclude pre-ledger sales.
+
+`npm test` includes executable PostgreSQL migration/ledger checks in PGlite, exact-quantity/provider validation, duplicate and retry handling, partial payments, stale notifications, late deposits, refunds, and injected-failure rollback tests. PGlite uses one backend; separate-session concurrency still needs verification against the deployment's Postgres/Neon database before real funds.

@@ -1,7 +1,9 @@
+import { requireAdmin } from "@/lib/auth";
 import { savePlan } from "@/app/actions/admin";
 import { db } from "@/lib/db";
 
 export default async function AdminPlans() {
+  await requireAdmin();
   const plans = await db.plan.findMany({ orderBy: { sortOrder: "asc" } });
   return (
     <div className="grid gap-4 md:grid-cols-3">

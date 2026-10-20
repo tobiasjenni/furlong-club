@@ -1,8 +1,10 @@
+import { requireAdmin } from "@/lib/auth";
 import { notFound } from "next/navigation";
 import { deleteVideo, saveVideo } from "@/app/actions/admin";
 import { db } from "@/lib/db";
 
 export default async function EditVideo({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ error?: string }> }) {
+  await requireAdmin();
   const { id } = await params;
   const { error } = await searchParams;
   const video = id === "new" ? null : await db.video.findUnique({ where: { id } });

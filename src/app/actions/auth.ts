@@ -6,14 +6,15 @@ import { z } from "zod";
 import { audit } from "@/lib/audit";
 import { endSession, requireUser, revokeSessions, startSession } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { passwordChangedMessage, resetPasswordMessage, sendEmail, verifyEmailMessage } from "@/lib/email";
+import { emailDelivers, passwordChangedMessage, resetPasswordMessage, sendEmail, verifyEmailMessage } from "@/lib/email";
 import { rateLimit } from "@/lib/rate-limit";
 import { clientIp, safeNext } from "@/lib/request";
 import { consumeToken, issueToken } from "@/lib/tokens";
 
 export type FormState = { error?: string; ok?: string } | null;
 
-const password = z.string().min(10, "Password must be at least 10 characters").max(200, "Password is too long");
+const password = z.string().min(10, "Password must be at least 10 characters").max(72, "Password is too long")
+  .refine(value => Buffer.byteLength(value, "utf8") <= 72, "Password must fit within 72 UTF-8 bytes");
 
 const signupSchema = z.object({
   name: z.string().trim().min(1, "Please enter your name").max(80),
@@ -35,7 +36,7 @@ async function sendVerification(user: { id: string; email: string }) {
 }
 
 export async function signup(_: FormState, form: FormData): Promise<FormState> {
-  if (!rateLimit(`signup:${await clientIp()}`, 10, 60 * 60 * 1000)) return { error: "Too many attempts, try again later." };
+  if (!await rateLimit(`signup:${await clientIp()}`, 10, 60 * 60 * 1000)) return { error: "Too many attempts, try again later." };
   const parsed = signupSchema.safeParse(Object.fromEntries(form));
   if (!parsed.success) return { error: parsed.error.issues[0].message };
   const { name, email, password, country, marketing } = parsed.data;
@@ -63,7 +64,7 @@ export async function login(_: FormState, form: FormData): Promise<FormState> {
   const email = String(form.get("email") ?? "").trim().toLowerCase().slice(0, 254);
   const pass = String(form.get("password") ?? "").slice(0, 200);
   const ip = await clientIp();
-  if (!rateLimit(`login-ip:${ip}`, 30, 15 * 60 * 1000) || !rateLimit(`login:${email}`, 8, 15 * 60 * 1000)) {
+  if (!await rateLimit(`login-ip:${ip}`, 30, 15 * 60 * 1000) || !await rateLimit(`login:${email}`, 8, 15 * 60 * 1000)) {
     return { error: "Too many attempts, try again in 15 minutes." };
   }
 
@@ -90,15 +91,17 @@ export async function logout() {
 export async function resendVerification(_: FormState): Promise<FormState> {
   const user = await requireUser();
   if (user.emailVerifiedAt) return { ok: "Your email is already confirmed." };
-  if (!rateLimit(`verify:${user.id}`, 3, 60 * 60 * 1000)) return { error: "We've sent a few already. Please check your inbox and spam folder." };
+  if (!emailDelivers()) return { error: "Please contact support@furlong.club to confirm your email while email delivery is unavailable." };
+  if (!await rateLimit(`verify:${user.id}`, 3, 60 * 60 * 1000)) return { error: "We've sent a few already. Please check your inbox and spam folder." };
   await sendVerification(user);
   return { ok: `We've sent a new link to ${user.email}.` };
 }
 
 export async function requestPasswordReset(_: FormState, form: FormData): Promise<FormState> {
+  if (!emailDelivers()) return { error: "Email recovery is currently unavailable. Please contact support@furlong.club for help." };
   const email = String(form.get("email") ?? "").trim().toLowerCase().slice(0, 254);
   const sent = { ok: "If an account exists for that email, we've sent a reset link. It's valid for one hour." };
-  if (!rateLimit(`reset-ip:${await clientIp()}`, 10, 60 * 60 * 1000) || !rateLimit(`reset:${email}`, 3, 60 * 60 * 1000)) return sent;
+  if (!await rateLimit(`reset-ip:${await clientIp()}`, 10, 60 * 60 * 1000) || !await rateLimit(`reset:${email}`, 3, 60 * 60 * 1000)) return sent;
   const user = await db.user.findUnique({ where: { email } });
   if (user && user.status === "ACTIVE") {
     const token = await issueToken(user.id, "RESET_PASSWORD");
@@ -138,7 +141,7 @@ export async function updateProfile(_: FormState, form: FormData): Promise<FormS
 
 export async function changePassword(_: FormState, form: FormData): Promise<FormState> {
   const user = await requireUser();
-  if (!rateLimit(`pw:${user.id}`, 5, 15 * 60 * 1000)) return { error: "Too many attempts, try again later." };
+  if (!await rateLimit(`pw:${user.id}`, 5, 15 * 60 * 1000)) return { error: "Too many attempts, try again later." };
   const parsed = password.safeParse(form.get("next"));
   if (!parsed.success) return { error: parsed.error.issues[0].message };
   if (!(await bcrypt.compare(String(form.get("current") ?? ""), user.passwordHash))) return { error: "Current password is incorrect." };
@@ -157,9 +160,11 @@ export async function signOutEverywhere() {
 
 export async function closeAccount(_: FormState, form: FormData): Promise<FormState> {
   const user = await requireUser();
+  if (!await rateLimit(`close:${user.id}`, 5, 15 * 60 * 1000)) return { error: "Too many attempts. Please try again later." };
   if (form.get("confirm") !== "CLOSE") return { error: 'Type CLOSE to confirm.' };
   if (!(await bcrypt.compare(String(form.get("password") ?? ""), user.passwordHash))) return { error: "Password is incorrect." };
-  await db.user.update({ where: { id: user.id }, data: { status: "CLOSED", closedAt: new Date(), marketingOptIn: false } });
+  const closed = await db.$queryRaw<{ result: string }[]>`SELECT wallet_close_account(${user.id}) AS result`;
+  if (closed[0]?.result !== "closed") return { error: "Please contact support to resolve your wallet balance or pending deposits before closing your account." };
   await audit(user.id, "user.closed_account", user.id);
   await revokeSessions(user.id);
   redirect("/?closed=1");
@@ -167,16 +172,19 @@ export async function closeAccount(_: FormState, form: FormData): Promise<FormSt
 
 export async function changeEmail(_: FormState, form: FormData): Promise<FormState> {
   const user = await requireUser();
-  if (!rateLimit(`email-change:${user.id}`, 5, 60 * 60 * 1000)) return { error: "Too many attempts, try again later." };
+  if (!await rateLimit(`email-change:${user.id}`, 5, 60 * 60 * 1000)) return { error: "Too many attempts, try again later." };
   const parsed = z.string().trim().toLowerCase().email("Please enter a valid email").max(254).safeParse(form.get("email"));
   if (!parsed.success) return { error: parsed.error.issues[0].message };
   const email = parsed.data;
   if (email === user.email) return { error: "That's already your email." };
   if (!(await bcrypt.compare(String(form.get("password") ?? ""), user.passwordHash))) return { error: "Password is incorrect." };
   if (await db.user.findUnique({ where: { email } })) return { error: "That email is already used by another account." };
-  await db.user.update({ where: { id: user.id }, data: { email, emailVerifiedAt: null } });
+  // Update the address and revoke old emailed links atomically on the HTTP driver.
+  await db.$executeRaw`WITH changed AS (
+    UPDATE "User" SET email=${email}, "emailVerifiedAt"=NULL, "updatedAt"=(CURRENT_TIMESTAMP AT TIME ZONE 'UTC') WHERE id=${user.id}
+  ) DELETE FROM "AuthToken" WHERE "userId"=${user.id}`;
   await audit(user.id, "user.email_changed", user.id, { from: user.email, to: email });
   await sendVerification({ id: user.id, email }).catch((err) => console.error("verification email failed", err));
   await revokeSessions(user.id, true);
-  return { ok: `Email changed. We've sent a confirmation link to ${email}.` };
+  return { ok: emailDelivers() ? `Email changed. We've sent a confirmation link to ${email}.` : "Email changed. Contact support@furlong.club to confirm your new address." };
 }

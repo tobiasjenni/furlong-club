@@ -1,15 +1,17 @@
+import { requireAdmin } from "@/lib/auth";
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { dateTime, usd } from "@/lib/format";
 
 export default async function AdminHome() {
+  await requireAdmin();
   const now = new Date();
   const monthAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
   const [users, newUsers, activeSubs, revenue, pending, recent] = await Promise.all([
     db.user.count(),
     db.user.count({ where: { createdAt: { gte: monthAgo } } }),
     db.subscription.count({ where: { status: "ACTIVE", endsAt: { gt: now } } }),
-    db.payment.aggregate({ _sum: { amountCents: true }, where: { status: "CONFIRMED", confirmedAt: { gte: monthAgo } } }),
+    db.walletJournal.aggregate({ _sum: { revenueDeltaCents: true }, where: { createdAt: { gte: monthAgo } } }),
     db.payment.count({ where: { status: { in: ["PENDING", "CONFIRMING", "PARTIAL"] } } }),
     db.user.findMany({ orderBy: { createdAt: "desc" }, take: 8 }),
   ]);
@@ -17,7 +19,7 @@ export default async function AdminHome() {
     { label: "Users", value: users },
     { label: "New (30 days)", value: newUsers },
     { label: "Active subscriptions", value: activeSubs },
-    { label: "Revenue (30 days)", value: usd(revenue._sum.amountCents ?? 0) },
+    { label: "Sales (30 days, ledger)", value: usd(revenue._sum.revenueDeltaCents ?? 0) },
     { label: "Open payments", value: pending },
   ];
   return (

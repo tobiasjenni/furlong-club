@@ -1,13 +1,14 @@
-// Simple in-memory limiter, good enough for a single server. Swap for Redis when running several instances.
-const hits = new Map<string, { count: number; reset: number }>();
+import crypto from "node:crypto";
+import { db } from "./db";
 
-export function rateLimit(key: string, limit: number, windowMs: number) {
-  const now = Date.now();
-  const entry = hits.get(key);
-  if (!entry || entry.reset < now) {
-    hits.set(key, { count: 1, reset: now + windowMs });
-    return true;
-  }
-  entry.count += 1;
-  return entry.count <= limit;
+// One atomic, shared counter across Worker instances. Hash identifying keys before storage.
+export async function rateLimit(key: string, limit: number, windowMs: number) {
+  const digest = crypto.createHash("sha256").update(key).digest("hex");
+  const rows = await db.$queryRaw<{ hits: number }[]>`INSERT INTO "RateLimit" (key,hits,"resetAt")
+    VALUES (${digest},1,(CURRENT_TIMESTAMP AT TIME ZONE 'UTC')+${windowMs}::integer*interval '1 millisecond')
+    ON CONFLICT (key) DO UPDATE SET
+      hits=CASE WHEN "RateLimit"."resetAt"<=(CURRENT_TIMESTAMP AT TIME ZONE 'UTC') THEN 1 ELSE LEAST("RateLimit".hits+1,${limit + 1}::integer) END,
+      "resetAt"=CASE WHEN "RateLimit"."resetAt"<=(CURRENT_TIMESTAMP AT TIME ZONE 'UTC') THEN EXCLUDED."resetAt" ELSE "RateLimit"."resetAt" END
+    RETURNING hits`;
+  return rows[0].hits <= limit;
 }

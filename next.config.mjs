@@ -31,6 +31,7 @@ const nextConfig = {
       {
         source: "/(.*)",
         headers: [
+          ...(process.env.APP_ENV === "staging" ? [{ key: "X-Robots-Tag", value: "noindex, nofollow, noarchive" }] : []),
           { key: "Content-Security-Policy", value: csp },
           { key: "X-Frame-Options", value: "DENY" },
           { key: "X-Content-Type-Options", value: "nosniff" },

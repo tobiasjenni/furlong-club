@@ -7,9 +7,32 @@ on:
 
 concurrency: deploy-production
 
+permissions:
+  contents: read
+
 jobs:
-  deploy:
+  audit:
+    if: github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/main'
     runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Read-only production audit
+        run: node scripts/audit-production.mjs
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
     environment: production
     env:
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
@@ -23,6 +46,11 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - name: Validate release before changing production
+        run: |
+          npm run lint
+          npm test
+          npm audit --omit=dev --audit-level=high
       - name: Apply database migrations
         run: npx prisma migrate deploy
       - name: Seed plans and the admin account
@@ -36,17 +64,21 @@ jobs:
         # AUTH_SECRET and CRON_SECRET are generated on the first deploy and then kept on the Worker,
         # so nobody has to create them by hand (a GitHub secret of the same name overrides them).
         run: |
-          existing=$(npx wrangler secret list --format json 2>/dev/null) || existing="[]"
+          existing=$(npx wrangler secret list --format json)
           EXISTING="$existing" node -e '
             const crypto = require("crypto");
             let have = new Set();
-            try { have = new Set(JSON.parse(process.env.EXISTING).map((s) => s.name)); } catch {}
+            have = new Set(JSON.parse(process.env.EXISTING).map((s) => s.name));
             const generate = (name, given) => given || (have.has(name) ? undefined : crypto.randomBytes(36).toString("base64url"));
             const s = { DATABASE_URL: process.env.DATABASE_URL,
                         AUTH_SECRET: generate("AUTH_SECRET", process.env.AUTH_SECRET),
                         CRON_SECRET: generate("CRON_SECRET", process.env.CRON_SECRET),
                         RESEND_API_KEY: process.env.RESEND_API_KEY, NOWPAYMENTS_API_KEY: process.env.NOWPAYMENTS_API_KEY,
-                        NOWPAYMENTS_IPN_SECRET: process.env.NOWPAYMENTS_IPN_SECRET, BUNNY_TOKEN_KEY: process.env.BUNNY_TOKEN_KEY };
+                        NOWPAYMENTS_IPN_SECRET: process.env.NOWPAYMENTS_IPN_SECRET, BUNNY_TOKEN_KEY: process.env.BUNNY_TOKEN_KEY,
+                        POOL_WALLET_USDC_POLYGON: process.env.POOL_WALLET_USDC_POLYGON,
+                        POOL_WALLET_USDT_TRC20: process.env.POOL_WALLET_USDT_TRC20,
+                        POOL_WALLET_USDC_ERC20: process.env.POOL_WALLET_USDC_ERC20,
+                        POOL_WALLET_USDT_ERC20: process.env.POOL_WALLET_USDT_ERC20 };
             for (const k of Object.keys(s)) if (!s[k]) delete s[k];
             require("fs").writeFileSync(`${process.env.RUNNER_TEMP}/secrets.json`, JSON.stringify(s), { mode: 0o600 });'
         env:
@@ -56,8 +88,14 @@ jobs:
           NOWPAYMENTS_API_KEY: ${{ secrets.NOWPAYMENTS_API_KEY }}
           NOWPAYMENTS_IPN_SECRET: ${{ secrets.NOWPAYMENTS_IPN_SECRET }}
           BUNNY_TOKEN_KEY: ${{ secrets.BUNNY_TOKEN_KEY }}
+          POOL_WALLET_USDC_POLYGON: ${{ secrets.POOL_WALLET_USDC_POLYGON }}
+          POOL_WALLET_USDT_TRC20: ${{ secrets.POOL_WALLET_USDT_TRC20 }}
+          POOL_WALLET_USDC_ERC20: ${{ secrets.POOL_WALLET_USDC_ERC20 }}
+          POOL_WALLET_USDT_ERC20: ${{ secrets.POOL_WALLET_USDT_ERC20 }}
       - name: Deploy
         run: npx opennextjs-cloudflare deploy -- --secrets-file "$RUNNER_TEMP/secrets.json"
+      - name: Verify published site
+        run: node scripts/check-release.mjs
       - name: Remove secrets file
         if: always()
         run: rm -f "$RUNNER_TEMP/secrets.json"

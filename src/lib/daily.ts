@@ -23,9 +23,10 @@ export async function runDailyJobs(now = new Date()) {
     }
   }
 
-  const expiredSubs = await db.subscription.updateMany({ where: { status: "ACTIVE", endsAt: { lte: now } }, data: { status: "EXPIRED" } });
+  const expiredSubs = await db.$executeRaw`UPDATE "Subscription" SET status='EXPIRED' WHERE status='ACTIVE' AND "endsAt"<=${now}`;
   const expiredPayments = await expireStalePayments();
-  await db.authToken.deleteMany({ where: { expiresAt: { lt: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000) } } });
+  await db.$executeRaw`DELETE FROM "AuthToken" WHERE "expiresAt"<${new Date(now.getTime() - 7 * 86400000)}`;
+  await db.$executeRaw`DELETE FROM "RateLimit" WHERE "resetAt"<${now}`;
 
-  return { reminded, expiredSubscriptions: expiredSubs.count, expiredPayments: expiredPayments.count };
+  return { reminded, expiredSubscriptions: expiredSubs, expiredPayments: expiredPayments.count };
 }
