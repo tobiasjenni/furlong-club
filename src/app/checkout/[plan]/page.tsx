@@ -5,6 +5,10 @@ import { checkoutOptions } from "@/lib/config";
 import { db } from "@/lib/db";
 import { usd } from "@/lib/format";
 import { CheckoutForm } from "./CheckoutForm";
+import crypto from "node:crypto";
+import { walletEnabled } from "@/lib/config";
+import { paymentsReady } from "@/lib/payments";
+import { WalletPurchase } from "./WalletPurchase";
 
 export const metadata = { title: "Checkout" };
 
@@ -26,7 +30,9 @@ export default async function CheckoutPage({ params }: { params: Promise<{ plan:
         {!user.emailVerifiedAt && (
           <p className="rounded-xl bg-gold-400/10 p-3 text-sm text-gold-300">Please confirm your email before paying. The link is in your inbox, or resend it from your dashboard.</p>
         )}
-        <CheckoutForm plan={plan.slug} options={checkoutOptions.map((o) => ({ label: o.label }))} />
+        {walletEnabled && <WalletPurchase planId={plan.id} priceCents={plan.priceCents} balanceCents={user.balanceCents} requestKey={crypto.randomUUID()} disabled={!user.emailVerifiedAt || user.walletFrozen} />}
+        <h2 className="text-xl">Pay directly with crypto</h2>
+        <CheckoutForm plan={plan.slug} options={checkoutOptions.map((o) => ({ label: o.label, enabled: paymentsReady(o) }))} />
         <Disclaimer compact />
       </div>
     </div>

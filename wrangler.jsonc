@@ -15,7 +15,6 @@
     "APP_URL": "https://furlong.club",
     "DATABASE_DRIVER": "neon-http",
     "PAYMENT_PROVIDER": "mock",
-    "ALLOW_MOCK_PAYMENTS": "true",
     "WALLET_ENABLED": "false"
   }
 }

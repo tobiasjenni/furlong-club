@@ -7,6 +7,7 @@ const nav = [
   { href: "/admin", label: "Overview" },
   { href: "/admin/users", label: "Users & CRM" },
   { href: "/admin/payments", label: "Payments" },
+  { href: "/admin/wallet", label: "Wallet & reconciliation" },
   { href: "/admin/videos", label: "Videos" },
   { href: "/admin/plans", label: "Plans" },
   { href: "/admin/audit", label: "Audit log" },

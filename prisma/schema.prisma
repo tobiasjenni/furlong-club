@@ -51,29 +51,31 @@ enum LedgerStatus {
 }
 
 model User {
-  id              String         @id @default(cuid())
-  email           String         @unique
+  id              String          @id @default(cuid())
+  email           String          @unique
   passwordHash    String
   name            String?
   country         String?
-  role            Role           @default(USER)
-  status          UserStatus     @default(ACTIVE)
-  marketingOptIn  Boolean        @default(false)
+  role            Role            @default(USER)
+  status          UserStatus      @default(ACTIVE)
+  marketingOptIn  Boolean         @default(false)
   ageConfirmedAt  DateTime
-  balanceCents    Int            @default(0)
+  balanceCents    Int             @default(0)
+  walletFrozen    Boolean         @default(false)
   emailVerifiedAt DateTime?
-  sessionVersion  Int            @default(0)
+  sessionVersion  Int             @default(0)
   closedAt        DateTime?
   lastLoginAt     DateTime?
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
   subscriptions   Subscription[]
   payments        Payment[]
   ledger          LedgerEntry[]
-  notes           CrmNote[]      @relation("NoteSubject")
-  notesWritten    CrmNote[]      @relation("NoteAuthor")
-  tags            String[]       @default([])
+  notes           CrmNote[]       @relation("NoteSubject")
+  notesWritten    CrmNote[]       @relation("NoteAuthor")
+  tags            String[]        @default([])
   tokens          AuthToken[]
+  walletJournal   WalletJournal[]
 }
 
 model AuthToken {
@@ -90,18 +92,19 @@ model AuthToken {
 }
 
 model Plan {
-  id            String         @id @default(cuid())
-  slug          String         @unique
+  id            String          @id @default(cuid())
+  slug          String          @unique
   name          String
   tagline       String
   priceCents    Int
-  intervalDays  Int            @default(30)
+  intervalDays  Int             @default(30)
   tier          Int
   features      String[]
-  active        Boolean        @default(true)
-  sortOrder     Int            @default(0)
+  active        Boolean         @default(true)
+  sortOrder     Int             @default(0)
   subscriptions Subscription[]
   payments      Payment[]
+  walletJournal WalletJournal[]
 }
 
 model Subscription {
@@ -121,26 +124,77 @@ model Subscription {
 }
 
 model Payment {
-  id          String        @id @default(cuid())
-  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId      String
-  plan        Plan          @relation(fields: [planId], references: [id])
-  planId      String
-  amountCents Int
-  currency    String // USDT | USDC
-  network     String // TRC20 | ERC20 | POLYGON | ...
-  provider    String
-  providerRef String?
-  payAddress  String?
-  payAmount   String?
-  status      PaymentStatus @default(PENDING)
-  expiresAt   DateTime?
-  confirmedAt DateTime?
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  id                String          @id @default(cuid())
+  user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId            String
+  plan              Plan?           @relation(fields: [planId], references: [id], onDelete: Restrict)
+  planId            String?
+  purpose           String          @default("SUBSCRIPTION")
+  planName          String?
+  planDays          Int?
+  amountCents       Int
+  currency          String // USDT | USDC
+  network           String // TRC20 | ERC20 | POLYGON | ...
+  provider          String
+  providerRef       String?
+  payAddress        String?
+  payAmount         String?
+  status            PaymentStatus   @default(PENDING)
+  expiresAt         DateTime?
+  confirmedAt       DateTime?
+  poolAddress       String?
+  settlementStatus  String          @default("LEGACY")
+  receivedAmount    Decimal?        @db.Decimal(36, 18)
+  outcomeAmount     Decimal?        @db.Decimal(36, 18)
+  outcomeCurrency   String?
+  payinHash         String?
+  payoutHash        String?
+  providerStatus    String?
+  providerUpdatedAt DateTime?
+  lastCheckedAt     DateTime?
+  reviewReason      String?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  events            PaymentEvent[]
+  journal           WalletJournal[]
 
   @@unique([provider, providerRef])
   @@index([userId])
+}
+
+// One immutable, balanced USD posting per business operation. Token quantities live on Payment/Event.
+model WalletJournal {
+  id                 String   @id
+  user               User     @relation(fields: [userId], references: [id], onDelete: Restrict)
+  userId             String
+  payment            Payment? @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+  paymentId          String?
+  plan               Plan?    @relation(fields: [planId], references: [id], onDelete: Restrict)
+  planId             String?
+  operationKey       String   @unique
+  kind               String
+  description        String
+  currency           String   @default("USD")
+  userDeltaCents     Int
+  clearingDeltaCents Int
+  revenueDeltaCents  Int
+  createdAt          DateTime @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)"))
+
+  @@index([userId, createdAt])
+}
+
+model PaymentEvent {
+  id        String   @id
+  payment   Payment  @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+  paymentId String
+  eventKey  String
+  source    String
+  payload   Json
+  decision  String
+  createdAt DateTime @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)"))
+
+  @@unique([paymentId, eventKey])
+  @@index([paymentId, createdAt])
 }
 
 model LedgerEntry {

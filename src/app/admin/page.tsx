@@ -9,7 +9,7 @@ export default async function AdminHome() {
     db.user.count(),
     db.user.count({ where: { createdAt: { gte: monthAgo } } }),
     db.subscription.count({ where: { status: "ACTIVE", endsAt: { gt: now } } }),
-    db.payment.aggregate({ _sum: { amountCents: true }, where: { status: "CONFIRMED", confirmedAt: { gte: monthAgo } } }),
+    db.walletJournal.aggregate({ _sum: { revenueDeltaCents: true }, where: { createdAt: { gte: monthAgo } } }),
     db.payment.count({ where: { status: { in: ["PENDING", "CONFIRMING", "PARTIAL"] } } }),
     db.user.findMany({ orderBy: { createdAt: "desc" }, take: 8 }),
   ]);
@@ -17,7 +17,7 @@ export default async function AdminHome() {
     { label: "Users", value: users },
     { label: "New (30 days)", value: newUsers },
     { label: "Active subscriptions", value: activeSubs },
-    { label: "Revenue (30 days)", value: usd(revenue._sum.amountCents ?? 0) },
+    { label: "Sales (30 days, ledger)", value: usd(revenue._sum.revenueDeltaCents ?? 0) },
     { label: "Open payments", value: pending },
   ];
   return (

@@ -159,6 +159,7 @@ export async function closeAccount(_: FormState, form: FormData): Promise<FormSt
   const user = await requireUser();
   if (form.get("confirm") !== "CLOSE") return { error: 'Type CLOSE to confirm.' };
   if (!(await bcrypt.compare(String(form.get("password") ?? ""), user.passwordHash))) return { error: "Password is incorrect." };
+  if (user.balanceCents > 0 || user.walletFrozen || await db.payment.count({ where: { userId: user.id, purpose: "WALLET_TOPUP", status: { in: ["PENDING", "CONFIRMING", "PARTIAL"] } } })) return { error: "Please contact support to resolve your wallet balance or pending deposits before closing your account." };
   await db.user.update({ where: { id: user.id }, data: { status: "CLOSED", closedAt: new Date(), marketingOptIn: false } });
   await audit(user.id, "user.closed_account", user.id);
   await revokeSessions(user.id);

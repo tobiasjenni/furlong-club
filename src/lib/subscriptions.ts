@@ -1,4 +1,5 @@
 import { db } from "./db";
+import crypto from "node:crypto";
 
 export async function activeSubscription(userId: string) {
   return db.subscription.findFirst({
@@ -15,13 +16,5 @@ export async function userTier(userId: string) {
 
 // Extends the user's current period for the same plan, or starts a new one.
 export async function grantSubscription(userId: string, planId: string, days: number, source: "payment" | "admin") {
-  const existing = await db.subscription.findFirst({
-    where: { userId, planId, status: "ACTIVE", endsAt: { gt: new Date() } },
-    orderBy: { endsAt: "desc" },
-  });
-  const ms = days * 24 * 60 * 60 * 1000;
-  if (existing) {
-    return db.subscription.update({ where: { id: existing.id }, data: { endsAt: new Date(existing.endsAt.getTime() + ms), reminderSentAt: null } });
-  }
-  return db.subscription.create({ data: { userId, planId, endsAt: new Date(Date.now() + ms), source } });
+  await db.$queryRaw`SELECT wallet_grant_subscription(${userId}, ${planId}, ${days}::integer, ${source}, ${crypto.randomUUID()})`;
 }

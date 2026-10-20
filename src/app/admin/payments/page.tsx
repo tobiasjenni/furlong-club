@@ -13,9 +13,9 @@ export default async function AdminPayments() {
             <tr key={p.id}>
               <td>{dateTime(p.createdAt)}</td>
               <td><Link href={`/admin/users/${p.userId}`} className="text-gold-300 hover:underline">{p.user.email}</Link></td>
-              <td>{p.plan.name}</td><td>{usd(p.amountCents)}</td><td>{p.currency} · {p.network}</td>
+              <td>{p.planName ?? "Wallet top-up"}</td><td>{usd(p.amountCents)}</td><td>{p.currency} · {p.network}</td>
               <td className="text-xs">{p.provider}<br /><span className="muted">{p.providerRef}</span></td>
-              <td>{p.status}</td>
+              <td><Link href={`/admin/payments/${p.id}`} className="text-gold-300 underline">{p.status}</Link><br />{p.settlementStatus}{p.reviewReason && <span className="block text-red-300">Review needed</span>}</td>
             </tr>
           ))}
         </tbody>

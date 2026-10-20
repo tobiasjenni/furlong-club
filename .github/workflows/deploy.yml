@@ -46,7 +46,11 @@ jobs:
                         AUTH_SECRET: generate("AUTH_SECRET", process.env.AUTH_SECRET),
                         CRON_SECRET: generate("CRON_SECRET", process.env.CRON_SECRET),
                         RESEND_API_KEY: process.env.RESEND_API_KEY, NOWPAYMENTS_API_KEY: process.env.NOWPAYMENTS_API_KEY,
-                        NOWPAYMENTS_IPN_SECRET: process.env.NOWPAYMENTS_IPN_SECRET, BUNNY_TOKEN_KEY: process.env.BUNNY_TOKEN_KEY };
+                        NOWPAYMENTS_IPN_SECRET: process.env.NOWPAYMENTS_IPN_SECRET, BUNNY_TOKEN_KEY: process.env.BUNNY_TOKEN_KEY,
+                        POOL_WALLET_USDC_POLYGON: process.env.POOL_WALLET_USDC_POLYGON,
+                        POOL_WALLET_USDT_TRC20: process.env.POOL_WALLET_USDT_TRC20,
+                        POOL_WALLET_USDC_ERC20: process.env.POOL_WALLET_USDC_ERC20,
+                        POOL_WALLET_USDT_ERC20: process.env.POOL_WALLET_USDT_ERC20 };
             for (const k of Object.keys(s)) if (!s[k]) delete s[k];
             require("fs").writeFileSync(`${process.env.RUNNER_TEMP}/secrets.json`, JSON.stringify(s), { mode: 0o600 });'
         env:
@@ -56,6 +60,10 @@ jobs:
           NOWPAYMENTS_API_KEY: ${{ secrets.NOWPAYMENTS_API_KEY }}
           NOWPAYMENTS_IPN_SECRET: ${{ secrets.NOWPAYMENTS_IPN_SECRET }}
           BUNNY_TOKEN_KEY: ${{ secrets.BUNNY_TOKEN_KEY }}
+          POOL_WALLET_USDC_POLYGON: ${{ secrets.POOL_WALLET_USDC_POLYGON }}
+          POOL_WALLET_USDT_TRC20: ${{ secrets.POOL_WALLET_USDT_TRC20 }}
+          POOL_WALLET_USDC_ERC20: ${{ secrets.POOL_WALLET_USDC_ERC20 }}
+          POOL_WALLET_USDT_ERC20: ${{ secrets.POOL_WALLET_USDT_ERC20 }}
       - name: Deploy
         run: npx opennextjs-cloudflare deploy -- --secrets-file "$RUNNER_TEMP/secrets.json"
       - name: Remove secrets file
