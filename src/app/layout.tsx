@@ -11,6 +11,14 @@ const sans = Inter({ subsets: ["latin"], variable: "--font-sans", display: "swap
 export const metadata: Metadata = {
   title: { default: `${brand.name} · Learn to read the race`, template: `%s · ${brand.name}` },
   description: `Horse racing education and race-day tip videos, hosted by ${brand.host.name}, our paddock guide.`,
+  metadataBase: new URL(`https://${brand.domain}`),
+  openGraph: {
+    type: "website",
+    siteName: brand.name,
+    title: `${brand.name} · Learn to read the race`,
+    description: "Learn to study form, judge the going and manage your stake, with race-day breakdowns before the off.",
+  },
+  twitter: { card: "summary_large_image" },
 };
 
 export const viewport: Viewport = { themeColor: "#06140f", width: "device-width", initialScale: 1 };
