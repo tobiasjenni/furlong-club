@@ -10,10 +10,10 @@ const lifetimes: Record<TokenType, number> = {
 const hash = (token: string) => crypto.createHash("sha256").update(token).digest("hex");
 
 // Only the hash is stored, so a database leak doesn't expose usable links.
-export async function issueToken(userId: string, type: TokenType) {
+export async function issueToken(userId: string, type: TokenType, ttlMs = lifetimes[type]) {
   await db.authToken.deleteMany({ where: { userId, type, usedAt: null } });
   const token = crypto.randomBytes(32).toString("base64url");
-  await db.authToken.create({ data: { userId, type, tokenHash: hash(token), expiresAt: new Date(Date.now() + lifetimes[type]) } });
+  await db.authToken.create({ data: { userId, type, tokenHash: hash(token), expiresAt: new Date(Date.now() + ttlMs) } });
   return token;
 }
 

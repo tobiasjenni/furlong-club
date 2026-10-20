@@ -12,7 +12,8 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
   const user = await requireUser();
   const { welcome } = await searchParams;
   const sub = await activeSubscription(user.id);
-  const tier = sub?.plan.tier ?? 0;
+  // Admins can preview every video.
+  const tier = user.role === "ADMIN" ? Infinity : sub?.plan.tier ?? 0;
   const latest = await db.video.findMany({ where: { published: true }, orderBy: { publishedAt: "desc" }, take: 3 });
 
   return (

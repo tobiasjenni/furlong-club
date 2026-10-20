@@ -44,7 +44,7 @@ With `EMAIL_PROVIDER=console`, verification and reset links are printed in the s
 - Postgres (Neon, Supabase, RDS) and hosting (Vercel or any Node host)
 - `PAYMENT_PROVIDER=nowpayments` with API key and IPN secret; set `APP_URL` to the public URL
 - Private video hosting (Vimeo private embeds, Bunny Stream or Mux signed URLs) so paid videos can't be shared
-- Resend account and a verified sending domain (`EMAIL_PROVIDER=resend`)
+- Resend account and a verified sending domain (`RESEND_API_KEY`)
 - Bunny Stream library with token authentication on (`BUNNY_LIBRARY_ID`, `BUNNY_TOKEN_KEY`)
 - `CRON_SECRET` set and the daily job scheduled
 - Replace placeholder legal pages with reviewed text
@@ -69,7 +69,7 @@ GitHub repository secrets (Settings → Secrets and variables → Actions):
 | `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD` | First admin login |
 | `RESEND_API_KEY`, `NOWPAYMENTS_API_KEY`, `NOWPAYMENTS_IPN_SECRET`, `BUNNY_TOKEN_KEY` | Optional, once those accounts exist |
 
-Non-secret settings live in `wrangler.jsonc` under `vars`. While `PAYMENT_PROVIDER` is `mock`, a "Test mode" banner shows on every page and no real crypto moves. To go live with payments, switch it to `nowpayments` and set `EMAIL_PROVIDER` to `resend`. Until email is set up, admins can confirm a member's email by hand on the user page.
+Non-secret settings live in `wrangler.jsonc` under `vars`. While `PAYMENT_PROVIDER` is `mock`, a "Test mode" banner shows on every page and no real crypto moves. To go live with payments, switch it to `nowpayments`. Emails go out through Resend as soon as the `RESEND_API_KEY` secret exists. Until then, admins can confirm emails by hand and get invite and reset links to pass on themselves.
 
 The Worker needs the Workers Paid plan ($5/month), because password hashing and the database engine use more CPU per request than the free plan's 10 ms allows. `.github/workflows/daily.yml` calls the daily job (renewal reminders, clean-up) every morning.
 

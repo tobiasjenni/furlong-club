@@ -19,6 +19,7 @@ export function VideoCard({ video, locked }: { video: Video; locked: boolean }) 
           )}
         </span>
         <span className="absolute bottom-2 right-2 rounded bg-black/60 px-1.5 py-0.5 text-xs">{video.durationMin} min</span>
+        {!video.bunnyVideoId && !video.embedUrl && <span className="absolute left-2 top-2 rounded bg-black/60 px-1.5 py-0.5 text-xs text-gold-300">Coming soon</span>}
       </div>
       <div className="flex flex-1 flex-col p-4">
         <div className="flex items-center gap-2 text-xs">

@@ -164,3 +164,19 @@ export async function closeAccount(_: FormState, form: FormData): Promise<FormSt
   await revokeSessions(user.id);
   redirect("/?closed=1");
 }
+
+export async function changeEmail(_: FormState, form: FormData): Promise<FormState> {
+  const user = await requireUser();
+  if (!rateLimit(`email-change:${user.id}`, 5, 60 * 60 * 1000)) return { error: "Too many attempts, try again later." };
+  const parsed = z.string().trim().toLowerCase().email("Please enter a valid email").max(254).safeParse(form.get("email"));
+  if (!parsed.success) return { error: parsed.error.issues[0].message };
+  const email = parsed.data;
+  if (email === user.email) return { error: "That's already your email." };
+  if (!(await bcrypt.compare(String(form.get("password") ?? ""), user.passwordHash))) return { error: "Password is incorrect." };
+  if (await db.user.findUnique({ where: { email } })) return { error: "That email is already used by another account." };
+  await db.user.update({ where: { id: user.id }, data: { email, emailVerifiedAt: null } });
+  await audit(user.id, "user.email_changed", user.id, { from: user.email, to: email });
+  await sendVerification({ id: user.id, email }).catch((err) => console.error("verification email failed", err));
+  await revokeSessions(user.id, true);
+  return { ok: `Email changed. We've sent a confirmation link to ${email}.` };
+}

@@ -16,7 +16,6 @@
     "DATABASE_DRIVER": "neon-http",
     "PAYMENT_PROVIDER": "mock",
     "ALLOW_MOCK_PAYMENTS": "true",
-    "EMAIL_PROVIDER": "console",
     "WALLET_ENABLED": "false"
   }
 }

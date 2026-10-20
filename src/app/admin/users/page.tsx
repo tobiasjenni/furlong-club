@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { date } from "@/lib/format";
+import { InviteForm } from "./AdminForms";
 
 export default async function AdminUsers({ searchParams }: { searchParams: Promise<{ q?: string; filter?: string; page?: string }> }) {
   const { q = "", filter = "all", page = "1" } = await searchParams;
@@ -32,6 +33,7 @@ export default async function AdminUsers({ searchParams }: { searchParams: Promi
 
   return (
     <div className="space-y-4">
+      <InviteForm />
       <form className="flex flex-col gap-2 sm:flex-row">
         <input name="q" defaultValue={q} placeholder="Search email, name or tag" className="input sm:max-w-sm" />
         <select name="filter" defaultValue={filter} className="input sm:max-w-[200px]">
@@ -40,7 +42,22 @@ export default async function AdminUsers({ searchParams }: { searchParams: Promi
         <button className="btn-gold">Search</button>
         <a href="/admin/users/export" className="btn-ghost">Export all (CSV)</a>
       </form>
-      <div className="card overflow-x-auto p-0 sm:p-0">
+      <ul className="space-y-2 md:hidden">
+        {users.map((u) => (
+          <li key={u.id}>
+            <Link href={`/admin/users/${u.id}`} className="card block p-4 sm:p-4">
+              <div className="flex items-center justify-between gap-2">
+                <span className="truncate font-semibold text-gold-300">{u.email}</span>
+                <span className={`badge shrink-0 ${u.status === "ACTIVE" ? "bg-emerald-500/15 text-emerald-300" : "bg-red-500/15 text-red-300"}`}>{u.status.toLowerCase()}</span>
+              </div>
+              <p className="muted mt-1 text-sm">
+                {u.name ?? "No name"} · {u.subscriptions[0]?.plan.name ?? "Free"}{u.role === "ADMIN" ? " · admin" : ""} · joined {date(u.createdAt)}
+              </p>
+            </Link>
+          </li>
+        ))}
+      </ul>
+      <div className="card hidden overflow-x-auto p-0 sm:p-0 md:block">
         <table className="table">
           <thead><tr><th>Email</th><th>Name</th><th>Plan</th><th>Tags</th><th>Status</th><th>Joined</th><th>Last login</th></tr></thead>
           <tbody>

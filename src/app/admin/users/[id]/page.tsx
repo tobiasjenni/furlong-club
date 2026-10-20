@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
-import { addNote, cancelSubscription, confirmEmail, grantPlan, updateUser } from "@/app/actions/admin";
+import { addNote, cancelSubscription, confirmEmail, grantPlan, signOutUser, updateUser } from "@/app/actions/admin";
+import { ResetLinkForm } from "../AdminForms";
 import { db } from "@/lib/db";
 import { date, dateTime, usd } from "@/lib/format";
 
@@ -48,6 +49,14 @@ export default async function AdminUser({ params }: { params: Promise<{ id: stri
           <div><label className="label">Tags (comma separated)</label><input name="tags" defaultValue={user.tags.join(", ")} className="input" placeholder="vip, uk, referral" /></div>
           <button className="btn-gold">Save</button>
         </form>
+        <div className="card space-y-3">
+          <h3 className="text-lg">Access & security</h3>
+          <ResetLinkForm userId={user.id} />
+          <form action={signOutUser}>
+            <input type="hidden" name="userId" value={user.id} />
+            <button className="btn-ghost w-full">Sign out of all devices</button>
+          </form>
+        </div>
         <form action={grantPlan} className="card space-y-3">
           <h3 className="text-lg">Grant access</h3>
           <input type="hidden" name="userId" value={user.id} />
