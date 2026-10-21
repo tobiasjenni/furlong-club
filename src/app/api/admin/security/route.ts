@@ -5,7 +5,7 @@ import { decodeJwt } from "jose";
 import { generateAuthenticationOptions, generateRegistrationOptions, verifyAuthenticationResponse, verifyRegistrationResponse,
   type AuthenticationResponseJSON, type RegistrationResponseJSON, type AuthenticatorTransport } from "@simplewebauthn/server";
 import { currentUser, adminConfirmed, startSession } from "@/lib/auth";
-import { ADMIN_COOKIE, ADMIN_CONFIRMATION_SECONDS, ADMIN_PASSWORD_COOKIE, sessionFingerprint, signAdminConfirmation, signAdminPassword, verifyAdminPassword } from "@/lib/admin-session";
+import { ADMIN_COOKIE, ADMIN_CONFIRMATION_SECONDS, ADMIN_PASSWORD_COOKIE, sessionFingerprint, signAdminConfirmation, signAdminReauthenticationGrant, verifyAdminReauthenticationGrant } from "@/lib/admin-session";
 import { SESSION_COOKIE, sessionCookieOptions } from "@/lib/session";
 import { db } from "@/lib/db";
 import { isAdmin } from "@/lib/roles";
@@ -23,7 +23,7 @@ export async function POST(request: Request) {
   if (!user || !isAdmin(user.role)) return response({ error: "Admin access required." }, 403);
   const store = await cookies();
   const session = store.get(SESSION_COOKIE)?.value;
-  if (!session || !await verifyAdminPassword(store.get(ADMIN_PASSWORD_COOKIE)?.value, user, session)) return response({ error: "Confirm your password again before continuing.", reauthenticate: true }, 401);
+  if (!session || !await verifyAdminReauthenticationGrant(store.get(ADMIN_PASSWORD_COOKIE)?.value, user, session)) return response({ error: "Confirm your password again before continuing.", reauthenticate: true }, 401);
   // The token was verified above. Keep its original deadline when rebinding after
   // a security change; repeated device changes must not extend password freshness.
   const passwordDeadline = Number(decodeJwt(store.get(ADMIN_PASSWORD_COOKIE)!.value).exp);
@@ -42,7 +42,7 @@ export async function POST(request: Request) {
     const token = (await cookies()).get(SESSION_COOKIE)?.value;
     if (!token) return response({ error: "Sign in again." }, 401);
     const remaining = Math.floor(passwordDeadline - Date.now() / 1000);
-    if (changed && remaining > 0) (await cookies()).set(ADMIN_PASSWORD_COOKIE, await signAdminPassword(fresh, token, remaining), { ...sessionCookieOptions, maxAge: remaining });
+    if (changed && remaining > 0) (await cookies()).set(ADMIN_PASSWORD_COOKIE, await signAdminReauthenticationGrant(fresh, token, remaining), { ...sessionCookieOptions, maxAge: remaining });
     if (grant) (await cookies()).set(ADMIN_COOKIE, await signAdminConfirmation(fresh, token, factor), { ...sessionCookieOptions, maxAge: ADMIN_CONFIRMATION_SECONDS });
     return response({ ok: true, needsVerification: !grant, ...(codes ? { recoveryCodes: codes } : {}) });
   };

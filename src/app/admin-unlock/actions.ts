@@ -3,7 +3,7 @@ import crypto from "node:crypto";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
-import { ADMIN_PASSWORD_COOKIE, ADMIN_PASSWORD_SECONDS, signAdminPassword } from "@/lib/admin-session";
+import { ADMIN_PASSWORD_COOKIE, ADMIN_PASSWORD_SECONDS, signAdminReauthenticationGrant } from "@/lib/admin-session";
 import { SESSION_COOKIE, sessionCookieOptions } from "@/lib/session";
 import { isAdmin } from "@/lib/roles";
 import { matchesPassword } from "@/lib/passwords";
@@ -22,6 +22,6 @@ export async function unlockAdmin(_: FormState, form: FormData): Promise<FormSta
   const store = await cookies();
   const session = store.get(SESSION_COOKIE)?.value;
   if (!session) redirect("/login");
-  store.set(ADMIN_PASSWORD_COOKIE, await signAdminPassword(user, session), { ...sessionCookieOptions, maxAge: ADMIN_PASSWORD_SECONDS });
+  store.set(ADMIN_PASSWORD_COOKIE, await signAdminReauthenticationGrant(user, session), { ...sessionCookieOptions, maxAge: ADMIN_PASSWORD_SECONDS });
   redirect(`/admin-unlock/security?next=${encodeURIComponent(safeAdminNext(form.get("next")))}`);
 }

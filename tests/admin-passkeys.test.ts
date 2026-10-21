@@ -25,11 +25,11 @@ vi.mock("@/lib/db", () => ({ db: {
 import { POST } from "@/app/api/admin/security/route";
 import { requireAdmin } from "@/lib/auth";
 import { signSession, SESSION_COOKIE } from "@/lib/session";
-import { ADMIN_COOKIE, ADMIN_PASSWORD_COOKIE, signAdminPassword, verifyAdminConfirmation } from "@/lib/admin-session";
+import { ADMIN_COOKIE, ADMIN_PASSWORD_COOKIE, signAdminReauthenticationGrant, verifyAdminConfirmation } from "@/lib/admin-session";
 import { unlockAdmin } from "@/app/admin-unlock/actions";
 
 async function user() { return (await pg.query<{ id: string; sessionVersion: number }>('SELECT * FROM "User" WHERE id=$1', [uid])).rows[0]; }
-async function passwordGrant() { store.set(ADMIN_PASSWORD_COOKIE, { value: await signAdminPassword(await user(), store.get(SESSION_COOKIE)!.value) }); }
+async function passwordGrant() { store.set(ADMIN_PASSWORD_COOKIE, { value: await signAdminReauthenticationGrant(await user(), store.get(SESSION_COOKIE)!.value) }); }
 const post = (input: object, origin = "https://club.test") => POST(new Request("https://club.test/api/admin/security", { method: "POST", headers: { "Content-Type": "application/json", Origin: origin }, body: JSON.stringify(input) }));
 const options = async (kind = "register") => { const r = await post({ action: "options", kind }); expect(r.status).toBe(200); return r.json(); };
 async function enroll() {
@@ -136,7 +136,7 @@ it("does not accept a password grant or an old password-only confirmation as the
   expect(await verifyAdminConfirmation(old, account, session)).toBe(false);
 });
 it("preserves the password deadline when changing security settings", async () => {
-  store.set(ADMIN_PASSWORD_COOKIE, { value: await signAdminPassword(await user(), store.get(SESSION_COOKIE)!.value, 25) });
+  store.set(ADMIN_PASSWORD_COOKIE, { value: await signAdminReauthenticationGrant(await user(), store.get(SESSION_COOKIE)!.value, 25) });
   const deadline = decodeJwt(store.get(ADMIN_PASSWORD_COOKIE)!.value).exp!;
   await enroll();
   expect(decodeJwt(store.get(ADMIN_PASSWORD_COOKIE)!.value).exp).toBeLessThanOrEqual(deadline);
