@@ -24,7 +24,7 @@ export default async function AccountPage() {
     <div className="container-page space-y-6 py-10">
       <h1 className="text-3xl md:text-4xl">Account</h1>
       <TradingSummary userId={user.id} />
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 lg:grid-cols-3">
         <div className="card"><h2 className="mb-4 text-xl">Profile</h2><p className="muted mb-4 text-sm">{user.email} · {user.emailVerifiedAt ? "confirmed" : "not confirmed yet"}</p><ProfileForm name={user.name ?? ""} country={user.country ?? ""} marketing={user.marketingOptIn} /></div>
         <div className="card"><h2 className="mb-4 text-xl">Email</h2>{user.role === "USER" ? <EmailForm email={user.email} /> : <p className="muted text-sm">Admin email changes require a verified ownership review. Contact the owner before changing this address.</p>}</div>
         <div className="card"><h2 className="mb-4 text-xl">Password</h2><PasswordForm /></div>

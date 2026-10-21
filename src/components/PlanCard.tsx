@@ -8,9 +8,9 @@ export function PlanCard({ plan, highlight = false, cta, availableVideos }: { pl
       {highlight && <span className="badge mb-3 w-fit bg-gold-400 text-turf-950">Recommended</span>}
       <h3 className="text-2xl">{plan.name}</h3>
       <p className="muted mt-1 text-sm">{plan.tagline}</p>
-      <p className="mt-5 flex items-baseline gap-1">
+      <p className="mt-5 flex flex-wrap items-baseline gap-x-2 gap-y-1">
         <span className="font-display text-4xl">{plan.priceCents === 0 ? "Free" : usd(plan.priceCents)}</span>
-        {plan.priceCents > 0 && <span className="muted text-sm">/ {plan.intervalDays} days</span>}
+        {plan.priceCents > 0 && <span className="muted whitespace-nowrap text-sm">/ {plan.intervalDays} days</span>}
       </p>
       {plan.priceCents > 0 && <p className="muted mt-1 text-xs">One payment · No automatic renewal</p>}
       {availableVideos !== undefined && <p className={`mt-3 text-xs ${availableVideos ? "text-emerald-300" : "text-gold-300"}`}>{availableVideos ? `${availableVideos} video${availableVideos === 1 ? "" : "s"} ready to watch` : "Video library in preparation"}</p>}

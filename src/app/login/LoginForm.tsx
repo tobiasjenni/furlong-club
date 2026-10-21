@@ -1,31 +1,28 @@
 "use client";
 import Link from "next/link";
-import { useActionState } from "react";
+import { PasswordInput } from "@/components/PasswordInput";
+import { useActionState, useState } from "react";
 import { login } from "@/app/actions/auth";
 import { FormMessage } from "@/components/FormMessage";
 import { SubmitButton } from "@/components/SubmitButton";
 
 export function LoginForm({ next, notice }: { next?: string; notice?: string }) {
-  const [state, action] = useActionState(login, null);
+  const [state, action, pending] = useActionState(login, null);
+  const [email, setEmail] = useState("");
   return (
-    <form action={action} className="space-y-4">
+    <form action={action} className="space-y-4" aria-busy={pending}>
       {notice && !state && <FormMessage state={{ ok: notice }} />}
       <input type="hidden" name="next" value={next ?? ""} />
       <div>
         <label className="label" htmlFor="email">Email</label>
-        <input className="input" id="email" name="email" type="email" autoComplete="email" required />
+        <input className="input" id="email" name="email" type="email" autoComplete="username" inputMode="email" autoCapitalize="none" spellCheck={false} maxLength={254} value={email} onChange={event => setEmail(event.target.value)} required />
       </div>
-      <div>
-        <div className="flex items-baseline justify-between">
-          <label className="label" htmlFor="password">Password</label>
-          <Link href="/forgot-password" className="text-xs text-gold-300 hover:underline">Forgot password?</Link>
-        </div>
-        <input className="input" id="password" name="password" type="password" autoComplete="current-password" required />
-      </div>
+      <PasswordInput id="password" name="password" label="Password" autoComplete="current-password" required />
+      <p className="text-right"><Link href="/forgot-password" className="text-xs text-gold-300 hover:underline">Forgot password?</Link></p>
       <FormMessage state={state} />
-      <SubmitButton>Sign in</SubmitButton>
+      <SubmitButton pendingLabel="Signing in…">Sign in</SubmitButton>
       <p className="muted text-center text-sm">
-        New here? <Link href="/signup" className="text-gold-300 hover:underline">Create a free account</Link>
+        New here? <Link href={next ? `/signup?next=${encodeURIComponent(next)}` : "/signup"} className="text-gold-300 hover:underline">Create a free account</Link>
       </p>
     </form>
   );

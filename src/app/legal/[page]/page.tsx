@@ -11,7 +11,6 @@ const pages: Record<string, { title: string; body: string[] }> = {
       "Paid plans provide 33 days of access with a one-off payment and no automatic renewal. New access starts when the purchase is confirmed; buying the same active plan extends its current expiry. Approved deposits add USD club credit, which you can use to buy a plan. Blockchain transfers cannot be reversed by the site; contact support about payment errors, refund requests and any applicable statutory rights.",
       `${brand.name} does not place bets on your behalf and does not hold funds for betting.`,
       "Trading with Harry is a proposal with unfinished terms. Real trading enrollment is closed. The proposed 2–3% daily target is unverified and not guaranteed. Trading can lose some or all of the principal. The proposed 33-day lock begins on admin approval; any payout is based on actual recorded results and processed manually after maturity. No automated trading or payout is provided by this website.",
-      `${brand.host.name} is the host of ${brand.name}. The current site portrait is an AI-generated illustration, not a photograph.`,
     ],
   },
   privacy: {

@@ -10,22 +10,22 @@ import { db } from "@/lib/db";
 import { emailDelivers, passwordChangedMessage, resetPasswordMessage, sendEmail, verifyEmailMessage } from "@/lib/email";
 import { rateLimit } from "@/lib/rate-limit";
 import { clientIp, safeNext } from "@/lib/request";
+import { newPasswordSchema, passwordSchema } from "@/lib/passwords";
+import type { Role } from "@prisma/client";
 import { consumeToken, issueToken } from "@/lib/tokens";
 
 export type FormState = { error?: string; ok?: string } | null;
 
-const password = z.string().min(10, "Password must be at least 10 characters").max(72, "Password is too long")
-  .refine(value => Buffer.byteLength(value, "utf8") <= 72, "Password must fit within 72 UTF-8 bytes");
-
 const signupSchema = z.object({
   name: z.string().trim().min(1, "Please enter your name").max(80),
   email: z.string().trim().toLowerCase().email("Please enter a valid email").max(254),
-  password,
+  password: passwordSchema,
+  passwordConfirm: z.string({ required_error: "Please confirm your password" }).min(1, "Please confirm your password"),
   country: z.string().trim().max(60).optional(),
   age: z.literal("on", { errorMap: () => ({ message: "You must confirm you are 18 or over" }) }),
   terms: z.literal("on", { errorMap: () => ({ message: "Please accept the terms" }) }),
   marketing: z.string().optional(),
-});
+}).refine(value => value.password === value.passwordConfirm, { path: ["passwordConfirm"], message: "Passwords do not match. Enter the same password again." });
 
 // Used when the email is unknown, so a failed login takes as long as a real one and doesn't reveal which emails exist.
 // A fixed cost-12 hash of a random string, so the comparison costs the same as a real one.
@@ -44,7 +44,8 @@ export async function signup(_: FormState, form: FormData): Promise<FormState> {
 
   if (await db.user.findUnique({ where: { email } })) return { error: "An account with this email already exists. Try signing in." };
 
-  const user = await db.user.create({
+  let user;
+  try { user = await db.user.create({
     data: {
       name,
       email,
@@ -55,20 +56,26 @@ export async function signup(_: FormState, form: FormData): Promise<FormState> {
       lastLoginAt: new Date(),
     },
   });
+  } catch (error) {
+    if (error && typeof error === "object" && "code" in error && error.code === "P2002") return { error: "An account with this email already exists. Sign in or use password recovery." };
+    console.error("Account creation could not be completed");
+    return { error: "We could not create your account right now. Please try again." };
+  }
   await audit(user.id, "user.signup", user.id);
-  await sendVerification(user).catch((err) => console.error("verification email failed", err));
+  await sendVerification(user).catch(() => console.error("verification email failed"));
   await startSession(user);
-  redirect("/dashboard?welcome=1");
+  redirect(safeNext(form.get("next"),"/dashboard?welcome=1"));
 }
 
 export async function login(_: FormState, form: FormData): Promise<FormState> {
-  const email = String(form.get("email") ?? "").trim().toLowerCase().slice(0, 254);
-  const pass = String(form.get("password") ?? "").slice(0, 200);
+  const email = String(form.get("email") ?? "").trim().toLowerCase();
+  const pass = String(form.get("password") ?? "");
   const ip = await clientIp();
   if (!await rateLimit(`login-ip:${ip}`, 30, 15 * 60 * 1000) || !await rateLimit(`login:${email}`, 8, 15 * 60 * 1000)) {
     return { error: "Too many attempts, try again in 15 minutes." };
   }
 
+  if (!z.string().email().max(254).safeParse(email).success || !pass || new TextEncoder().encode(pass).length > 72) return { error: "Email or password is incorrect." };
   const user = await db.user.findUnique({ where: { email } });
   const valid = await bcrypt.compare(pass, user?.passwordHash ?? DUMMY_HASH);
   if (!user || !valid) {
@@ -78,9 +85,10 @@ export async function login(_: FormState, form: FormData): Promise<FormState> {
   if (user.status === "SUSPENDED") return { error: "This account is suspended. Please contact support." };
   if (user.status === "CLOSED") return { error: "This account has been closed. Contact support if you'd like it reopened." };
 
-  await db.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } });
+  const signedIn = await db.$queryRaw<{ id: string; role: Role; sessionVersion: number }[]>`UPDATE "User" SET "lastLoginAt"=(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),"updatedAt"=(CURRENT_TIMESTAMP AT TIME ZONE 'UTC') WHERE id=${user.id} AND status='ACTIVE' AND "passwordHash"=${user.passwordHash} AND "sessionVersion"=${user.sessionVersion} RETURNING id,role,"sessionVersion"`;
+  if (!signedIn[0]) return { error: "Your account changed during sign-in. Please try again." };
   await audit(user.id, "user.login", user.id, { ip });
-  await startSession(user);
+  await startSession(signedIn[0]);
   redirect(safeNext(form.get("next")));
 }
 
@@ -100,23 +108,26 @@ export async function resendVerification(_: FormState): Promise<FormState> {
 
 export async function requestPasswordReset(_: FormState, form: FormData): Promise<FormState> {
   if (!emailDelivers()) return { error: "Email recovery is currently unavailable. Please contact support@furlong.club for help." };
-  const email = String(form.get("email") ?? "").trim().toLowerCase().slice(0, 254);
+  const email = String(form.get("email") ?? "").trim().toLowerCase();
   const sent = { ok: "If an account exists for that email, we've sent a reset link. It's valid for one hour." };
   if (!await rateLimit(`reset-ip:${await clientIp()}`, 10, 60 * 60 * 1000) || !await rateLimit(`reset:${email}`, 3, 60 * 60 * 1000)) return sent;
+  if (!z.string().email().max(254).safeParse(email).success) return sent;
   const user = await db.user.findUnique({ where: { email } });
   if (user && user.status === "ACTIVE") {
-    const token = await issueToken(user.id, "RESET_PASSWORD",undefined,user.email);
-    await sendEmail(resetPasswordMessage(user.email, token)).catch((err) => console.error("reset email failed", err));
-    await audit(user.id, "user.password_reset_requested", user.id);
+    try {
+      const token = await issueToken(user.id, "RESET_PASSWORD",undefined,user.email);
+      await sendEmail(resetPasswordMessage(user.email, token));
+      await audit(user.id, "user.password_reset_requested", user.id);
+    } catch { console.error("Password recovery could not be delivered"); }
   }
   return sent;
 }
 
 export async function resetPassword(_: FormState, form: FormData): Promise<FormState> {
-  const parsed = password.safeParse(form.get("password"));
+  const parsed = newPasswordSchema.safeParse(Object.fromEntries(form));
   if (!parsed.success) return { error: parsed.error.issues[0].message };
   if (!await rateLimit(`reset-consume:${await clientIp()}`,10,15*60*1000)) return { error: "Too many attempts. Try again later." };
-  const userId = await consumeToken(String(form.get("token") ?? ""), "RESET_PASSWORD", await bcrypt.hash(parsed.data,12));
+  const userId = await consumeToken(String(form.get("token") ?? ""), "RESET_PASSWORD", await bcrypt.hash(parsed.data.password,12));
   if (!userId) return { error: "This reset link is invalid or has expired. Please request a new one." };
   const user = await db.user.findUniqueOrThrow({ where: { id: userId } });
   await endSession();
@@ -139,10 +150,10 @@ export async function updateProfile(_: FormState, form: FormData): Promise<FormS
 export async function changePassword(_: FormState, form: FormData): Promise<FormState> {
   const user = await requireUser();
   if (!await rateLimit(`pw:${user.id}`, 5, 15 * 60 * 1000)) return { error: "Too many attempts, try again later." };
-  const parsed = password.safeParse(form.get("next"));
+  const parsed = newPasswordSchema.safeParse({ password: form.get("next"), passwordConfirm: form.get("nextConfirm") });
   if (!parsed.success) return { error: parsed.error.issues[0].message };
   if (!(await bcrypt.compare(String(form.get("current") ?? ""), user.passwordHash))) return { error: "Current password is incorrect." };
-  const changed = await db.$queryRaw<{ changed: boolean }[]>`SELECT auth_change_password(${user.id},${user.passwordHash},${await bcrypt.hash(parsed.data,12)}) AS changed`;
+  const changed = await db.$queryRaw<{ changed: boolean }[]>`SELECT auth_change_password(${user.id},${user.passwordHash},${await bcrypt.hash(parsed.data.password,12)}) AS changed`;
   if (!changed[0]?.changed) return { error: "Your account changed. Sign in again and retry." };
   await audit(user.id, "user.password_changed", user.id);
   await startSession(await db.user.findUniqueOrThrow({ where: { id: user.id } }));

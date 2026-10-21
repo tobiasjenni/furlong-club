@@ -15,11 +15,11 @@ export function SiteFooter() {
             risk and you can lose the money you stake. Only bet what you can afford to lose.
           </p>
           <p className="muted max-w-md">
-            {brand.host.name} is the host of {brand.name}. The current portrait is an AI-generated illustration.
+            {brand.host.name} brings more than 40 years of experience reading horses and riders to {brand.name}.
           </p>
         </div>
         <div className="space-y-2">
-          <p className="font-semibold text-cream">Company</p>
+          <p className="font-semibold text-cream">The club</p>
           <Link href={brand.host.page} className="muted block hover:text-gold-300">Meet {brand.host.first}</Link>
           <Link href="/trading" className="muted block hover:text-gold-300">Trading with Harry</Link>
           <Link href="/plans" className="muted block hover:text-gold-300">Plans</Link>

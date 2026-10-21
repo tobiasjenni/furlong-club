@@ -11,13 +11,13 @@ const sans = Inter({ subsets: ["latin"], variable: "--font-sans", display: "swap
 
 export const metadata: Metadata = {
   title: { default: `${brand.name} · Learn to read the race`, template: `%s · ${brand.name}` },
-  description: `Horse racing education and race-day tip videos, hosted by ${brand.host.name}, our paddock guide.`,
+  description: `Horse racing education with ${brand.host.name}, drawing on over 40 years of experience reading horses and riders.`,
   metadataBase: new URL(`https://${brand.domain}`),
   openGraph: {
     type: "website",
     siteName: brand.name,
     title: `${brand.name} · Learn to read the race`,
-    description: "Learn to study form, judge the going and manage your stake, with race-day breakdowns before the off.",
+    description: "Read horses, understand riders and study the form with Harry Whitcombe’s 40+ years of racing experience.",
   },
   twitter: { card: "summary_large_image" },
 };
@@ -33,8 +33,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             Wallet test site · All balances and payments are simulated. Do not send real cryptocurrency.
           </div>
         )}
+        <a href="#main-content" className="fixed left-4 top-3 z-50 -translate-y-24 rounded-xl bg-gold-400 px-5 py-3 font-semibold text-turf-950 transition-transform focus:translate-y-0">Skip to content</a>
         <SiteHeader />
-        <main className="flex-1">{children}</main>
+        <main id="main-content" tabIndex={-1} className="min-w-0 flex-1">{children}</main>
         <SiteFooter />
       </body>
     </html>

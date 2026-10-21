@@ -12,7 +12,7 @@ describe("safeNext", () => {
   it("keeps same-site paths", () => {
     expect(safeNext("/videos/abc")).toBe("/videos/abc");
   });
-  it.each(["//evil.com", "/\\evil.com", "https://evil.com", "javascript:alert(1)", "", undefined])("rejects %s", (v) => {
+  it.each(["//evil.com", "/\\evil.com", "https://evil.com", "javascript:alert(1)", "/\n/evil.com", "/a/..//evil.com", "/%5cevil.com", "/%0d%0aevil.com", "/login?next=/login", "/signup", "", undefined])("rejects %s", (v) => {
     expect(safeNext(v)).toBe("/dashboard");
   });
 });
