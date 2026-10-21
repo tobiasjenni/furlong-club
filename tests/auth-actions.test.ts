@@ -116,3 +116,17 @@ it("resets through the real action atomically and rejects reuse",async()=>{
   const user=(await pg.query<{passwordHash:string;sessionVersion:number}>(`SELECT "passwordHash","sessionVersion" FROM "User" WHERE id=$1`,[current.id])).rows[0];
   expect(await bcrypt.compare('replacement-password',user.passwordHash)).toBe(true);expect(user.sessionVersion).toBe(1);
 });
+
+it("automatically emails a new member a single-use link that confirms only that account", async () => {
+  const data = registration();
+  const email = String(data.get('email'));
+  await expect(signup(null, data)).rejects.toThrow('REDIRECT:/dashboard?welcome=1');
+  const user = (await pg.query<{id:string;emailVerifiedAt:Date|null}>(`SELECT id,"emailVerifiedAt" FROM "User" WHERE email=$1`, [email])).rows[0];
+  expect(user.emailVerifiedAt).toBeNull();
+  expect(messages).toHaveLength(1);
+  expect(messages[0].to).toBe(email);
+  expect(messages[0].token).toMatch(/^[A-Za-z0-9_-]{43}$/);
+  expect(await consumeToken(messages[0].token!, 'VERIFY_EMAIL')).toBe(user.id);
+  expect(await consumeToken(messages[0].token!, 'VERIFY_EMAIL')).toBeNull();
+  expect((await pg.query<{emailVerifiedAt:Date|null}>(`SELECT "emailVerifiedAt" FROM "User" WHERE id=$1`, [user.id])).rows[0].emailVerifiedAt).not.toBeNull();
+});
