@@ -6,7 +6,7 @@ The owner confirms Harry Whitcombe is a real person. Site copy reflects that con
 
 Real enrollment is **closed**. Both production `TRADING_REQUESTS_ENABLED=false` and the database `TradingProgram.enrollmentEnabled=false` prevent requests and approvals. There is no public or admin launch toggle. The isolated test deployment enables both gates for simulated funds. Existing obligations can still be settled if enrollment is later paused. The website does not execute trades, sign transactions, store private keys or send crypto.
 
-The public proposal shows a $500–$10,000 range, a 33-day lock from admin approval, and a provisional, unverified 2–3% **daily** target. It does not guarantee returns or capital. No target earnings are accrued, compounded or credited. Final commercial terms, operator identity/contact details, strategy, fees, loss handling, compounding and jurisdiction-specific requirements must be defined before opening real enrollment. This document and the software are not a legal or investment compliance review.
+The public proposal shows a $500–$10,000 range, a 33-day lock from admin approval, and owner-proposed, unverified **daily** targets of 1–3% for Form Room and 2–4% for Inner Circle. These are marketing proposals, not contractual rates, forecasts or verified historical performance. It does not guarantee returns or capital. No target earnings are accrued, compounded or credited. Final commercial terms, operator identity/contact details, strategy, fees, loss handling, compounding and jurisdiction-specific requirements must be defined before opening real enrollment. This document and the software are not a legal or investment compliance review.
 
 ## Member flow
 
