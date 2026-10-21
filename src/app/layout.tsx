@@ -17,7 +17,17 @@ export const metadata: Metadata = {
   metadataBase: new URL(siteOrigin),
   applicationName: brand.name,
   category: "Horse racing membership and education",
-  icons: { apple: "/apple-icon.png" },
+  // Explicit links keep icons in the rendered metadata on the Worker adapter,
+  // rather than relying on automatic discovery of app/icon.svg.
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "16x16 32x32 48x48", type: "image/x-icon" },
+      { url: "/favicon-96x96.png", sizes: "96x96", type: "image/png" },
+      { url: "/icon.svg", sizes: "any", type: "image/svg+xml" },
+    ],
+    shortcut: "/favicon.ico",
+    apple: { url: "/apple-icon.png", sizes: "180x180", type: "image/png" },
+  },
 };
 
 export const viewport: Viewport = { themeColor: "#06140f", width: "device-width", initialScale: 1 };

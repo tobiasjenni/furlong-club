@@ -20,11 +20,20 @@ function metadata(html) {
   const value = key => meta.find(tag => tag.name === key || tag.property === key)?.content;
   return { value, canonical: elements(html, "link").find(tag => tag.rel === "canonical")?.href, title: decode(html.match(/<title>([^<]*)<\/title>/i)?.[1]) };
 }
+function checkIcons(html, context) {
+  const head = html.match(/<head\b[^>]*>([\s\S]*?)<\/head>/i)?.[1] || "";
+  const links = elements(head, "link");
+  for (const [href, type, sizes] of [["/favicon.ico", "image/x-icon", "16x16 32x32 48x48"], ["/favicon-96x96.png", "image/png", "96x96"], ["/icon.svg", "image/svg+xml", "any"]]) {
+    check(links.some(link => link.rel === "icon" && link.href === href && link.type === type && link.sizes === sizes), `${context}: missing ${href} icon declaration in head`);
+  }
+  check(links.some(link => link.rel === "apple-touch-icon" && link.href === "/apple-icon.png"), `${context}: missing Apple icon`);
+}
 
 for (const path of publicPaths) {
   const response = await fetchPage(path);
   const html = await response.text();
   const { value, canonical, title } = metadata(html);
+  checkIcons(html, path);
   const expectedUrl = new URL(path, canonicalOrigin).href;
   check(response.status === 200, `${path}: expected HTTP 200`);
   check(title && !titles.has(title), `${path}: missing or duplicate title`);
@@ -50,7 +59,9 @@ for (const path of publicPaths) {
 }
 for (const path of authPaths) {
   const response = await fetchPage(path);
-  const { value, canonical } = metadata(await response.text());
+  const html = await response.text();
+  const { value, canonical } = metadata(html);
+  checkIcons(html, path);
   check(response.status === 200 && /noindex/.test(value("robots")) && /noindex/.test(value("googlebot")), `${path}: missing noindex metadata`);
   check(/noindex/.test(response.headers.get("x-robots-tag")), `${path}: missing noindex header`);
   check(!canonical, `${path}: inherited a public canonical`);
@@ -67,12 +78,24 @@ check(sitemapResponse.ok, "Sitemap is unavailable");
 check(JSON.stringify(locations.slice().sort()) === JSON.stringify((staging ? [] : publicPaths.map(path => new URL(path, canonicalOrigin).href)).sort()), "Sitemap includes the wrong URLs");
 const robots = await (await fetchPage("/robots.txt")).text();
 check(staging ? /Disallow: \/\s*$/.test(robots.trim()) : robots.includes(`${canonicalOrigin}/sitemap.xml`), "Incorrect crawler rules");
-for (const [path, width, height] of [["/social/furlong-club.png", 1200, 630], ["/brand-logo.png", 512, 512], ["/apple-icon.png", 180, 180]]) {
+for (const [path, width, height] of [["/social/furlong-club.png", 1200, 630], ["/brand-logo.png", 512, 512], ["/apple-icon.png", 180, 180], ["/favicon-96x96.png", 96, 96]]) {
   const response = await fetchPage(path);
   const bytes = new Uint8Array(await response.arrayBuffer());
   const view = new DataView(bytes.buffer);
   check(response.ok && response.headers.get("content-type")?.includes("image/png") && bytes.length > 24 && view.getUint32(16) === width && view.getUint32(20) === height, `${path}: incorrect image dimensions or format`);
+  check(staging || !/noindex/i.test(response.headers.get("x-robots-tag") || ""), `${path}: image must be crawlable in production`);
 }
+const ico = await fetchPage("/favicon.ico");
+const icoBytes = new Uint8Array(await ico.arrayBuffer());
+const icoView = new DataView(icoBytes.buffer);
+check(ico.ok && /image\/(?:x-icon|vnd.microsoft.icon)/.test(ico.headers.get("content-type") || "") && icoBytes.length > 54 && icoView.getUint16(0, true) === 0 && icoView.getUint16(2, true) === 1 && icoView.getUint16(4, true) === 3, "Missing or invalid multi-size ICO favicon");
+check(staging || !/noindex/i.test(ico.headers.get("x-robots-tag") || ""), "ICO favicon must be crawlable in production");
+if (icoBytes.length > 54) for (let i = 0; i < 3; i++) check(icoBytes[6 + i * 16] === [16, 32, 48][i] && icoBytes[7 + i * 16] === [16, 32, 48][i], "ICO favicon has incorrect sizes");
+const svg = await fetchPage("/icon.svg");
+check(svg.ok && svg.headers.get("content-type")?.includes("image/svg+xml") && (await svg.text()).includes('viewBox="0 0 64 64"'), "Missing scalable monogram icon");
+check(staging || !/noindex/i.test(svg.headers.get("x-robots-tag") || ""), "Scalable icon must be crawlable in production");
+const browserHome = await fetch(new URL("/", origin), { headers: { "User-Agent": "Mozilla/5.0" }, signal: AbortSignal.timeout(20000) });
+checkIcons(await browserHome.text(), "Browser homepage");
 if (!staging && new URL(origin).hostname === "furlong.club") {
   const response = await fetch("https://www.furlong.club/trading?source=seo-check", { redirect: "manual", signal: AbortSignal.timeout(20000) });
   check(response.status === 308 && response.headers.get("location") === `${canonicalOrigin}/trading?source=seo-check`, "www must permanently redirect to the canonical host and preserve the query");
