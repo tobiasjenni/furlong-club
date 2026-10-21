@@ -55,7 +55,7 @@ for (const path of authPaths) {
   check(/noindex/.test(response.headers.get("x-robots-tag")), `${path}: missing noindex header`);
   check(!canonical, `${path}: inherited a public canonical`);
 }
-for (const path of ["/account", "/dashboard", "/wallet", "/videos", "/checkout/form", "/admin"]) {
+for (const path of ["/account", "/dashboard", "/wallet", "/videos", "/checkout/form", "/admin", "/v2"]) {
   const response = await fetchPage(path);
   check([307, 308].includes(response.status) && /\/login\?/.test(response.headers.get("location")), `${path}: private route must require sign-in`);
   check(/noindex/.test(response.headers.get("x-robots-tag")), `${path}: private redirect lacks noindex`);
@@ -80,4 +80,4 @@ if (!staging && new URL(origin).hostname === "furlong.club") {
   check([301, 308].includes(insecure.status) && insecure.headers.get("location") === `${canonicalOrigin}/trading?source=seo-check`, "HTTP must redirect to HTTPS and preserve the path and query");
 }
 if (failures.length) { for (const failure of failures) console.error(`SEO check failed: ${failure}`); process.exitCode = 1; }
-else console.log(`SEO checks passed: ${publicPaths.length} public pages, ${authPaths.length} auth pages, 6 protected routes, sitemap, crawler rules and image assets.`);
+else console.log(`SEO checks passed: ${publicPaths.length} public pages, ${authPaths.length} auth pages, 7 protected routes, sitemap, crawler rules and image assets.`);

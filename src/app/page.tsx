@@ -1,32 +1,24 @@
-import { TradingOffer } from "@/components/TradingOffer";
 import Link from "next/link";
 import { PlanCard } from "@/components/PlanCard";
 import { HostPortrait } from "@/components/HostPortrait";
-import { brand } from "@/lib/config";
+import { PortalIcon } from "@/components/v2/PortalIcon";
 import { db } from "@/lib/db";
 import { currentUser } from "@/lib/auth";
 import { hasPlayableSource } from "@/lib/video";
 import { usd } from "@/lib/format";
 import { organization, pageMetadata, siteUrl, website } from "@/lib/seo";
 import { JsonLd } from "@/components/JsonLd";
+import "./landing.css";
 
 export const dynamic = "force-dynamic";
 export const metadata = pageMetadata("/");
-
-const steps = [
-  { title: "Join free", body: "Create your Paddock account and explore the club before choosing a paid plan." },
-  { title: "Meet Harry’s approach", body: "Explore Trading with Harry and his experience reading horses and riders. Review the allocation, lock and payout terms." },
-  { title: "Choose Form Room", body: "Trading with Harry is the main planned membership benefit. Enrollment is currently closed; membership and trading capital are paid separately." },
-];
-
 const faqs = [
-  { q: "Is Furlong Club a bookmaker?", a: "No. We teach you how to read a race and share our opinion on the day's cards. This website does not place bets. Trading with Harry is a proposed allocation service with its own terms, described on the trading page; real enrollment is currently closed." },
-  { q: "Who is Harry Whitcombe?", a: "Harry Whitcombe is the host of Furlong Club, bringing more than 40 years of experience reading horses and riders. He helps members look beyond the numbers to understand the horse, the rider and the race in front of them." },
-  { q: "How do I pay?", a: "Add USDT or USDC to your club wallet, report your transfer, and wait for an admin to approve the deposit. Then use your available club credit to activate a plan. Your access period is shown on the plan and at checkout." },
-  { q: "Will I be charged again?", a: "No. Paid plans are one-off purchases with no automatic renewal. When your access period ends, paid access stops and your free account stays open. Extend only if you choose to." },
-  { q: "Are all videos available now?", a: "Check the video library before choosing a paid plan. Titles marked In preparation are not available to watch yet; joining or upgrading does not make those videos available sooner." },
-  { q: "How does Trading with Harry fit into membership?", a: "Trading with Harry is the main planned benefit of Form Room and is also included in Inner Circle’s planned access. Real trading enrollment is currently closed while final terms are prepared. The membership fee is separate from the $500–$10,000 allocation: buying a plan does not create an allocation, start the 33-day lock or generate profit." },
-  { q: "Do you guarantee winnings?", a: "No one can. Our videos are education and opinion, not advice. Only bet what you can afford to lose, and stop if it stops being fun." },
+  { q: "What is Trading with Harry?", a: "A proposed service for Harry to trade a dedicated allocation on your behalf. Planned access is the main benefit of Form Room and is also included in Inner Circle. Real enrollment is currently closed while final terms are prepared. The membership fee and allocation capital are separate payments." },
+  { q: "When does the 33-day lock start?", a: "The lock starts only when an admin approves an allocation. Creating an account, paying for membership or submitting a request does not start it. The allocation range is $500–$10,000. After the lock, an admin records the actual result and manually pays any amount due to your saved external wallet." },
+  { q: "How do USDT and USDC deposits work?", a: "Choose an amount, token and supported network in your wallet. Send only to the address shown for that request, then report the transaction ID. An admin verifies the incoming transfer before adding club credit. Pending deposits cannot be spent." },
+  { q: "Are returns guaranteed?", a: "No. Actual results can include losses, including loss of all principal. Proposed targets are unverified, and no daily profit is automatically credited. Your charts show actual recorded results, never assumed earnings." },
+  { q: "Does membership renew automatically?", a: "No. Paid membership is a one-off purchase for the period shown at checkout, with no automatic renewal. Extend only when you choose. Your free account stays open after paid access ends." },
+  { q: "Are the videos ready to watch?", a: "Check the video library before buying. Titles marked In preparation are not playable yet. Paid access starts when payment is confirmed and does not make unpublished videos available sooner." },
 ];
 
 export default async function Home() {
@@ -35,105 +27,28 @@ export default async function Home() {
     db.video.findMany({ where: { published: true }, select: { minTier: true, bunnyVideoId: true, embedUrl: true } }),
     currentUser(),
   ]);
-  const periods = [...new Set(plans.filter(p => p.priceCents > 0).map(p => p.intervalDays))];
-  const formPlan = plans.find(p => p.slug === "form" && p.priceCents > 0);
-  const membershipLabel = formPlan ? `${usd(formPlan.priceCents)} / ${formPlan.intervalDays} days` : "View membership";
-  const highlights = [
-    { value: "40+ years", label: "Harry’s experience" },
-    { value: "Trading with Harry", label: "Form Room’s main feature" },
-    { value: periods.length === 1 ? `${periods[0]} days` : "Your choice", label: "Plans, no auto-renew" },
-    { value: "18+", label: "Responsible gambling first" },
-  ];
-  return (
-    <>
-      <JsonLd data={{ "@context": "https://schema.org", "@graph": [organization, website, { "@type": "WebPage", "@id": siteUrl("/#webpage"), url: siteUrl(), name: "Trading with Harry & Horse Racing | Furlong Club", isPartOf: { "@id": website["@id"] }, about: { "@id": organization["@id"] }, inLanguage: "en" }] }} />
-      <section className="silk-stripes relative overflow-hidden border-b border-white/10">
-        <div className="container-page grid items-center gap-10 py-14 md:grid-cols-[1.2fr_1fr] md:py-24">
-          <div>
-            <p className="badge mb-5 border border-gold-400/40 text-gold-300">{formPlan?.name ?? "Form Room"} · {membershipLabel}</p>
-            <h1 className="text-4xl leading-[1.05] sm:text-5xl md:text-6xl">
-              Trading with <span className="text-gold-400">Harry.</span>
-            </h1>
-            <p className="mt-5 max-w-xl text-lg text-cream/75">
-              The centrepiece of Form Room. More than 40 years of reading horses and riders, brought to your membership by {brand.host.name}.
-            </p>
-            <p className="mt-4 max-w-xl text-sm leading-relaxed text-cream/75">A proposed service for Harry to trade a dedicated allocation on your behalf, alongside the club&apos;s racing lessons. Trading enrollment is not yet open; your allocation is funded separately from membership.</p>
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <Link href="/trading" className="btn-gold px-7 py-3 text-base">Explore Trading with Harry</Link>
-              <Link href="/plans#plan-form" className="btn-ghost px-7 py-3 text-base">{formPlan ? `View ${usd(formPlan.priceCents)} membership` : "View membership"}</Link>
-            </div>
-            <p className="muted mt-4 text-xs">{formPlan ? `${formPlan.intervalDays}-day membership` : "One-off membership"} · No automatic renewal · 18+ only</p>
-          </div>
-          <div className="relative">
-            <HostPortrait priority className="mx-auto w-full max-w-[340px] shadow-2xl" />
-            <p className="muted mt-3 text-center text-xs">{brand.host.name} · Over 40 years of racing experience</p>
-          </div>
-        </div>
-      </section>
-
-      <section className="border-b border-white/10 bg-turf-900/60">
-        <dl className="container-page grid grid-cols-2 gap-6 py-8 md:grid-cols-4">
-          {highlights.map((h) => (
-            <div key={h.label} className="text-center">
-              <dt className="muted text-xs uppercase tracking-wider">{h.label}</dt>
-              <dd className="mt-1 font-display text-2xl text-gold-300">{h.value}</dd>
-            </div>
-          ))}
-        </dl>
-      </section>
-
-      <div className="container-page py-8 md:py-12"><TradingOffer /></div>
-
-      <section id="how" className="container-page py-12 md:py-20">
-        <h2 className="text-3xl md:text-4xl">How it works</h2>
-        <div className="mt-8 grid gap-4 md:grid-cols-3">
-          {steps.map((s, i) => (
-            <div key={s.title} className="card">
-              <span className="font-display text-4xl text-gold-400">{String(i + 1).padStart(2, "0")}</span>
-              <h3 className="mt-3 text-xl">{s.title}</h3>
-              <p className="muted mt-2 text-sm">{s.body}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section className="container-page py-6">
-        <div className="card grid items-center gap-8 md:grid-cols-[auto_1fr]">
-          <HostPortrait className="mx-auto h-40 w-40" rounded="rounded-full" />
-          <div>
-            <h2 className="text-3xl">Experience that looks beyond the form</h2>
-            <p className="mt-3 text-cream/75">
-              {brand.host.name} brings more than 40 years of experience reading horses and riders to {brand.name}. Learn to consider how a horse moves, how its rider responds and how the pair fit the conditions.
-            </p>
-            <Link href={brand.host.page} className="mt-4 inline-block text-gold-300 hover:underline">Meet {brand.host.first} →</Link>
-          </div>
-        </div>
-      </section>
-
-      <section id="plans" className="container-page py-12 md:py-20">
-        <h2 className="text-3xl md:text-4xl">Choose your plan</h2>
-        <p className="muted mt-2">Form Room puts Trading with Harry at the heart of your membership. Compare the planned access and current availability below, or explore the club with a free account.</p>
-        <div className="mt-8 grid gap-4 md:grid-cols-3">
-          {plans.map((p) => (
-            <PlanCard key={p.id} plan={p} availableVideos={videos.filter(v => v.minTier <= p.tier && hasPlayableSource(v)).length} highlight={p.tier === 1} cta={{ href: p.priceCents ? `/checkout/${p.slug}` : user ? "/dashboard" : "/signup", label: p.priceCents ? `Choose ${p.name}` : user ? "Open dashboard" : "Join free" }} />
-          ))}
-        </div>
-      </section>
-
-      <section id="faq" className="container-page max-w-3xl pb-8">
-        <h2 className="text-3xl md:text-4xl">Questions, answered</h2>
-        <div className="mt-6 divide-y divide-white/10 rounded-2xl border border-white/10 bg-turf-900/40">
-          {faqs.map((f) => (
-            <details key={f.q} className="group px-5 py-4">
-              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-semibold text-cream">
-                {f.q}
-                <span className="text-gold-400 transition group-open:rotate-45" aria-hidden>+</span>
-              </summary>
-              <p className="muted mt-3 text-sm leading-relaxed">{f.a}</p>
-            </details>
-          ))}
-        </div>
-      </section>
-    </>
-  );
+  const form = plans.find(p => p.slug === "form");
+  const membership = form ? `${usd(form.priceCents)} / ${form.intervalDays} days` : "Explore membership";
+  return <div className="club-landing">
+    <JsonLd data={{ "@context": "https://schema.org", "@graph": [organization, website, { "@type": "WebPage", "@id": siteUrl("/#webpage"), url: siteUrl(), name: "Trading with Harry & Horse Racing | Furlong Club", isPartOf: { "@id": website["@id"] }, about: { "@id": organization["@id"] }, inLanguage: "en" }] }} />
+    <section className="landing-hero container-page">
+      <div className="landing-hero-copy"><p className="landing-eyebrow"><span className="landing-dot" /> THE FURLONG CLUB EXPERIENCE</p><h1>Trading with Harry.<br /><span>A clearer view.</span></h1><p className="landing-intro">Over 40 years of reading horses and riders. A club built around Harry’s experience, with your funds, allocations and recorded results in one place.</p><div className="landing-hero-actions"><Link className="btn-gold" href={user ? "/v2" : "/signup"}>{user ? "Open your member portal" : "Create your free account"}<PortalIcon name="arrow" /></Link><Link className="btn-ghost" href="/trading">Explore Trading with Harry</Link></div><p className="landing-fine">Form Room · {membership} · No automatic renewal</p><div className="landing-availability"><span className="landing-status" /> <p>Trading access is being prepared. Membership and the separate allocation are different payments; real trading enrollment remains closed.</p></div></div>
+      <div className="landing-preview" aria-label="Member portal interface preview"><div className="landing-preview-top"><span><span className="landing-dot" /> YOUR MEMBER WORKSPACE</span><span className="landing-preview-tag">Interface preview</span></div><div className="landing-preview-value"><span>Account clarity, at a glance</span><strong>Your club.<br />In focus.</strong><p>Available credit · Locked capital · Actual results</p></div><div className="landing-mini-metrics"><div><PortalIcon name="wallet" /><span>Wallet credit</span><strong>Track every deposit</strong></div><div><PortalIcon name="clock" /><span>33-day lock</span><strong>Follow your allocation</strong></div></div><div className="landing-preview-chart"><div><span>Recorded performance</span><span className="landing-chart-dot" /> Actual results only</div><div className="landing-chart-grid"><PortalIcon name="performance" /><p>Your results. Your history.</p><span>Charts populate from your own recorded activity.</span></div></div><div className="landing-preview-bottom"><span><PortalIcon name="activity" /> A traceable account history</span><Link href={user ? "/v2/performance" : "/signup?next=%2Fv2%2Fperformance"}>Explore your workspace →</Link></div></div>
+    </section>
+    <section className="landing-facts container-page" aria-label="Club essentials"><div><span>EXPERIENCE</span><strong>40+ years</strong><p>Reading horses and riders</p></div><div><span>FORM ROOM</span><strong>{form ? usd(form.priceCents) : "Membership"}</strong><p>{form ? `${form.intervalDays} days · one payment` : "No automatic renewal"}</p></div><div><span>ALLOCATION</span><strong>$500–$10,000</strong><p>Separate from membership</p></div><div><span>APPROVAL LOCK</span><strong>33 days</strong><p>From admin approval</p></div></section>
+    <section className="landing-section container-page"><div className="landing-section-head"><div><p className="landing-eyebrow">LESS GUESSWORK. MORE VISIBILITY.</p><h2>Every step, clearly recorded.</h2></div><p>One workspace for your membership, deposits and allocations. Know what is available, what is locked and what has actually been paid.</p></div><div className="landing-feature-grid">{[
+      { icon: "wallet" as const, title: "Fund with confidence", body: "Choose USDT or USDC on a supported network. Every reported transfer has its own reference and manual approval record.", link: "/v2/wallet", cta: "Your wallet" },
+      { icon: "trading" as const, title: "Follow the full 33 days", body: "See your approved principal, lock progress and end date. Follow the allocation from request through recorded payout.", link: "/v2/trading", cta: "Allocation tracking" },
+      { icon: "performance" as const, title: "See the actual outcome", body: "Read your account chart, profit and loss history, and results calendar. Deposits and returned principal stay separate from earnings.", link: "/v2/performance", cta: "Your recorded results" },
+    ].map(feature => <article className="landing-feature" key={feature.title}><span className="landing-feature-icon"><PortalIcon name={feature.icon} /></span><h3>{feature.title}</h3><p>{feature.body}</p><Link href={user ? feature.link : `/signup?next=${encodeURIComponent(feature.link)}`}>{feature.cta}<PortalIcon name="arrow" /></Link></article>)}</div></section>
+    <section className="landing-section container-page"><div className="landing-harry"><div className="landing-harry-portrait"><HostPortrait className="h-full w-full" /><span>HARRY WHITCOMBE<br /><small>Your Furlong Club host</small></span></div><div className="landing-harry-copy"><p className="landing-eyebrow">THE EXPERIENCE BEHIND THE INSIGHT</p><h2>A lifetime around horses.<br /><span>A different way to read a race.</span></h2><p>Harry brings more than 40 years of experience reading horses and their riders. How a horse moves. How its rider responds. How the pair fit the conditions in front of them.</p><p>Trading with Harry is the centrepiece of Form Room’s planned access, alongside the club’s racing lessons. Explore the approach, current availability and allocation terms before deciding.</p><div className="landing-hero-actions"><Link className="btn-gold" href="/meet-harry">Meet Harry<PortalIcon name="arrow" /></Link><Link className="btn-ghost" href="/trading">View the trading details</Link></div></div></div></section>
+    <section id="how" className="landing-section container-page"><div className="landing-section-head"><div><p className="landing-eyebrow">A SIMPLE START</p><h2>Join the club. Find your perspective.</h2></div><Link className="btn-ghost" href={user ? "/v2" : "/signup"}>{user ? "Go to your portal" : "Start with a free account"}<PortalIcon name="arrow" /></Link></div><div className="landing-steps">{[
+      ["01", "Make yourself at home", "Create your free account. Explore the portal, meet Harry and review what is available before choosing a paid plan."],
+      ["02", "Choose your membership", "Form Room is built around planned Trading with Harry access. Membership is a one-off payment; allocation capital is separate."],
+      ["03", "Keep everything in view", "Track deposits, approved allocations, actual results and external payouts in your own member workspace."],
+    ].map(([number,title,body]) => <article key={number}><span>{number}</span><h3>{title}</h3><p>{body}</p></article>)}</div></section>
+    <section id="plans" className="landing-section container-page"><div className="landing-section-head"><div><p className="landing-eyebrow">YOUR MEMBERSHIP. YOUR CHOICE.</p><h2>A place in the club.</h2></div><p>Start free, then choose the access that suits you. Review the planned benefits and current video availability before paying.</p></div><div className="landing-plan-grid">{plans.map(p => <PlanCard key={p.id} plan={p} availableVideos={videos.filter(v => v.minTier <= p.tier && hasPlayableSource(v)).length} highlight={p.tier === 1} cta={{ href: p.priceCents ? `/v2/membership/${p.slug}` : user ? "/v2" : "/signup", label: p.priceCents ? `Choose ${p.name}` : user ? "Open your portal" : "Join free" }} />)}</div></section>
+    <section id="faq" className="landing-section container-page"><div className="landing-faq-layout"><div><p className="landing-eyebrow">BEFORE YOU JOIN</p><h2>Clear answers.<br />From the start.</h2><p className="landing-faq-intro">Understand the process, the timing and what your membership includes.</p><Link href="mailto:support@furlong.club" className="landing-inline-link">Talk to the club<PortalIcon name="arrow" /></Link></div><div className="landing-faqs">{faqs.map(f => <details key={f.q}><summary>{f.q}<span aria-hidden="true">+</span></summary><p>{f.a}</p></details>)}</div></div></section>
+    <section className="container-page landing-final"><div><p className="landing-eyebrow">WELCOME TO FURLONG CLUB</p><h2>Experience the club.<br /><span>Keep your own clear record.</span></h2><Link className="btn-gold" href={user ? "/v2" : "/signup"}>{user ? "Open your member portal" : "Create your free account"}<PortalIcon name="arrow" /></Link><p>Free to join · 18+ only · No automatic renewal</p></div></section>
+  </div>;
 }

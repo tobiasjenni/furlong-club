@@ -19,9 +19,9 @@ export function ReportDepositForm({ id }: { id: string }) {
   </form>;
 }
 
-export function CancelDepositForm({ id }: { id: string }) {
+export function CancelDepositForm({ id, portal = false }: { id: string; portal?: boolean }) {
   const [state, action] = useActionState(cancelManualDeposit, null);
-  return <form action={action} className="space-y-2"><input type="hidden" name="id" value={id} /><FormMessage state={state} /><SubmitButton className="btn-ghost w-full">Cancel this unsent deposit</SubmitButton></form>;
+  return <form action={action} className="space-y-2"><input type="hidden" name="id" value={id} />{portal && <input type="hidden" name="experience" value="v2" />}<FormMessage state={state} /><SubmitButton className="btn-ghost w-full">Cancel this unsent deposit</SubmitButton></form>;
 }
 
 export function ReviewDepositForm({ id, submittedHash, amount, token, network }: { id: string; submittedHash: string | null; amount: string; token: string; network: string }) {

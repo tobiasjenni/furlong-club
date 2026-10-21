@@ -36,3 +36,7 @@
 
 main h1, main h2, main h3, main p, main dd { overflow-wrap: anywhere; }
 input[type="checkbox"] { width: 1.125rem; height: 1.125rem; flex-shrink: 0; }
+
+.public-v2{background:#08140f;color:#f5f2e9}.public-v2 h1,.public-v2 h2,.public-v2 h3{font-family:var(--font-sans),sans-serif;letter-spacing:-.035em}.public-v2 .btn-gold,.public-v2 .btn-ghost,.public-v2 .btn-danger{border-radius:12px}.public-v2 .btn-gold{background:linear-gradient(120deg,#edcf87,#d9b45c);color:#0a1912}.public-v2 .card{background:linear-gradient(130deg,#142d20,#0c2016);box-shadow:none;backdrop-filter:none;border-color:#bfd7c41f}.public-v2 .silk-stripes{background-image:radial-gradient(ellipse at 80% 0,#285c3233,transparent 65%)}.public-v2 .muted{color:#a4b5ab}.public-v2>footer{background:#08140f}.public-v2 :focus-visible{outline:2px solid #e9c46a;outline-offset:4px}
+
+.public-v2 .card[id="plan-form"]{border-color:#d4b87966;box-shadow:inset 0 1px #d4b87922}
