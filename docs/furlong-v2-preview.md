@@ -1,6 +1,6 @@
 # Furlong Club V2 member portal preview
 
-V2 is available at `/v2` on the isolated test deployment for review. It is an authenticated, noindex member workspace using the existing database, sessions, roles and financial functions. This branch does not enable real trading or introduce an automatic payout, compounding or daily-yield process. The production site stays on the previously published version until V2 is reviewed.
+V2 is available at `/v2` and becomes the default member dashboard after publication. It is an authenticated, noindex member workspace using the existing database, sessions, roles and financial functions. This branch does not enable real trading or introduce an automatic payout, compounding or daily-yield process. The owner approved the V2 design and requested production publication, including a matching public landing page.
 
 ## Reference review
 
@@ -41,3 +41,9 @@ The review environment uses simulated accounts and addresses. Do not send crypto
 TypeScript checks and all 186 automated tests pass. The analytics tests execute the actual PostgreSQL query and posting functions, including member isolation, pending funds, recorded unpaid results, external payouts, total losses, literal search and history beyond one year.
 
 The hosted Cloudflare preview was reviewed across all nine member sections, membership checkout and member-owned deposit receipts. Browser checks covered chart metric/period controls and exact data, balance masking, calendar-to-result navigation, activity filtering and empty search results, hypothetical planner arithmetic, mobile navigation and an unsent simulated deposit creation/cancellation round trip. No transfer was reported or approved and no membership purchase or account security change was submitted. Responsive checks cover 320px and 390px phones, tablet and desktop layouts.
+
+## Production publication
+
+The public landing page and shared public styling now match the portal. The main header links to V2 wallet/account pages, and `/dashboard` forwards to V2 while preserving the legacy dashboard at `?classic=1`. Existing sign-in redirects continue to pass through the guarded dashboard route. The portal preview badge is removed. The simulated-money banner remains conditional on the isolated staging flags and never renders in production.
+
+A read-only production audit confirmed manual deposits, all three owner receiving-wallet bindings, no mock payments, correct 33-day plans, and zero ledger balance/posting/locked-principal mismatches. Trading enrollment remains closed; this visual release does not enable it. No real payment, trading approval, credential change or account closure is performed during browser QA.

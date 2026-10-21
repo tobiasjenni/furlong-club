@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { isAdmin } from "@/lib/roles";
 import { TradingSummary } from "@/components/TradingSummary";
 import { brand } from "@/lib/config";
@@ -13,9 +14,10 @@ import { TradingMembership } from "@/components/TradingMembership";
 
 export const metadata = { title: "Dashboard" };
 
-export default async function Dashboard({ searchParams }: { searchParams: Promise<{ welcome?: string; walletPurchase?: string }> }) {
+export default async function Dashboard({ searchParams }: { searchParams: Promise<{ welcome?: string; walletPurchase?: string; classic?: string }> }) {
   const user = await requireUser();
-  const { welcome, walletPurchase } = await searchParams;
+  const { welcome, walletPurchase, classic } = await searchParams;
+  if (classic !== "1") { const query = new URLSearchParams(); if (welcome === "1") query.set("welcome", "1"); if (walletPurchase === "1") query.set("walletPurchase", "1"); redirect(`/v2${query.size ? `?${query}` : ""}`); }
   const sub = await activeSubscription(user.id);
   // Admins can preview every video.
   const tier = isAdmin(user.role) ? Infinity : sub?.plan.tier ?? 0;
