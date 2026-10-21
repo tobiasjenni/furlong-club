@@ -145,7 +145,7 @@ export async function changePassword(_: FormState, form: FormData): Promise<Form
   const changed = await db.$queryRaw<{ changed: boolean }[]>`SELECT auth_change_password(${user.id},${user.passwordHash},${await bcrypt.hash(parsed.data,12)}) AS changed`;
   if (!changed[0]?.changed) return { error: "Your account changed. Sign in again and retry." };
   await audit(user.id, "user.password_changed", user.id);
-  await revokeSessions(user.id, true);
+  await startSession(await db.user.findUniqueOrThrow({ where: { id: user.id } }));
   await sendEmail(passwordChangedMessage(user.email)).catch(() => {});
   return { ok: "Password updated. Other devices have been signed out." };
 }
@@ -181,7 +181,7 @@ export async function changeEmail(_: FormState, form: FormData): Promise<FormSta
   if (await db.user.findUnique({ where: { email } })) return { error: "That email is already used by another account." };
   const changed = await db.$queryRaw<{changed:boolean}[]>`SELECT auth_change_email(${user.id},${user.passwordHash},${user.sessionVersion}::integer,${email},${crypto.randomUUID()}) AS changed`;
   if (!changed[0]?.changed) return { error: "Your account changed. Sign in again and retry." };
-  await sendVerification({ id: user.id, email }).catch((err) => console.error("verification email failed", err));
-  await revokeSessions(user.id, true);
+  await startSession(await db.user.findUniqueOrThrow({ where: { id: user.id } }));
+  await sendVerification({ id: user.id, email }).catch(() => console.error("verification email failed"));
   return { ok: emailDelivers() ? `Email changed. We've sent a confirmation link to ${email}.` : "Email changed. Contact support@furlong.club to confirm your new address." };
 }
