@@ -35,3 +35,9 @@ The middleware and V2 layout require the existing active session. Every data que
 Existing financial functions still enforce balances, email verification, frozen wallets, immutable postings, term snapshots, approval rules, 33-day locks and payout deduplication. The only new action parameter chooses the V2 internal return route; the default classic routes remain unchanged. V2 refreshes every 30 seconds and financial mutations revalidate its layout.
 
 The review environment uses simulated accounts and addresses. Do not send cryptocurrency to test addresses. Email delivery and video uploads still depend on operator configuration. No credentials or signing keys are stored in this document.
+
+## Preview validation
+
+TypeScript checks and all 186 automated tests pass. The analytics tests execute the actual PostgreSQL query and posting functions, including member isolation, pending funds, recorded unpaid results, external payouts, total losses, literal search and history beyond one year.
+
+The hosted Cloudflare preview was reviewed across all nine member sections, membership checkout and member-owned deposit receipts. Browser checks covered chart metric/period controls and exact data, balance masking, calendar-to-result navigation, activity filtering and empty search results, hypothetical planner arithmetic, mobile navigation and an unsent simulated deposit creation/cancellation round trip. No transfer was reported or approved and no membership purchase or account security change was submitted. Responsive checks cover 320px and 390px phones, tablet and desktop layouts.
