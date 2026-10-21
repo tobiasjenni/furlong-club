@@ -18,7 +18,7 @@ export function PasswordInput({ id, label, hint, error, inputRef, ...input }: Pa
     <div className="relative">
       <input {...input} ref={inputRef} id={id} type={visible ? "text" : "password"} className="input pr-20"
         autoCapitalize="none" spellCheck={false} aria-describedby={description} aria-invalid={error ? true : undefined} />
-      <button type="button" aria-label={`${visible ? "Hide" : "Show"} ${label.toLowerCase()}`} aria-controls={id} aria-pressed={visible}
+      <button type="button" aria-label={`${visible ? "Hide" : "Show"} ${label.toLowerCase()}`} aria-controls={id}
         onClick={() => setVisible(value => !value)} className="absolute inset-y-0 right-2 min-w-14 rounded-lg px-2 text-xs font-semibold text-gold-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold-400">
         {visible ? "Hide" : "Show"}
       </button>

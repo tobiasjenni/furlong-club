@@ -6,7 +6,7 @@ export const metadata = { title: `Meet ${brand.host.name}`, description: "More t
 
 export default function MeetHost() {
   return <div className="container-page grid gap-10 py-12 md:grid-cols-[1fr_1.3fr] md:py-16">
-    <div className="order-2 md:order-1"><HostPortrait className="mx-auto w-full max-w-sm shadow-2xl" /><div className="mx-auto mt-5 max-w-sm rounded-2xl border border-gold-400/25 bg-gold-400/5 p-5 text-center"><p className="font-display text-4xl text-gold-300">40+ years</p><p className="muted mt-2 text-sm">Reading horses. Understanding riders. Studying the race.</p></div></div>
+
     <article className="order-1 space-y-5 text-cream/85 md:order-2">
       <p className="text-sm text-gold-300">Experience behind the insight</p><h1 className="text-3xl text-cream sm:text-4xl">Meet {brand.host.name}</h1>
       <p className="text-lg leading-relaxed">More than 40 years of reading horses and riders, brought to Furlong Club.</p>
@@ -19,5 +19,6 @@ export default function MeetHost() {
       <p>Trading can result in losses, including loss of the full allocation. Any eventual payout depends on actual results and manual processing; the website does not execute trades or send payouts automatically.</p>
       <div className="flex flex-wrap gap-3"><Link href="/trading" className="btn-ghost">View the trading proposal</Link><Link href="/signup" className="btn-gold">Join Furlong Club</Link></div>
     </article>
+    <div className="order-2 md:order-1"><HostPortrait className="mx-auto w-full max-w-sm shadow-2xl" /><div className="mx-auto mt-5 max-w-sm rounded-2xl border border-gold-400/25 bg-gold-400/5 p-5 text-center"><p className="font-display text-4xl text-gold-300">40+ years</p><p className="muted mt-2 text-sm">Reading horses. Understanding riders. Studying the race.</p></div></div>
   </div>;
 }
