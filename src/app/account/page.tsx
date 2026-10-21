@@ -26,24 +26,24 @@ export default async function AccountPage() {
       <TradingSummary userId={user.id} />
       <div className="grid gap-4 md:grid-cols-3">
         <div className="card"><h2 className="mb-4 text-xl">Profile</h2><p className="muted mb-4 text-sm">{user.email} · {user.emailVerifiedAt ? "confirmed" : "not confirmed yet"}</p><ProfileForm name={user.name ?? ""} country={user.country ?? ""} marketing={user.marketingOptIn} /></div>
-        <div className="card"><h2 className="mb-4 text-xl">Email</h2><EmailForm email={user.email} /></div>
+        <div className="card"><h2 className="mb-4 text-xl">Email</h2>{user.role === "USER" ? <EmailForm email={user.email} /> : <p className="muted text-sm">Admin email changes require a verified ownership review. Contact the owner before changing this address.</p>}</div>
         <div className="card"><h2 className="mb-4 text-xl">Password</h2><PasswordForm /></div>
       </div>
       <div className="card overflow-x-auto">
         <h2 className="mb-4 text-xl">Subscriptions</h2>
         {subs.length === 0 ? <p className="muted text-sm">No paid subscriptions yet.</p> : (
           <table className="table"><thead><tr><th>Plan</th><th>Start</th><th>End</th><th>Status</th></tr></thead>
-            <tbody>{subs.map((s) => <tr key={s.id}><td>{s.plan.name}</td><td>{date(s.startsAt)}</td><td>{date(s.endsAt)}</td><td>{s.endsAt < new Date() ? "EXPIRED" : s.status}</td></tr>)}</tbody></table>
+            <tbody>{subs.map((s) => <tr key={s.id}><td>{s.plan.name}</td><td>{date(s.startsAt)}</td><td>{date(s.endsAt)}</td><td>{s.status === "CANCELLED" ? "Cancelled" : s.endsAt < new Date() ? "Expired" : "Active"}</td></tr>)}</tbody></table>
         )}
       </div>
       <div className="card overflow-x-auto">
         <h2 className="mb-4 text-xl">Payments</h2>
         {payments.length === 0 ? <p className="muted text-sm">No payments yet.</p> : (
           <table className="table"><thead><tr><th>Date</th><th>Plan</th><th>Amount</th><th>Coin</th><th>Status</th></tr></thead>
-            <tbody>{payments.map((p) => <tr key={p.id}><td>{date(p.createdAt)}</td><td>{p.planName ?? "Wallet top-up"}</td><td>{usd(p.amountCents)}</td><td>{p.currency} · {p.network}</td><td><span className={`badge ${statusColor[p.status] ?? "bg-white/10 text-cream/70"}`}>{p.provider === "manual" ? manualDepositLabel(p.status, p.providerStatus) : p.status}</span></td></tr>)}</tbody></table>
+            <tbody>{payments.map((p) => <tr key={p.id}><td>{date(p.createdAt)}</td><td>{p.planName ?? "Wallet top-up"}</td><td>{usd(p.amountCents)}</td><td>{p.currency} · {p.network}</td><td><span className={`badge ${statusColor[p.status] ?? "bg-white/10 text-cream/70"}`}>{p.provider === "manual" ? manualDepositLabel(p.status, p.providerStatus) : p.status.charAt(0) + p.status.slice(1).toLowerCase()}</span></td></tr>)}</tbody></table>
         )}
       </div>
-      <DangerZone />
+      <DangerZone protectedAccount={user.role !== "USER"} />
     </div>
   );
 }

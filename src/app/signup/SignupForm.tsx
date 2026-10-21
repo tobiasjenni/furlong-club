@@ -39,7 +39,7 @@ export function SignupForm() {
       </label>
       <label className="flex gap-3 text-sm">
         <input type="checkbox" name="marketing" className="mt-1 accent-gold-400" />
-        <span className="muted">Send me new videos and race-day reminders by email.</span>
+        <span className="muted">Email me club updates and new video notices.</span>
       </label>
       <FormMessage state={state} />
       <SubmitButton>Create account</SubmitButton>

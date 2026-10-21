@@ -4,7 +4,7 @@ import { closeAccount, signOutEverywhere } from "@/app/actions/auth";
 import { FormMessage } from "@/components/FormMessage";
 import { SubmitButton } from "@/components/SubmitButton";
 
-export function DangerZone() {
+export function DangerZone({ protectedAccount = false }: { protectedAccount?: boolean }) {
   const [state, action] = useActionState(closeAccount, null);
   return (
     <div className="grid gap-4 md:grid-cols-2">
@@ -13,7 +13,7 @@ export function DangerZone() {
         <p className="muted mt-1 text-sm">Signed in on a shared or lost device? Sign out everywhere, including here.</p>
         <form action={signOutEverywhere} className="mt-4"><button className="btn-ghost">Sign out on all devices</button></form>
       </div>
-      <div className="card">
+      {protectedAccount ? <div className="card"><h2 className="text-xl">Protected admin account</h2><p className="muted mt-2 text-sm">An admin must be demoted to Member before account closure. The Super Admin owner account cannot be closed here.</p></div> : <div className="card">
         <h2 className="text-xl">Take a break or close your account</h2>
         <p className="muted mt-1 text-sm">
           If betting has stopped being fun, closing your account stops all emails and access straight away. To reopen it later, contact support.
@@ -25,7 +25,7 @@ export function DangerZone() {
           <FormMessage state={state} />
           <SubmitButton className="btn-danger">Close my account</SubmitButton>
         </form>
-      </div>
+      </div>}
     </div>
   );
 }
