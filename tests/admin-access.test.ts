@@ -24,7 +24,7 @@ it("requires confirmation inside the admin action, even when called without the 
   await expect(reviewManualDeposit(null, new FormData())).rejects.toThrow("REDIRECT:/admin-unlock");
 });
 it("allows a current confirmed admin and rejects a revoked session or changed role", async () => {
-  store.set(ADMIN_COOKIE, await signAdminConfirmation(account, store.get(SESSION_COOKIE)!));
+  store.set(ADMIN_COOKIE, await signAdminConfirmation(account, store.get(SESSION_COOKIE)!, "passkey"));
   expect(await requireSuperAdmin()).toBe(account);
   account.sessionVersion++;
   await expect(requireAdmin()).rejects.toThrow("REDIRECT:/login");

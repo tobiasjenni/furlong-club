@@ -45,6 +45,7 @@ try {
   const security = await db.$queryRaw`SELECT
     (SELECT count(*)::int FROM "User" WHERE "passwordHash" !~ '^\\$2[aby]\\$12\\$') AS "passwordHashesOutsideCost12",
     (SELECT count(*)::int FROM "AuthToken" WHERE "tokenHash" !~ '^[0-9a-f]{64}$') AS "malformedTokenHashes",
+    (SELECT count(*)::int FROM "User" u WHERE u.role IN ('ADMIN','SUPER_ADMIN') AND u.status='ACTIVE' AND EXISTS(SELECT 1 FROM "AdminPasskey" k WHERE k."userId"=u.id AND k."verifiedAt" IS NOT NULL)) AS "adminsWithVerifiedPasskeys",
     (SELECT count(*)::int FROM pg_tables WHERE schemaname='public' AND tableowner=current_user) AS "tablesOwnedByRuntimeRole",
     (SELECT rolsuper FROM pg_roles WHERE rolname=current_user) AS "databaseSuperuser",
     has_schema_privilege(current_user,'public','CREATE') AS "canCreateInPublicSchema",

@@ -28,6 +28,7 @@ export async function runDailyJobs(now = new Date()) {
   const expiredPayments = await expireStalePayments();
   await db.$executeRaw`DELETE FROM "AuthToken" WHERE "expiresAt"<${new Date(now.getTime() - 7 * 86400000)}`;
   await db.$executeRaw`DELETE FROM "RateLimit" WHERE "resetAt"<${now}`;
+  await db.$executeRaw`DELETE FROM "AdminSecurityChallenge" WHERE "expiresAt"<${new Date(now.getTime() - 86400000)}`;
 
   return { reminded, remindersAvailable, expiredSubscriptions: expiredSubs, expiredPayments: expiredPayments.count };
 }
