@@ -2,15 +2,37 @@ import { appUrl, brand } from "./config";
 
 export type Email = { to: string; subject: string; text: string; html: string };
 
-// EMAIL_PROVIDER=console prints emails to the server log (development). EMAIL_PROVIDER=resend sends through Resend.
+// Production uses a Cloudflare binding; local development can log messages or use Resend.
 export async function sendEmail(email: Email) {
-  // Resend is used as soon as its key is configured; otherwise emails are only logged.
   const provider = process.env.EMAIL_PROVIDER || (process.env.RESEND_API_KEY ? "resend" : "console");
+  if (provider === "cloudflare") {
+    const { getCloudflareContext } = await import("@opennextjs/cloudflare");
+    const { env } = getCloudflareContext();
+    const binding = (env as unknown as { EMAIL?: {
+      send(message: Email & { from: { email: string; name: string }; replyTo: string }): Promise<unknown>;
+    } }).EMAIL;
+    if (!binding) throw new Error("Cloudflare email binding is missing");
+    // Retry only explicit temporary rejections, never ambiguous delivery failures.
+    for (let attempt = 0; ; attempt++) {
+      try {
+        await binding.send({
+          ...email,
+          from: { email: process.env.EMAIL_FROM_ADDRESS || `notifications@${brand.domain}`, name: brand.name },
+          replyTo: brand.supportEmail,
+        });
+        return;
+      } catch (error) {
+        const code = error && typeof error === "object" && "code" in error ? error.code : undefined;
+        if (code !== "E_RATE_LIMIT_EXCEEDED" || attempt >= 2) throw error;
+        await new Promise((resolve) => setTimeout(resolve, 500 * 2 ** attempt));
+      }
+    }
+  }
   if (provider === "resend") {
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { authorization: `Bearer ${process.env.RESEND_API_KEY}`, "content-type": "application/json" },
-      body: JSON.stringify({ from: process.env.EMAIL_FROM ?? `${brand.name} <no-reply@${brand.domain}>`, ...email }),
+      body: JSON.stringify({ reply_to: brand.supportEmail, from: process.env.EMAIL_FROM ?? `${brand.name} <no-reply@${brand.domain}>`, ...email }),
       signal: AbortSignal.timeout(15000),
     });
     if (!res.ok) throw new Error(`Email delivery failed (${res.status})`);
@@ -61,7 +83,8 @@ export function inviteMessage(to: string, token: string): Email {
 }
 
 export function emailDelivers() {
-  return Boolean(process.env.RESEND_API_KEY) && process.env.EMAIL_PROVIDER !== "console";
+  const provider = process.env.EMAIL_PROVIDER || (process.env.RESEND_API_KEY ? "resend" : "console");
+  return provider === "cloudflare" || (provider === "resend" && Boolean(process.env.RESEND_API_KEY));
 }
 
 export function passwordChangedMessage(to: string): Email {
