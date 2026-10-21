@@ -29,8 +29,8 @@ export default async function AdminUser({ params, searchParams }: { params: Prom
   const management = (await searchParams).management;
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[1fr_1.2fr]">
-      <div className="space-y-4">
+    <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
+      <div className="min-w-0 space-y-4">
         <div className="card">
           <h2 className="text-xl">{user.name ?? "—"}</h2>
           <p className="muted text-sm">{user.email}</p>
@@ -82,7 +82,7 @@ export default async function AdminUser({ params, searchParams }: { params: Prom
           <button className="btn-ghost">Grant days</button>
         </form>}
       </div>
-      <div className="space-y-4">
+      <div className="min-w-0 space-y-4">
         <TradingSummary userId={user.id} admin />
         <div className="card">
           <h3 className="mb-3 text-lg">Crypto deposit approvals</h3>
