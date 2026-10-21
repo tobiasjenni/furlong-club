@@ -33,10 +33,10 @@ describe("public search metadata", () => {
     expect(sitemap()).toEqual([]);
     expect(robots().rules).toMatchObject({ disallow: "/" });
   });
-  it("leaves auth pages crawlable so their noindex can be read", () => {
+  it("leaves HTML and private redirects crawlable so their noindex can be read", () => {
     vi.stubEnv("APP_ENV", "production");
-    expect(robots().rules).toMatchObject({ allow: "/", disallow: expect.arrayContaining(["/admin", "/videos", "/api"]) });
-    expect(robots().rules).not.toMatchObject({ disallow: expect.arrayContaining(["/login"]) });
+    expect(robots().rules).toMatchObject({ allow: "/", disallow: ["/api/"] });
+    for (const path of ["/login", "/admin", "/videos", "/checkout"]) expect(robots().rules).not.toMatchObject({ disallow: expect.arrayContaining([path]) });
   });
 });
 

@@ -4,7 +4,7 @@ Public page titles, descriptions, canonical URLs and sharing cards are defined i
 
 The homepage identifies Furlong Club as an Organization and WebSite. Harry’s public biography describes a Person through ProfilePage data. Breadcrumb data matches visible Home links on public detail pages. The sharing image has its editable source in `public/social/furlong-club.svg`; publish a matching 1200×630 PNG when changing it. The organization logo is a 512×512 rendering of the existing monogram.
 
-Member pages, checkout, admin, APIs and authentication pages have noindex response headers. Private layouts and authentication metadata also disable indexing and clear inherited canonical/sharing metadata. Authentication pages are crawlable so crawlers can read noindex. Authenticated member pages still require sign-in independently of search rules. Staging blocks all crawlers, uses noindex metadata/headers and returns an empty sitemap.
+Member pages, checkout, admin, APIs and authentication pages have noindex response headers. Private layouts and authentication metadata also disable indexing and clear inherited canonical/sharing metadata. HTML URLs and private redirects are crawlable so crawlers can read noindex; only API paths are disallowed in production robots.txt. Member and admin pages still require sign-in and role checks independently of search rules. Staging blocks all crawlers, uses noindex metadata/headers and returns an empty sitemap.
 
 `www.furlong.club` permanently redirects to `furlong.club`, preserving the path and query. HTTP requests on the canonical domain redirect to HTTPS using Cloudflare’s original-protocol header. Canonical URLs use HTTPS and the same host. No fabricated modification dates are emitted in the sitemap.
 
