@@ -15,6 +15,7 @@ function cents(input: FormDataEntryValue | null, signed = false) {
   return text.startsWith("-") ? -value : value;
 }
 function refresh(userId: string, id: string) {
+  revalidatePath("/v2", "layout");
   for (const path of ["/trading", "/account", "/wallet", "/dashboard", "/admin", "/admin/trading", "/admin/wallet", `/admin/trading/${id}`, `/admin/users/${userId}`]) revalidatePath(path);
 }
 const errors: Record<string, string> = {

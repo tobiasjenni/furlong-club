@@ -1,7 +1,7 @@
 import type { Payment } from "@prisma/client";
 import Link from "next/link";
 import QRCode from "qrcode";
-import { dateTime, usd } from "@/lib/format";
+import { dateTime, dateTimeUtc, usd } from "@/lib/format";
 import { walletTestMode } from "@/lib/environment";
 import { manualDepositLabel, transactionUrl } from "@/lib/manual-deposits";
 import { CancelDepositForm, ReportDepositForm } from "./ManualDepositForms";
@@ -10,7 +10,9 @@ import { AutoRefresh } from "@/app/checkout/pay/[id]/AutoRefresh";
 
 export const networkNames: Record<string, string> = { TRC20: "Tron (TRC-20)", ERC20: "Ethereum (ERC-20)", POLYGON: "Polygon" };
 
-export async function ManualDepositPage({ payment }: { payment: Payment }) {
+export async function ManualDepositPage({ payment, portal = false }: { payment: Payment; portal?: boolean }) {
+  const walletHref = portal ? "/v2/wallet" : "/wallet";
+  const formatDate = portal ? dateTimeUtc : dateTime;
   const pending = payment.status === "PENDING";
   const reviewing = payment.status === "CONFIRMING";
   const approved = payment.status === "CONFIRMED";
@@ -23,7 +25,7 @@ export async function ManualDepositPage({ payment }: { payment: Payment }) {
   const explorer = test ? null : transactionUrl(payment.network, tx);
   return <div className="container-page max-w-2xl space-y-5 py-10">
     {reviewing && <AutoRefresh seconds={15} />}
-    <Link href="/wallet" className="text-sm text-gold-300 underline">← Back to wallet</Link>
+    <Link href={walletHref} className="text-sm text-gold-300 underline">← Back to wallet</Link>
     <section className="card space-y-5">
       <div><p className="muted text-sm">Manual deposit · {payment.currency}</p>
         <h1 className="mt-1 text-3xl">{pending ? "Send your deposit" : manualDepositLabel(payment.status, payment.providerStatus)}</h1>
@@ -40,19 +42,19 @@ export async function ManualDepositPage({ payment }: { payment: Payment }) {
         {qr && <img src={qr} alt={`${payment.currency} receiving address on ${network}`} className="mx-auto h-56 w-56 rounded-xl" />}
         <div><p className="label">Club receiving address · {network}</p><div className="flex items-center gap-2 rounded-xl border border-white/15 bg-turf-950/60 p-3"><code className="min-w-0 flex-1 break-all text-xs">{payment.payAddress}</code>{!test && <CopyButton value={payment.payAddress!} />}</div></div>
         <ReportDepositForm id={payment.id} />
-        <CancelDepositForm id={payment.id} />
+        <CancelDepositForm id={payment.id} portal={portal} />
       </>}
       {payment.providerStatus === "admin_rejected" && <p className="rounded-xl bg-red-500/10 p-3 text-sm text-red-200">Reason: {payment.reviewReason}</p>}
       {cancelled && <details className="text-sm"><summary className="cursor-pointer text-gold-300">Already sent funds for this cancelled request?</summary><div className="mt-4"><ReportDepositForm id={payment.id} /></div></details>}
       <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-3 text-sm">
         <dt className="muted">Status</dt><dd>{manualDepositLabel(payment.status, payment.providerStatus)}</dd>
         <dt className="muted">Reference</dt><dd className="break-all text-xs">{payment.id}</dd>
-        <dt className="muted">Created</dt><dd>{dateTime(payment.createdAt)}</dd>
-        {payment.submittedAt && <><dt className="muted">Reported sent</dt><dd>{dateTime(payment.submittedAt)}</dd></>}
-        {payment.reviewedAt && <><dt className="muted">Reviewed</dt><dd>{dateTime(payment.reviewedAt)}</dd></>}
+        <dt className="muted">Created</dt><dd>{formatDate(payment.createdAt)}</dd>
+        {payment.submittedAt && <><dt className="muted">Reported sent</dt><dd>{formatDate(payment.submittedAt)}</dd></>}
+        {payment.reviewedAt && <><dt className="muted">Reviewed</dt><dd>{formatDate(payment.reviewedAt)}</dd></>}
         {tx && <><dt className="muted">Transaction</dt><dd className="break-all text-xs">{explorer ? <a href={explorer} target="_blank" rel="noreferrer" className="text-gold-300 underline">{tx}</a> : tx}</dd></>}
       </dl>
-      {approved && <Link href="/wallet" className="btn-gold w-full">View wallet balance</Link>}
+      {approved && <Link href={walletHref} className="btn-gold w-full">View wallet balance</Link>}
       <p className="muted text-xs">Questions? Contact <a href="mailto:support@furlong.club" className="text-gold-300 underline">support@furlong.club</a> with your reference and transaction ID.</p>
     </section>
   </div>;

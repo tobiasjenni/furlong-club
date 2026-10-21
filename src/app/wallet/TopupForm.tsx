@@ -4,11 +4,12 @@ import { startTopup } from "@/app/actions/wallet";
 import { FormMessage } from "@/components/FormMessage";
 import { SubmitButton } from "@/components/SubmitButton";
 
-export function TopupForm({ options, disabled, manual }: { options: { value: number; label: string; currency: string; enabled: boolean }[]; disabled: boolean; manual: boolean }) {
+export function TopupForm({ options, disabled, manual, portal = false }: { options: { value: number; label: string; currency: string; enabled: boolean }[]; disabled: boolean; manual: boolean; portal?: boolean }) {
   const [state, action] = useActionState(startTopup, null);
   const [selected, setSelected] = useState(options.find(o => o.enabled)?.value ?? options[0]?.value ?? 0);
   const currency = options.find(o => o.value === selected)?.currency ?? "USDT";
   return <form action={action} className="space-y-4">
+    {portal && <input type="hidden" name="experience" value="v2" />}
     <label className="label" htmlFor="topup-amount">{manual ? `Amount to send (${currency})` : "Amount to add (USD)"}</label>
     <input id="topup-amount" className="input" name="amount" type="number" min="20" max="10000" step="0.01" defaultValue="50" required disabled={disabled} />
     <label className="label" htmlFor="topup-network">Pay with</label>

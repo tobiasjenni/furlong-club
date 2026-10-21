@@ -33,7 +33,7 @@ const nextConfig = {
   async headers() {
     return [
       {
-        source: "/:section(admin|account|dashboard|wallet|checkout|videos|api|login|signup|forgot-password|reset-password|verify-email)/:path*",
+        source: "/:section(admin|account|dashboard|wallet|checkout|videos|api|login|signup|forgot-password|reset-password|verify-email|v2)/:path*",
         headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow, noarchive" }],
       },
       {

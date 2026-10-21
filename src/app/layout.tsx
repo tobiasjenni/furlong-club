@@ -6,6 +6,7 @@ import { brand } from "@/lib/config";
 import "./globals.css";
 import { walletTestMode } from "@/lib/environment";
 import { pageMetadata, siteOrigin } from "@/lib/seo";
+import { SiteChrome } from "@/components/SiteChrome";
 
 const display = Fraunces({ subsets: ["latin"], variable: "--font-display", display: "swap" });
 const sans = Inter({ subsets: ["latin"], variable: "--font-sans", display: "swap" });
@@ -31,9 +32,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </div>
         )}
         <a href="#main-content" className="fixed left-4 top-3 z-50 -translate-y-24 rounded-xl bg-gold-400 px-5 py-3 font-semibold text-turf-950 transition-transform focus:translate-y-0">Skip to content</a>
-        <SiteHeader />
-        <main id="main-content" tabIndex={-1} className="min-w-0 flex-1">{children}</main>
-        <SiteFooter />
+        <SiteChrome header={<SiteHeader />} footer={<SiteFooter />}>{children}</SiteChrome>
       </body>
     </html>
   );

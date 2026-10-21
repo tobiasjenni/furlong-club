@@ -1,5 +1,6 @@
+const usdFormatter = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
 export function usd(cents: number) {
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(cents / 100);
+  return usdFormatter.format(cents / 100);
 }
 
 export function date(d: Date | string | null | undefined) {
