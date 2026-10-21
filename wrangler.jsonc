@@ -5,6 +5,7 @@
   "compatibility_date": "2025-09-01",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
   "assets": { "directory": ".open-next/assets", "binding": "ASSETS" },
+  "send_email": [{ "name": "EMAIL", "allowed_sender_addresses": ["notifications@furlong.club"] }],
   "routes": [
     { "pattern": "furlong.club", "custom_domain": true },
     { "pattern": "www.furlong.club", "custom_domain": true }
@@ -12,6 +13,8 @@
   "observability": { "enabled": true },
   // Non-secret settings. Secrets (DATABASE_URL, AUTH_SECRET, CRON_SECRET, RESEND_API_KEY, ...) are pushed by the deploy workflow.
   "vars": {
+    "EMAIL_PROVIDER": "cloudflare",
+    "EMAIL_FROM_ADDRESS": "notifications@furlong.club",
     "APP_URL": "https://furlong.club",
     "DATABASE_DRIVER": "neon-http",
     "APP_ENV": "production",
