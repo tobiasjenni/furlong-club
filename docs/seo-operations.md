@@ -10,6 +10,12 @@ Member pages, checkout, admin, APIs and authentication pages have noindex respon
 
 Run `node scripts/check-seo.mjs` after publishing. To check the isolated test site, set APP_URL to its URL and add `--staging`. The deploy workflows run these checks automatically. They inspect crawler HTML, JSON syntax, canonical links, private redirects, image dimensions and the sitemap; they do not certify Google rich-result eligibility or rankings.
 
+## Browser and search-result icons
+
+The root layout explicitly declares the existing gold F monogram in `public/icon.svg`, a 96×96 PNG at `/favicon-96x96.png`, a multi-size 16/32/48-pixel `/favicon.ico` and the 180×180 Apple icon. Keep the icon URLs stable. The SVG is a static public asset rather than relying on automatic app-directory icon discovery through the Worker adapter. If the monogram changes, render matching PNG and ICO files from that SVG too.
+
+Release checks require the icon links inside the HTML head for public and sign-in pages, verify both crawler and browser homepage HTML, and fetch the actual files to check format, size and production crawlability. Google can take days or weeks to refresh a search-result icon, and showing one is not guaranteed. An existing browser tab may need reopening if it cached the missing icon. See [Google favicon guidance](https://developers.google.com/search/docs/appearance/favicon-in-search).
+
 ## Owner setup for Google
 
 1. In Google Search Console, add the domain property `furlong.club` with the owner’s Google account.
