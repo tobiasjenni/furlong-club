@@ -3,7 +3,8 @@ let failed = false;
 for (const path of ['/', '/trading', '/meet-harry', '/plans', '/login', '/signup', '/legal/terms', '/legal/privacy', '/legal/responsible-gambling', '/forgot-password', '/reset-password', '/verify-email', '/icon.svg', '/robots.txt', '/sitemap.xml']) {
   const response = await fetch(new URL(path, origin), { signal: AbortSignal.timeout(20000) });
   const body = await response.text();
-  // React separates dynamic text with HTML comments; check the rendered wording.
+  // Node assertions only: React separates text with comments. Never render this as HTML
+  // or reuse these replacements as an HTML sanitizer.
   const visibleText = body.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, "").replace(/<!--[\s\S]*?-->/g, "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ");
   if (response.status !== 200) { console.error(`Release check failed: ${path} (${response.status})`); failed = true; }
   if (path === '/' && /Wallet test site|Test mode: payments|All balances and payments are simulated/.test(body)) {

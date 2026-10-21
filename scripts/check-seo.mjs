@@ -8,7 +8,7 @@ const failures = [];
 const titles = new Set();
 const descriptions = new Set();
 const check = (value, message) => { if (!value) failures.push(message); };
-const decode = value => value?.replace(/&amp;/g, "&").replace(/&quot;/g, '"').replace(/&#x27;|&#39;/g, "'");
+const decode = value => value?.replace(/&(?:amp|quot|#x27|#39);/g, entity => ({ "&amp;": "&", "&quot;": '"', "&#x27;": "'", "&#39;": "'" })[entity]);
 // Next normalizes an origin-only metadata URL by removing the final slash.
 const normalizedUrl = value => { try { return new URL(value).href; } catch { return undefined; } };
 const fetchPage = path => fetch(new URL(path, origin), { headers: { "User-Agent": "Googlebot" }, redirect: "manual", signal: AbortSignal.timeout(20000) });
