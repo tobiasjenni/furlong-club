@@ -11,7 +11,7 @@ Horse racing education and tip-video membership site. Next.js 15 + TypeScript + 
   - `nowpayments` provider with signed IPN webhook at `/api/payments/webhook/nowpayments`
 - Admin back office: stats, user search and filters, CRM notes and tags, role/suspend, grant or cancel access, payments list, video CRUD, plan editing, CSV export
 - Member wallet: USDT/USDC top-ups, USD credit balance, payment receipts and membership purchases from balance. Immutable balanced ledger and pooled settlement trail in admin. Manual funding uses configured receiving wallets and admin verification. General withdrawals and member-to-member transfers are not supported.
-- Harry Whitcombe is the real host, as confirmed by the site owner. The current image remains labeled as an AI-generated illustration. Trading terms and daily targets are provisional; production enrollment remains closed.
+- Harry Whitcombe is the real host, as confirmed by the site owner. The owner confirms over 40 years of experience reading horses and riders; the public profile and captions reflect that biography. Trading terms and daily targets are provisional; production enrollment remains closed.
 
 See [trading operations](docs/trading-operations.md) for the draft $500–$10,000 allocation flow, 33-day locks, actual-result review and manual external payout records. Real trading enrollment remains closed.
 
@@ -28,7 +28,7 @@ npm test                      # unit tests
 With `EMAIL_PROVIDER=console`, verification and reset links are printed in the server log.
 
 ## Security
-- Passwords: bcrypt (cost 12), 10+ characters with an enforced 72-byte limit for new passwords. Login takes the same time whether or not the email exists.
+- Passwords: bcrypt (cost 12), 10+ characters with an enforced 72-byte limit for new passwords. Signup, password reset and password changes require matching confirmation. Sign-in uses generic credential errors and checks current account/session state before issuing a session.
 - Sessions: signed HttpOnly cookie carrying a session version. Changing or resetting a password, closing the account, or an admin suspending/demoting someone signs out all their devices.
 - Email verification is required before paying. Reset and verification tokens are random, stored only as SHA-256 hashes, single use and short-lived.
 - Rate limits on sign-up, login, password reset, verification emails and checkout use shared, atomic PostgreSQL counters across serverless instances. Identifying keys are hashed; expired counters are cleaned daily.
@@ -66,12 +66,12 @@ GitHub repository secrets (Settings → Secrets and variables → Actions):
 | `CLOUDFLARE_API_TOKEN` | API token from the "Edit Cloudflare Workers" template, with the furlong.club zone included |
 | `CLOUDFLARE_ACCOUNT_ID` | Shown on the Cloudflare dashboard overview |
 | `DATABASE_URL` | Neon connection string (`postgresql://…neon.tech/…?sslmode=require`) |
-| `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD` | First admin login |
+| `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD` | Configured Super Admin owner |
 
 `AUTH_SECRET` and `CRON_SECRET` are generated on the first deploy and kept on the Worker (add a GitHub secret with the same name to set them yourself).
 | `RESEND_API_KEY`, `NOWPAYMENTS_API_KEY`, `NOWPAYMENTS_IPN_SECRET`, `BUNNY_TOKEN_KEY` | Optional, once those accounts exist |
 
-Non-secret settings live in `wrangler.jsonc` under `vars`. Production uses `DEPOSIT_MODE=manual` with simulations explicitly disabled: deposits go to configured public receiving addresses and credit only after admin verification. No payment-provider API key is required for manual deposits. Direct provider checkout is hidden in manual mode. The separate `wrangler.test.jsonc` deployment enables simulations only with all three settings: `APP_ENV=staging`, `ENABLE_TEST_PAYMENTS=true`, and `PAYMENT_PROVIDER=mock`. Complete [wallet setup](docs/wallet-setup.md) before accepting money. Emails go out through Resend as soon as the `RESEND_API_KEY` secret exists. Until then, admins can confirm emails by hand and get invite and reset links to pass on themselves. Production never logs usable verification or reset links.
+Non-secret settings live in `wrangler.jsonc` under `vars`. Production uses `DEPOSIT_MODE=manual` with simulations explicitly disabled: deposits go to configured public receiving addresses and credit only after admin verification. No payment-provider API key is required for manual deposits. Direct provider checkout is hidden in manual mode. The separate `wrangler.test.jsonc` deployment enables simulations only with all three settings: `APP_ENV=staging`, `ENABLE_TEST_PAYMENTS=true`, and `PAYMENT_PROVIDER=mock`. Complete [wallet setup](docs/wallet-setup.md) before accepting money. Emails go out through Resend as soon as the `RESEND_API_KEY` secret exists. Until then, only Super Admin can confirm email ownership manually or create private recovery links for non-owner accounts. Members create their own accounts. Production never logs usable verification or reset links.
 
 The Worker needs the Workers Paid plan ($5/month), because password hashing and the database engine use more CPU per request than the free plan's 10 ms allows. `.github/workflows/daily.yml` runs `npm run daily` (renewal reminders, clean-up) every morning against the production database.
 

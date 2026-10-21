@@ -1,4 +1,5 @@
 "use client";
+import { PasswordInput, PasswordPair } from "@/components/PasswordInput";
 import { useActionState } from "react";
 import { changeEmail, changePassword, updateProfile } from "@/app/actions/auth";
 import { FormMessage } from "@/components/FormMessage";
@@ -21,8 +22,8 @@ export function PasswordForm() {
   const [state, action] = useActionState(changePassword, null);
   return (
     <form action={action} className="space-y-4">
-      <div><label className="label" htmlFor="current">Current password</label><input className="input" id="current" name="current" type="password" autoComplete="current-password" required /></div>
-      <div><label className="label" htmlFor="next">New password</label><input className="input" id="next" name="next" type="password" autoComplete="new-password" minLength={10} required /></div>
+      <PasswordInput id="current" name="current" label="Current password" autoComplete="current-password" required />
+      <PasswordPair name="next" label="New password" confirmationName="nextConfirm" confirmationLabel="Confirm new password" />
       <FormMessage state={state} />
       <SubmitButton className="btn-ghost">Change password</SubmitButton>
     </form>

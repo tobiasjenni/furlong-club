@@ -35,10 +35,10 @@ export async function SiteHeader() {
 
         <DesktopNav links={links} />
 
-        <div className="hidden items-center gap-2 lg:flex">
+        <div className="hidden items-center gap-2 xl:flex">
           {user ? (
             <>
-              <Link href="/account" className="flex h-9 w-9 items-center justify-center rounded-full bg-gold-400 text-sm font-bold text-turf-950" title={user.email}>
+              <Link href="/account" aria-label="Account settings" className="flex h-11 w-11 items-center justify-center rounded-full bg-gold-400 text-sm font-bold text-turf-950" title={user.email}>
                 {initials}
               </Link>
               <form action={logout}>

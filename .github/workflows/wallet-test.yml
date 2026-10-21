@@ -1,7 +1,7 @@
 name: Deploy wallet test site
 on:
   push:
-    branches: [feat/stablecoin-wallet-ledger, feat/manual-deposit-review, feat/harry-trading-lock, feat/site-wording-33-days]
+    branches: [feat/stablecoin-wallet-ledger, feat/manual-deposit-review, feat/harry-trading-lock, feat/site-wording-33-days, feat/smooth-secure-signup]
   workflow_dispatch:
 permissions:
   contents: read

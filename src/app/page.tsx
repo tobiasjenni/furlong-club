@@ -17,7 +17,7 @@ const steps = [
 
 const faqs = [
   { q: "Is Furlong Club a bookmaker?", a: "No. We teach you how to read a race and share our opinion on the day's cards. We accept membership payments and club credit, but never take bets or bet on your behalf. If you choose to bet, you do it yourself with a licensed bookmaker." },
-  { q: "Who is Harry Whitcombe?", a: "Harry Whitcombe is the host of Furlong Club. The current portrait on the site is an AI-generated illustration." },
+  { q: "Who is Harry Whitcombe?", a: "Harry Whitcombe is the host of Furlong Club, bringing more than 40 years of experience reading horses and riders. He helps members look beyond the numbers to understand the horse, the rider and the race in front of them." },
   { q: "How do I pay?", a: "Add USDT or USDC to your club wallet, report your transfer, and wait for an admin to approve the deposit. Then use your available club credit to activate a plan. Your access period is shown on the plan and at checkout." },
   { q: "Will I be charged again?", a: "No. Paid plans are one-off purchases with no automatic renewal. When your access period ends, paid access stops and your free account stays open. Extend only if you choose to." },
   { q: "Are all videos available now?", a: "Check the video library before choosing a paid plan. Titles marked In preparation are not available to watch yet; joining or upgrading does not make those videos available sooner." },
@@ -33,7 +33,7 @@ export default async function Home() {
   ]);
   const periods = [...new Set(plans.filter(p => p.priceCents > 0).map(p => p.intervalDays))];
   const highlights = [
-    { value: "UK", label: "Racing focus" },
+    { value: "40+ years", label: "Harry’s experience" },
     { value: "Form & racecraft", label: "Learn the essentials" },
     { value: periods.length === 1 ? `${periods[0]} days` : "Your choice", label: "Plans, no auto-renew" },
     { value: "18+", label: "Responsible gambling first" },
@@ -48,8 +48,8 @@ export default async function Home() {
               Read the race <span className="text-gold-400">before</span> the gates open.
             </h1>
             <p className="mt-5 max-w-xl text-lg text-cream/75">
-              A clearer view of the form. Explore race cards, understand the going and build a disciplined approach to staking,
-              with {brand.host.first} as your guide. Start with a free account and find your place in the club.
+              More than 40 years of reading horses and riders, shared by {brand.host.name}.
+              Explore the form, understand race conditions and build a more considered approach to racing. Start with a free account.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Link href={user ? "/dashboard" : "/signup"} className="btn-gold px-7 py-3 text-base">{user ? "Open your dashboard" : "Join free"}</Link>
@@ -58,8 +58,8 @@ export default async function Home() {
             <p className="muted mt-4 text-xs">Free to join · No automatic renewal · 18+ only</p>
           </div>
           <div className="relative">
-            <HostPortrait className="mx-auto w-full max-w-[340px] shadow-2xl" />
-            <p className="muted mt-3 text-center text-xs">Meet {brand.host.name}, our paddock guide. AI-generated illustration.</p>
+            <HostPortrait priority className="mx-auto w-full max-w-[340px] shadow-2xl" />
+            <p className="muted mt-3 text-center text-xs">{brand.host.name} · Over 40 years of racing experience</p>
           </div>
         </div>
       </section>
@@ -75,7 +75,7 @@ export default async function Home() {
         </dl>
       </section>
 
-      <section id="how" className="container-page py-16 md:py-20">
+      <section id="how" className="container-page py-12 md:py-20">
         <h2 className="text-3xl md:text-4xl">How it works</h2>
         <div className="mt-8 grid gap-4 md:grid-cols-3">
           {steps.map((s, i) => (
@@ -92,9 +92,9 @@ export default async function Home() {
         <div className="card grid items-center gap-8 md:grid-cols-[auto_1fr]">
           <HostPortrait className="mx-auto h-40 w-40" rounded="rounded-full" />
           <div>
-            <h2 className="text-3xl">Who is {brand.host.first}?</h2>
+            <h2 className="text-3xl">Experience that looks beyond the form</h2>
             <p className="mt-3 text-cream/75">
-              {brand.host.name} is the host of {brand.name}. Join Harry for racing education, race-day analysis and a closer look at the form.
+              {brand.host.name} brings more than 40 years of experience reading horses and riders to {brand.name}. Learn to consider how a horse moves, how its rider responds and how the pair fit the conditions.
             </p>
             <Link href={brand.host.page} className="mt-4 inline-block text-gold-300 hover:underline">Meet {brand.host.first} →</Link>
           </div>
@@ -103,7 +103,7 @@ export default async function Home() {
 
       <div className="container-page py-8"><TradingOffer /></div>
 
-      <section id="plans" className="container-page py-16 md:py-20">
+      <section id="plans" className="container-page py-12 md:py-20">
         <h2 className="text-3xl md:text-4xl">Choose your plan</h2>
         <p className="muted mt-2">Start with Paddock for free. Compare each plan&apos;s access and published videos before choosing.</p>
         <div className="mt-8 grid gap-4 md:grid-cols-3">

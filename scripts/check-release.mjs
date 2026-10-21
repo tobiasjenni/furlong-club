@@ -11,6 +11,7 @@ for (const path of ['/', '/trading', '/meet-harry', '/plans', '/login', '/signup
   }
   if (['/','/plans'].includes(path) && (/30 days|30-day/i.test(visibleText) || !/33 days/.test(visibleText))) { console.error('Release check failed: incorrect membership period'); failed = true; }
   if (path === '/icon.svg' && !body.includes('M21 17H43')) { console.error('Release check failed: outdated brand icon'); failed = true; }
+  if (/AI-generated illustration|paddock guide/i.test(body)) { console.error(`Release check failed: outdated host caption at ${path}`); failed = true; }
   if (/fictional character|fictional host|not a real person/i.test(body)) { console.error(`Release check failed: outdated Harry description at ${path}`); failed = true; }
   if (path === '/trading' && !/real trading enrollment is closed/i.test(body)) { console.error('Release check failed: draft trading enrollment must remain closed'); failed = true; }
   if (path === '/' && !response.headers.get('content-security-policy')) { console.error('Release check failed: missing security policy'); failed = true; }
