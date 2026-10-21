@@ -9,6 +9,8 @@ const titles = new Set();
 const descriptions = new Set();
 const check = (value, message) => { if (!value) failures.push(message); };
 const decode = value => value?.replace(/&amp;/g, "&").replace(/&quot;/g, '"').replace(/&#x27;|&#39;/g, "'");
+// Next normalizes an origin-only metadata URL by removing the final slash.
+const normalizedUrl = value => { try { return new URL(value).href; } catch { return undefined; } };
 const fetchPage = path => fetch(new URL(path, origin), { headers: { "User-Agent": "Googlebot" }, redirect: "manual", signal: AbortSignal.timeout(20000) });
 function elements(html, name) {
   return [...html.matchAll(new RegExp(`<${name}\\b[^>]*>`, "gi"))].map(([tag]) => Object.fromEntries([...tag.matchAll(/([\w:-]+)=["']([^"']*)["']/g)].map(([, key, value]) => [key.toLowerCase(), decode(value)])));
@@ -28,8 +30,8 @@ for (const path of publicPaths) {
   check(title && !titles.has(title), `${path}: missing or duplicate title`);
   check(value("description") && !descriptions.has(value("description")), `${path}: missing or duplicate description`);
   titles.add(title); descriptions.add(value("description"));
-  check(canonical === expectedUrl, `${path}: incorrect canonical URL`);
-  check(value("og:url") === expectedUrl, `${path}: incorrect sharing URL`);
+  check(normalizedUrl(canonical) === expectedUrl, `${path}: incorrect canonical URL`);
+  check(normalizedUrl(value("og:url")) === expectedUrl, `${path}: incorrect sharing URL`);
   check(value("og:title") === title && value("twitter:title") === title, `${path}: inconsistent sharing titles`);
   check(value("og:description") === value("description"), `${path}: inconsistent sharing description`);
   check(value("og:image") === `${canonicalOrigin}/social/furlong-club.png`, `${path}: missing branded image`);
