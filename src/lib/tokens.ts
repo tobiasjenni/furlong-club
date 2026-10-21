@@ -1,32 +1,17 @@
-import crypto from "node:crypto";
-import type { TokenType } from "@prisma/client";
-import { db } from "./db";
-
-const lifetimes: Record<TokenType, number> = {
-  VERIFY_EMAIL: 24 * 60 * 60 * 1000,
-  RESET_PASSWORD: 60 * 60 * 1000,
-};
-
-const hash = (token: string) => crypto.createHash("sha256").update(token).digest("hex");
-
-// Only the hash is stored, so a database leak doesn't expose usable links.
+import crypto from 'node:crypto';
+import type { TokenType } from '@prisma/client';
+import { db } from './db';
+const lifetimes: Record<TokenType, number> = { VERIFY_EMAIL: 86400000, RESET_PASSWORD: 3600000 };
+const hash = (token: string) => crypto.createHash('sha256').update(token).digest('hex');
 export async function issueToken(userId: string, type: TokenType, ttlMs = lifetimes[type]) {
-  const token = crypto.randomBytes(32).toString("base64url");
-  const id = crypto.randomUUID();
-  const expiresAt = new Date(Date.now() + ttlMs);
-  await db.$executeRaw`WITH removed AS (
-    DELETE FROM "AuthToken" WHERE "userId"=${userId} AND type=${type}::"TokenType" AND "usedAt" IS NULL
-  ) INSERT INTO "AuthToken" (id,"userId",type,"tokenHash","expiresAt")
-    VALUES (${id},${userId},${type}::"TokenType",${hash(token)},${expiresAt})`;
+  const users = await db.$queryRaw<{sessionVersion:number}[]>`SELECT "sessionVersion" FROM "User" WHERE id=${userId}`;
+  const token = crypto.randomBytes(32).toString('base64url');
+  const issued = await db.$queryRaw<{issued:boolean}[]>`SELECT auth_issue_token(${userId},${type}::"TokenType",${crypto.randomUUID()},${hash(token)},${ttlMs}::bigint,${users[0]?.sessionVersion ?? -1}::integer) AS issued`;
+  if (!issued[0]?.issued) throw new Error('Account changed while issuing recovery link');
   return token;
 }
-
-// Single use: returns the userId and marks the token used, or null if it is unknown, used or expired.
-export async function consumeToken(token: string, type: TokenType) {
+export async function consumeToken(token: string, type: TokenType, passwordHash: string | null = null) {
   if (!/^[A-Za-z0-9_-]{43}$/.test(token)) return null;
-  const claimed = await db.$queryRaw<{ userId: string }[]>`UPDATE "AuthToken"
-    SET "usedAt"=(CURRENT_TIMESTAMP AT TIME ZONE 'UTC')
-    WHERE "tokenHash"=${hash(token)} AND type=${type}::"TokenType" AND "usedAt" IS NULL
-      AND "expiresAt">(CURRENT_TIMESTAMP AT TIME ZONE 'UTC') RETURNING "userId"`;
-  return claimed[0]?.userId ?? null;
+  const rows = await db.$queryRaw<{userId:string|null}[]>`SELECT auth_consume_token(${hash(token)},${type}::"TokenType",${passwordHash}) AS "userId"`;
+  return rows[0]?.userId ?? null;
 }

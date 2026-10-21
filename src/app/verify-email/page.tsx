@@ -1,6 +1,4 @@
 import Link from "next/link";
-import { audit } from "@/lib/audit";
-import { db } from "@/lib/db";
 import { consumeToken } from "@/lib/tokens";
 
 export const metadata = { title: "Confirm email" };
@@ -9,10 +7,7 @@ export const dynamic = "force-dynamic";
 export default async function VerifyEmail({ searchParams }: { searchParams: Promise<{ token?: string }> }) {
   const { token } = await searchParams;
   const userId = token ? await consumeToken(token, "VERIFY_EMAIL") : null;
-  if (userId) {
-    await db.user.update({ where: { id: userId }, data: { emailVerifiedAt: new Date() } });
-    await audit(userId, "user.email_verified", userId);
-  }
+
   return (
     <div className="container-page max-w-md py-16 text-center">
       <div className="card">

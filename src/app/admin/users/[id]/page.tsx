@@ -2,14 +2,15 @@ import { TradingSummary } from "@/components/TradingSummary";
 import { requireAdmin } from "@/lib/auth";
 import { notFound } from "next/navigation";
 import { addNote, cancelSubscription, confirmEmail, grantPlan, signOutUser, updateUser } from "@/app/actions/admin";
-import { ResetLinkForm } from "../AdminForms";
+import { canManageUser, roleLabel } from "@/lib/roles";
+import { ResetLinkForm, RoleForm } from "../AdminForms";
 import { db } from "@/lib/db";
 import { date, dateTime, usd } from "@/lib/format";
 import { ReviewDepositForm } from "@/components/ManualDepositForms";
 import { transactionUrl } from "@/lib/manual-deposits";
 
-export default async function AdminUser({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ tradingOpen?: string }> }) {
-  await requireAdmin();
+export default async function AdminUser({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ tradingOpen?: string; management?: string }> }) {
+  const admin = await requireAdmin();
   const user = await db.user.findUnique({
     where: { id: (await params).id },
     include: {
@@ -21,7 +22,11 @@ export default async function AdminUser({ params, searchParams }: { params: Prom
   if (!user) notFound();
   const pendingDeposits = await db.payment.findMany({ where: { userId: user.id, provider: "manual", status: "CONFIRMING" }, orderBy: { submittedAt: "asc" }, take: 50 });
   const plans = await db.plan.findMany({ where: { priceCents: { gt: 0 } }, orderBy: { sortOrder: "asc" } });
+  const history = await db.auditLog.findMany({ where: { target: user.id }, orderBy: { createdAt: "desc" }, take: 20 });
   const now = new Date();
+  const manageable = canManageUser(admin,user);
+  const superAdmin = admin.role === "SUPER_ADMIN";
+  const management = (await searchParams).management;
 
   return (
     <div className="grid gap-4 lg:grid-cols-[1fr_1.2fr]">
@@ -32,47 +37,50 @@ export default async function AdminUser({ params, searchParams }: { params: Prom
           <dl className="mt-4 grid grid-cols-2 gap-2 text-sm">
             <dt className="muted">Email confirmed</dt>
             <dd>
-              {user.emailVerifiedAt ? date(user.emailVerifiedAt) : (
-                <form action={confirmEmail}><input type="hidden" name="userId" value={user.id} /><button className="text-gold-300 hover:underline">Not yet · confirm manually</button></form>
-              )}
+              {user.emailVerifiedAt ? date(user.emailVerifiedAt) : manageable && superAdmin ? (
+                <form action={confirmEmail}><input type="hidden" name="userId" value={user.id} /><label className="label">Ownership verification note<input name="reason" minLength={10} maxLength={500} required className="input" placeholder="How you verified this email belongs to the member" /></label><button className="text-gold-300 hover:underline">Confirm verified ownership</button></form>
+              ) : "Not yet"}
             </dd>
+            <dt className="muted">Role</dt><dd>{roleLabel(user.role)}</dd>
             <dt className="muted">Country</dt><dd>{user.country ?? "—"}</dd>
             <dt className="muted">Joined</dt><dd>{dateTime(user.createdAt)}</dd>
             <dt className="muted">Last login</dt><dd>{dateTime(user.lastLoginAt)}</dd>
             <dt className="muted">18+ confirmed</dt><dd>{date(user.ageConfirmedAt)}</dd>
             <dt className="muted">Marketing</dt><dd>{user.marketingOptIn ? "Opted in" : "No"}</dd>
             <dt className="muted">Balance</dt><dd>{usd(user.balanceCents)}</dd>
-            {user.closedAt && <><dt className="muted">Closed by user</dt><dd>{dateTime(user.closedAt)}</dd></>}
+            {user.closedAt && <><dt className="muted">Account closed</dt><dd>{dateTime(user.closedAt)}</dd></>}
           </dl>
         </div>
-        <form action={updateUser} className="card space-y-3">
+        {management && <p role="status" className="card text-sm">{management === 'saved' ? 'Account updated and recorded in the audit history.' : management === 'wallet_unresolved' ? 'Resolve the balance, pending deposits and open trading allocations before closing this account.' : 'This action is unavailable. Check your permissions and the account status.'}</p>}
+        {!manageable && <div className="card"><h3 className="text-lg">Protected account</h3><p className="muted mt-2 text-sm">{user.role === 'SUPER_ADMIN' ? 'The Super Admin owner account cannot be demoted, suspended or closed here.' : 'Your role does not allow changes to this account.'} Use your own profile for personal password and session settings.</p></div>}
+        {manageable && <form action={updateUser} className="card space-y-3">
           <h3 className="text-lg">Account</h3>
           {(await searchParams).tradingOpen && <p role="alert" className="text-sm text-gold-300">Resolve all pending or unpaid trading allocations before closing this account.</p>}
           <input type="hidden" name="userId" value={user.id} />
           <div className="grid grid-cols-2 gap-3">
-            <div><label className="label">Role</label><select name="role" defaultValue={user.role} className="input"><option>USER</option><option>ADMIN</option></select></div>
-            <div><label className="label">Status</label><select name="status" defaultValue={user.status} className="input"><option>ACTIVE</option><option>SUSPENDED</option><option>CLOSED</option></select></div>
+            <div><label htmlFor="account-status" className="label">Status</label><select id="account-status" name="status" defaultValue={user.status} className="input"><option>ACTIVE</option><option>SUSPENDED</option><option>CLOSED</option></select></div>
           </div>
           <div><label className="label">Tags (comma separated)</label><input name="tags" defaultValue={user.tags.join(", ")} className="input" placeholder="vip, uk, referral" /></div>
           <button className="btn-gold">Save</button>
-        </form>
-        <div className="card space-y-3">
+        </form>}
+        {manageable && superAdmin && <RoleForm userId={user.id} role={user.role} />}
+        {manageable && <div className="card space-y-3">
           <h3 className="text-lg">Access & security</h3>
-          <ResetLinkForm userId={user.id} />
+          {superAdmin && <ResetLinkForm userId={user.id} />}
           <form action={signOutUser}>
             <input type="hidden" name="userId" value={user.id} />
             <button className="btn-ghost w-full">Sign out of all devices</button>
           </form>
-        </div>
-        <form action={grantPlan} className="card space-y-3">
+        </div>}
+        {manageable && <form action={grantPlan} className="card space-y-3">
           <h3 className="text-lg">Grant access</h3>
           <input type="hidden" name="userId" value={user.id} />
           <div className="grid grid-cols-2 gap-3">
             <select name="planId" className="input">{plans.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</select>
-            <input name="days" type="number" defaultValue={30} min={1} max={366} className="input" />
+            <input name="days" type="number" defaultValue={33} min={1} max={366} className="input" />
           </div>
           <button className="btn-ghost">Grant days</button>
-        </form>
+        </form>}
       </div>
       <div className="space-y-4">
         <TradingSummary userId={user.id} admin />
@@ -92,11 +100,11 @@ export default async function AdminUser({ params, searchParams }: { params: Prom
         </div>
         <div className="card">
           <h3 className="mb-3 text-lg">CRM notes</h3>
-          <form action={addNote} className="space-y-2">
+          {manageable && <form action={addNote} className="space-y-2">
             <input type="hidden" name="userId" value={user.id} />
             <textarea name="body" rows={3} className="input" placeholder="Called, interested in Inner Circle…" />
             <button className="btn-gold">Add note</button>
-          </form>
+          </form>}
           <ul className="mt-4 space-y-3">
             {user.notes.map((n) => (
               <li key={n.id} className="rounded-xl bg-white/5 p-3 text-sm">
@@ -116,12 +124,17 @@ export default async function AdminUser({ params, searchParams }: { params: Prom
                 return (
                   <tr key={s.id}>
                     <td>{s.plan.name}</td><td>{date(s.endsAt)}</td><td>{s.source}</td><td>{live ? "Active" : s.status === "CANCELLED" ? "Cancelled" : "Expired"}</td>
-                    <td>{live && <form action={cancelSubscription}><input type="hidden" name="id" value={s.id} /><button className="text-xs text-red-300 hover:underline">Cancel</button></form>}</td>
+                    <td>{live && manageable && <form action={cancelSubscription}><input type="hidden" name="id" value={s.id} /><button className="text-xs text-red-300 hover:underline">Cancel</button></form>}</td>
                   </tr>
                 );
               })}
             </tbody>
           </table>
+        </div>
+        <div className="card">
+          <h3 className="text-lg">Recent account history</h3>
+          <p className="muted mt-2 text-sm">The latest 20 recorded events. <Link href="/admin/audit" className="text-gold-300 underline">Open the full audit log</Link></p>
+          <ul className="mt-3 space-y-3">{history.map(event => <li key={event.id} className="rounded-xl bg-white/5 p-3 text-sm"><p className="break-all">{event.action}</p><p className="muted mt-1 text-xs">{dateTime(event.createdAt)}</p>{event.meta && <p className="muted mt-1 break-all text-xs">{JSON.stringify(event.meta)}</p>}</li>)}</ul>
         </div>
         <div className="card overflow-x-auto">
           <h3 className="mb-3 text-lg">Payments</h3>

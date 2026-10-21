@@ -5,7 +5,7 @@ Horse racing education and tip-video membership site. Next.js 15 + TypeScript + 
 ## What's in v0.1
 - Email sign-up and login, email verification, password reset, sign out on all devices, self-service account closure
 - Member area: dashboard, video library gated by plan tier, account page with profile, password, subscription and payment history
-- Plans: Paddock (free), Form Room ($29 / 30 days), Inner Circle ($79 / 30 days), editable in admin
+- Plans: Paddock (free), Form Room ($29 / 33 days), Inner Circle ($79 / 33 days), editable in admin
 - Crypto checkout in USDT/USDC (Tron, Ethereum, Polygon) behind a `PaymentProvider` interface
   - `mock` provider for local testing (a "simulate payment" button appears on the pay page)
   - `nowpayments` provider with signed IPN webhook at `/api/payments/webhook/nowpayments`

@@ -114,15 +114,11 @@ export async function requestPasswordReset(_: FormState, form: FormData): Promis
 export async function resetPassword(_: FormState, form: FormData): Promise<FormState> {
   const parsed = password.safeParse(form.get("password"));
   if (!parsed.success) return { error: parsed.error.issues[0].message };
-  const userId = await consumeToken(String(form.get("token") ?? ""), "RESET_PASSWORD");
+  if (!await rateLimit(`reset-consume:${await clientIp()}`,10,15*60*1000)) return { error: "Too many attempts. Try again later." };
+  const userId = await consumeToken(String(form.get("token") ?? ""), "RESET_PASSWORD", await bcrypt.hash(parsed.data,12));
   if (!userId) return { error: "This reset link is invalid or has expired. Please request a new one." };
-  const user = await db.user.update({
-    where: { id: userId },
-    // Clicking the emailed link proves ownership of the address.
-    data: { passwordHash: await bcrypt.hash(parsed.data, 12), emailVerifiedAt: new Date() },
-  });
-  await audit(user.id, "user.password_reset", user.id);
-  await revokeSessions(user.id);
+  const user = await db.user.findUniqueOrThrow({ where: { id: userId } });
+  await endSession();
   await sendEmail(passwordChangedMessage(user.email)).catch(() => {});
   redirect("/login?reset=1");
 }
@@ -145,7 +141,8 @@ export async function changePassword(_: FormState, form: FormData): Promise<Form
   const parsed = password.safeParse(form.get("next"));
   if (!parsed.success) return { error: parsed.error.issues[0].message };
   if (!(await bcrypt.compare(String(form.get("current") ?? ""), user.passwordHash))) return { error: "Current password is incorrect." };
-  await db.user.update({ where: { id: user.id }, data: { passwordHash: await bcrypt.hash(parsed.data, 12) } });
+  const changed = await db.$queryRaw<{ changed: boolean }[]>`SELECT auth_change_password(${user.id},${user.passwordHash},${await bcrypt.hash(parsed.data,12)}) AS changed`;
+  if (!changed[0]?.changed) return { error: "Your account changed. Sign in again and retry." };
   await audit(user.id, "user.password_changed", user.id);
   await revokeSessions(user.id, true);
   await sendEmail(passwordChangedMessage(user.email)).catch(() => {});
@@ -160,6 +157,7 @@ export async function signOutEverywhere() {
 
 export async function closeAccount(_: FormState, form: FormData): Promise<FormState> {
   const user = await requireUser();
+  if (user.role !== "USER") return { error: "Ask the owner to remove admin access before closing an admin account. The Super Admin owner account is protected." };
   if (!await rateLimit(`close:${user.id}`, 5, 15 * 60 * 1000)) return { error: "Too many attempts. Please try again later." };
   if (form.get("confirm") !== "CLOSE") return { error: 'Type CLOSE to confirm.' };
   if (!(await bcrypt.compare(String(form.get("password") ?? ""), user.passwordHash))) return { error: "Password is incorrect." };
@@ -172,6 +170,7 @@ export async function closeAccount(_: FormState, form: FormData): Promise<FormSt
 
 export async function changeEmail(_: FormState, form: FormData): Promise<FormState> {
   const user = await requireUser();
+  if (user.role !== "USER") return { error: "Admin email changes require a verified ownership review. Contact the owner before changing this address." };
   if (!await rateLimit(`email-change:${user.id}`, 5, 60 * 60 * 1000)) return { error: "Too many attempts, try again later." };
   const parsed = z.string().trim().toLowerCase().email("Please enter a valid email").max(254).safeParse(form.get("email"));
   if (!parsed.success) return { error: parsed.error.issues[0].message };

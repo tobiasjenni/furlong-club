@@ -3,16 +3,17 @@ import Link from "next/link";
 import type { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { date } from "@/lib/format";
-import { InviteForm } from "./AdminForms";
+import { isAdmin, roleLabel } from "@/lib/roles";
 
 export default async function AdminUsers({ searchParams }: { searchParams: Promise<{ q?: string; filter?: string; page?: string }> }) {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const { q = "", filter = "all", page = "1" } = await searchParams;
   const take = 25;
   const skip = (Math.max(Number(page) || 1, 1) - 1) * take;
   const now = new Date();
   const where: Prisma.UserWhereInput = {
     ...(q ? { OR: [{ email: { contains: q, mode: "insensitive" } }, { name: { contains: q, mode: "insensitive" } }, { tags: { has: q } }] } : {}),
+    ...(filter === "admins" ? { role: { in: ["ADMIN", "SUPER_ADMIN"] } } : {}),
     ...(filter === "subscribers" ? { subscriptions: { some: { status: "ACTIVE", endsAt: { gt: now } } } } : {}),
     ...(filter === "free" ? { subscriptions: { none: { status: "ACTIVE", endsAt: { gt: now } } } } : {}),
     ...(filter === "suspended" ? { status: "SUSPENDED" } : {}),
@@ -30,19 +31,19 @@ export default async function AdminUsers({ searchParams }: { searchParams: Promi
     }),
     db.user.count({ where }),
   ]);
-  const filters = ["all", "subscribers", "free", "marketing", "unverified", "suspended", "closed"];
+  const filters = ["all", "admins", "subscribers", "free", "marketing", "unverified", "suspended", "closed"];
   const pageNum = skip / take + 1;
 
   return (
     <div className="space-y-4">
-      <InviteForm />
+      <div className="card"><h2 className="text-lg">Member management</h2><p className="muted mt-2 text-sm">Members register at <Link href="/signup" className="text-gold-300 underline">Create account</Link>. Open a member’s profile to review their account. Only Super Admin can grant admin access after they have signed in and confirmed their email.</p><p className="mt-2 text-sm text-gold-300">Your access: {roleLabel(admin.role)}</p></div>
       <form className="flex flex-col gap-2 sm:flex-row">
         <input name="q" defaultValue={q} placeholder="Search email, name or tag" className="input sm:max-w-sm" />
         <select name="filter" defaultValue={filter} className="input sm:max-w-[200px]">
           {filters.map((f) => <option key={f} value={f}>{f[0].toUpperCase() + f.slice(1)}</option>)}
         </select>
         <button className="btn-gold">Search</button>
-        <a href="/admin/users/export" className="btn-ghost">Export all (CSV)</a>
+        {admin.role === "SUPER_ADMIN" && <a href="/admin/users/export" className="btn-ghost">Export all (CSV)</a>}
       </form>
       <ul className="space-y-2 md:hidden">
         {users.map((u) => (
@@ -53,7 +54,7 @@ export default async function AdminUsers({ searchParams }: { searchParams: Promi
                 <span className={`badge shrink-0 ${u.status === "ACTIVE" ? "bg-emerald-500/15 text-emerald-300" : "bg-red-500/15 text-red-300"}`}>{u.status.toLowerCase()}</span>
               </div>
               <p className="muted mt-1 text-sm">
-                {u.name ?? "No name"} · {u.subscriptions[0]?.plan.name ?? "Free"}{u.role === "ADMIN" ? " · admin" : ""} · joined {date(u.createdAt)}
+                {u.name ?? "No name"} · {u.subscriptions[0]?.plan.name ?? "Free"}{isAdmin(u.role) ? ` · ${roleLabel(u.role)}` : ""} · joined {date(u.createdAt)}
               </p>
             </Link>
           </li>
@@ -65,7 +66,7 @@ export default async function AdminUsers({ searchParams }: { searchParams: Promi
           <tbody>
             {users.map((u) => (
               <tr key={u.id}>
-                <td><Link href={`/admin/users/${u.id}`} className="text-gold-300 hover:underline">{u.email}</Link>{u.role === "ADMIN" && <span className="badge ml-2 bg-gold-400/20 text-gold-300">admin</span>}</td>
+                <td><Link href={`/admin/users/${u.id}`} className="text-gold-300 hover:underline">{u.email}</Link>{isAdmin(u.role) && <span className="badge ml-2 bg-gold-400/20 text-gold-300">{roleLabel(u.role)}</span>}</td>
                 <td>{u.name}</td>
                 <td>{u.subscriptions[0]?.plan.name ?? <span className="muted">Free</span>}</td>
                 <td className="text-xs">{u.tags.join(", ")}</td>

@@ -1,3 +1,4 @@
+import { isAdmin } from "@/lib/roles";
 import Link from "next/link";
 import { logout } from "@/app/actions/auth";
 import { currentUser } from "@/lib/auth";
@@ -15,7 +16,7 @@ export async function SiteHeader() {
         { href: "/wallet", label: "Wallet" },
         { href: "/trading", label: "Trading" },
         { href: "/account", label: "Account" },
-        ...(user.role === "ADMIN" ? [{ href: "/admin", label: "Admin" }] : []),
+        ...(isAdmin(user.role) ? [{ href: "/admin", label: "Admin" }] : []),
       ]
     : [
         { href: "/#how", label: "How it works" },

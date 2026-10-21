@@ -4,7 +4,7 @@ export const SESSION_COOKIE = "fc_session";
 const MAX_AGE = 60 * 60 * 24 * 14;
 
 // sv is the user's sessionVersion; bumping it in the database signs out every existing session.
-export type SessionPayload = { uid: string; role: "USER" | "ADMIN"; sv: number };
+export type SessionPayload = { uid: string; role: "USER" | "ADMIN" | "SUPER_ADMIN"; sv: number };
 
 function key() {
   const secret = process.env.AUTH_SECRET;
@@ -24,8 +24,8 @@ export async function verifySession(token: string | undefined): Promise<SessionP
   if (!token) return null;
   try {
     const { payload } = await jwtVerify(token, key(), { algorithms: ["HS256"] });
-    if (typeof payload.uid !== "string") return null;
-    return { uid: payload.uid, role: payload.role === "ADMIN" ? "ADMIN" : "USER", sv: Number(payload.sv ?? 0) };
+    if (typeof payload.uid !== "string" || !payload.uid || !["USER", "ADMIN", "SUPER_ADMIN"].includes(String(payload.role)) || !Number.isSafeInteger(payload.sv) || Number(payload.sv) < 0) return null;
+    return { uid: payload.uid, role: payload.role as SessionPayload["role"], sv: Number(payload.sv) };
   } catch {
     return null;
   }
