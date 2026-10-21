@@ -1,5 +1,6 @@
 "use server";
 
+import crypto from "node:crypto";
 import bcrypt from "bcryptjs";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -31,7 +32,7 @@ const signupSchema = z.object({
 const DUMMY_HASH = "$2a$12$C6UzMDM.H6dfI/f/IKcEeO5mJ4mRFKuJ1bQnzD6gjmpo8l3Ws7vqS";
 
 async function sendVerification(user: { id: string; email: string }) {
-  const token = await issueToken(user.id, "VERIFY_EMAIL");
+  const token = await issueToken(user.id, "VERIFY_EMAIL",undefined,user.email);
   await sendEmail(verifyEmailMessage(user.email, token));
 }
 
@@ -104,7 +105,7 @@ export async function requestPasswordReset(_: FormState, form: FormData): Promis
   if (!await rateLimit(`reset-ip:${await clientIp()}`, 10, 60 * 60 * 1000) || !await rateLimit(`reset:${email}`, 3, 60 * 60 * 1000)) return sent;
   const user = await db.user.findUnique({ where: { email } });
   if (user && user.status === "ACTIVE") {
-    const token = await issueToken(user.id, "RESET_PASSWORD");
+    const token = await issueToken(user.id, "RESET_PASSWORD",undefined,user.email);
     await sendEmail(resetPasswordMessage(user.email, token)).catch((err) => console.error("reset email failed", err));
     await audit(user.id, "user.password_reset_requested", user.id);
   }
@@ -178,11 +179,8 @@ export async function changeEmail(_: FormState, form: FormData): Promise<FormSta
   if (email === user.email) return { error: "That's already your email." };
   if (!(await bcrypt.compare(String(form.get("password") ?? ""), user.passwordHash))) return { error: "Password is incorrect." };
   if (await db.user.findUnique({ where: { email } })) return { error: "That email is already used by another account." };
-  // Update the address and revoke old emailed links atomically on the HTTP driver.
-  await db.$executeRaw`WITH changed AS (
-    UPDATE "User" SET email=${email}, "emailVerifiedAt"=NULL, "updatedAt"=(CURRENT_TIMESTAMP AT TIME ZONE 'UTC') WHERE id=${user.id}
-  ) DELETE FROM "AuthToken" WHERE "userId"=${user.id}`;
-  await audit(user.id, "user.email_changed", user.id, { from: user.email, to: email });
+  const changed = await db.$queryRaw<{changed:boolean}[]>`SELECT auth_change_email(${user.id},${user.passwordHash},${user.sessionVersion}::integer,${email},${crypto.randomUUID()}) AS changed`;
+  if (!changed[0]?.changed) return { error: "Your account changed. Sign in again and retry." };
   await sendVerification({ id: user.id, email }).catch((err) => console.error("verification email failed", err));
   await revokeSessions(user.id, true);
   return { ok: emailDelivers() ? `Email changed. We've sent a confirmation link to ${email}.` : "Email changed. Contact support@furlong.club to confirm your new address." };

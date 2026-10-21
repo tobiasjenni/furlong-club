@@ -92,6 +92,16 @@ describe("recovery, suspension and stored obligations",()=>{
     expect(await manage(owner,member,"reset",{tokenHash:"x",passwordHash:"test-hash"})).toBe("saved");
     expect(await manage(owner,owner,"reset",{tokenHash:"y",passwordHash:"test-hash"})).toBe("forbidden");
   });
+  it("binds recovery issuance to the requested email and revokes links on email change",async()=>{
+    const before=(await pg.query<{email:string}>(`SELECT email FROM "User" WHERE id=$1`,[member])).rows[0].email;
+    await token(member,'before-email-change');
+    expect(await scalar(`SELECT auth_change_email($1,'test-hash',0,'changed@example.com',$2) AS result`,[member,crypto.randomUUID()])).toBe(true);
+    expect(await scalar(`SELECT auth_consume_token('before-email-change','RESET_PASSWORD','bad') AS result`)).toBeNull();
+    expect(await scalar(`SELECT auth_issue_token($1,'RESET_PASSWORD',$2,'old-address',3600000,1,$3) AS result`,[member,crypto.randomUUID(),before])).toBe(false);
+    expect(await scalar(`SELECT auth_issue_token($1,'RESET_PASSWORD',$2,'new-address',3600000,1,'changed@example.com') AS result`,[member,crypto.randomUUID()])).toBe(true);
+    expect(await scalar(`SELECT auth_change_email($1,'test-hash',0,'takeover@example.com',$2) AS result`,[member,crypto.randomUUID()])).toBe(false);
+    expect(await scalar(`SELECT auth_change_email($1,'test-hash',0,'owner-change@example.com',$2) AS result`,[owner,crypto.randomUUID()])).toBe(false);
+  });
   it("invalidates recovery links when the password changes",async()=>{
     await token(member,"obsolete");
     expect(await scalar(`SELECT auth_change_password($1,'wrong','new') AS result`,[member])).toBe(false);
