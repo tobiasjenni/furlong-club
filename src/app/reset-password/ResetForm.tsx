@@ -10,7 +10,7 @@ export function ResetForm({ token }: { token: string }) {
   return (
     <form action={action} className="space-y-4" aria-busy={pending}>
       <input type="hidden" name="token" value={token} />
-      <PasswordPair label="New password" confirmationLabel="Confirm new password" hint="At least 10 characters. Changing your password signs out all devices." />
+      <PasswordPair label="New password" confirmationLabel="Confirm new password" hint="At least 15 characters. Changing your password signs out all devices." />
       <FormMessage state={state} />
       <SubmitButton>Set new password</SubmitButton>
     </form>

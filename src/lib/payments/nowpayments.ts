@@ -20,13 +20,14 @@ const statusMap: Record<string, PaymentStatus> = {
   expired: "EXPIRED",
 };
 
-export function sortKeys(value: unknown): unknown {
-  if (Array.isArray(value)) return value.map(sortKeys);
+export function sortKeys(value: unknown, depth = 0): unknown {
+  if (depth > 32) throw new Error("Notification nesting limit exceeded");
+  if (Array.isArray(value)) return value.map(item => sortKeys(item, depth + 1));
   if (value && typeof value === "object") {
     return Object.fromEntries(
       Object.keys(value as object)
         .sort()
-        .map((k) => [k, sortKeys((value as Record<string, unknown>)[k])]),
+        .map((k) => [k, sortKeys((value as Record<string, unknown>)[k], depth + 1)]),
     );
   }
   return value;
@@ -34,18 +35,14 @@ export function sortKeys(value: unknown): unknown {
 
 // Returns the parsed body when the HMAC-SHA512 signature over the key-sorted JSON matches, otherwise null.
 export function verifyNowPaymentsSignature(rawBody: string, signature: string | null, secret: string): Record<string, unknown> | null {
-  if (!signature) return null;
+  if (!signature || !/^[a-f0-9]{128}$/i.test(signature) || Buffer.byteLength(rawBody, "utf8") > 64 * 1024) return null;
   let body: Record<string, unknown>;
   try {
     body = JSON.parse(rawBody);
     if (!body || typeof body !== "object" || Array.isArray(body)) return null;
-  } catch {
-    return null;
-  }
   const expected = crypto.createHmac("sha512", secret).update(JSON.stringify(sortKeys(body))).digest("hex");
-  const a = Buffer.from(expected);
-  const b = Buffer.from(signature);
-  return a.length === b.length && crypto.timingSafeEqual(a, b) ? body : null;
+  return crypto.timingSafeEqual(Buffer.from(expected, "hex"), Buffer.from(signature, "hex")) ? body : null;
+  } catch { return null; }
 }
 
 export function parseNowPayment(body: Record<string, unknown>): WebhookEvent | null {

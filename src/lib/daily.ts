@@ -18,8 +18,8 @@ export async function runDailyJobs(now = new Date()) {
       await sendEmail(renewalReminderMessage(sub.user.email, sub.plan.name, sub.endsAt, sub.plan.slug));
       await db.subscription.update({ where: { id: sub.id }, data: { reminderSentAt: now } });
       reminded++;
-    } catch (err) {
-      console.error("reminder failed", sub.id, err);
+    } catch {
+      console.error("Renewal reminder delivery failed", { subscriptionId: sub.id });
     }
   }
 

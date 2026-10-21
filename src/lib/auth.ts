@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { cache } from "react";
 import { db } from "./db";
 import { SESSION_COOKIE, sessionCookieOptions, signSession, verifySession } from "./session";
+import { ADMIN_COOKIE, verifyAdminConfirmation } from "./admin-session";
 
 export const currentUser = cache(async () => {
   const store = await cookies();
@@ -25,7 +26,13 @@ export async function requireAdmin() {
   const user = await currentUser();
   if (!user) redirect("/login");
   if (!isAdmin(user.role)) redirect("/dashboard");
+  if (!await adminConfirmed(user)) redirect("/admin-unlock");
   return user;
+}
+
+export async function adminConfirmed(user: { id: string; sessionVersion: number }) {
+  const store = await cookies();
+  return verifyAdminConfirmation(store.get(ADMIN_COOKIE)?.value, user, store.get(SESSION_COOKIE)?.value);
 }
 
 export async function requireSuperAdmin() {
@@ -37,10 +44,12 @@ export async function requireSuperAdmin() {
 export async function startSession(user: { id: string; role: "USER" | "ADMIN" | "SUPER_ADMIN"; sessionVersion: number }) {
   const token = await signSession({ uid: user.id, role: user.role, sv: user.sessionVersion });
   (await cookies()).set(SESSION_COOKIE, token, sessionCookieOptions);
+  (await cookies()).delete(ADMIN_COOKIE);
 }
 
 export async function endSession() {
   (await cookies()).delete(SESSION_COOKIE);
+  (await cookies()).delete(ADMIN_COOKIE);
 }
 
 // Signs the user out everywhere. Pass keepCurrent to re-issue this browser's session afterwards.

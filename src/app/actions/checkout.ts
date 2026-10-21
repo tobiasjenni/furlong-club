@@ -19,8 +19,8 @@ export async function startCheckout(_: FormState, form: FormData): Promise<FormS
   let paymentId: string;
   try {
     paymentId = (await createCheckout(user.id, plan.id, option)).id;
-  } catch (err) {
-    console.error(err);
+  } catch {
+    console.error("Checkout invoice creation failed");
     return { error: "We couldn't create your payment right now. Please try again." };
   }
   redirect(`/checkout/pay/${paymentId}`);

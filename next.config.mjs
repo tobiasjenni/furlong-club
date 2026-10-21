@@ -33,8 +33,8 @@ const nextConfig = {
   async headers() {
     return [
       {
-        source: "/:section(admin|account|dashboard|wallet|checkout|videos|api|login|signup|forgot-password|reset-password|verify-email|v2)/:path*",
-        headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow, noarchive" }],
+        source: "/:section(admin|admin-unlock|account|dashboard|wallet|checkout|videos|api|login|signup|forgot-password|reset-password|verify-email|v2)/:path*",
+        headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow, noarchive" }, { key: "Cache-Control", value: "private, no-store" }, { key: "Referrer-Policy", value: "same-origin" }],
       },
       {
         source: "/(.*)",

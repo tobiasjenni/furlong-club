@@ -42,12 +42,19 @@ try {
         (SELECT COALESCE(sum("principalCents"),0) FROM "TradingAllocation" WHERE "userId"=u.id AND status IN ('ACTIVE','PAYOUT_READY'))) AS "lockedPrincipalMismatches"`;
   }
   const trading = await db.tradingProgram.findUnique({ where: { id: 'harry' }, select: { enrollmentEnabled: true } });
+  const security = await db.$queryRaw`SELECT
+    (SELECT count(*)::int FROM "User" WHERE "passwordHash" !~ '^\\$2[aby]\\$12\\$') AS "passwordHashesOutsideCost12",
+    (SELECT count(*)::int FROM "AuthToken" WHERE "tokenHash" !~ '^[0-9a-f]{64}$') AS "malformedTokenHashes",
+    (SELECT count(*)::int FROM pg_tables WHERE schemaname='public' AND tableowner=current_user) AS "tablesOwnedByRuntimeRole",
+    (SELECT rolsuper FROM pg_roles WHERE rolname=current_user) AS "databaseSuperuser",
+    has_schema_privilege(current_user,'public','CREATE') AS "canCreateInPublicSchema",
+    to_regprocedure('public.auth_confirm_admin(text,text,integer,text)') IS NOT NULL AS "adminConfirmationApplied"`;
   const routes = [];
   for (const path of ['/','/trading','/plans','/login','/signup','/legal/terms','/icon.svg','/robots.txt']) {
     const result = await fetch(`https://furlong.club${path}`, { signal: AbortSignal.timeout(20000) });
     routes.push({path,status:result.status});
   }
-  console.log('RELEASE_AUDIT ' + JSON.stringify({flags,secretNames,database:counts[0],migrations:tables[0],ledger:ledger?.[0],trading,routes}));
+  console.log('RELEASE_AUDIT ' + JSON.stringify({flags,secretNames,database:counts[0],migrations:tables[0],ledger:ledger?.[0],security:security[0],trading,routes}));
   if (!counts[0].superAdmins || counts[0].outdatedPaidPlans || !counts[0].admins || counts[0].negativeBalances || ledger?.[0].balanceMismatches || ledger?.[0].unbalancedPostings || ledger?.[0].lockedPrincipalMismatches || trading?.enrollmentEnabled || flags.TRADING_REQUESTS_ENABLED!=='false' || routes.some(r=>r.status!==200)) process.exitCode=1;
 } catch (error) {
   // Database/driver error objects may embed a connection string. Keep logs redacted.

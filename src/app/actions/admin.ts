@@ -1,7 +1,7 @@
 "use server";
 
 import crypto from "node:crypto";
-import bcrypt from "bcryptjs";
+import { matchesPassword } from "@/lib/passwords";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -40,7 +40,7 @@ export async function updateUser(form: FormData) {
 export async function changeUserRole(_: AdminFormState, form: FormData): Promise<AdminFormState> {
   const admin = await requireSuperAdmin();
   if (!await rateLimit(`admin-role:${admin.id}`,5,15*60*1000)) return { error: 'Too many attempts. Try again in 15 minutes.' };
-  if (!await bcrypt.compare(String(form.get('password') ?? ''),admin.passwordHash)) return { error: 'Your current password is incorrect.' };
+  if (!await matchesPassword(String(form.get('password') ?? ''),admin.passwordHash)) return { error: 'Your current password is incorrect.' };
   const result = await manage(admin.id,String(form.get('userId')),'role', {
     role: String(form.get('role')), reason: String(form.get('reason') ?? '').trim().slice(0,500), passwordHash: admin.passwordHash,
   });
@@ -106,7 +106,7 @@ export async function savePlan(form: FormData) {
     tagline: z.string().trim().max(120),
     price: z.coerce.number().min(0).max(100000),
     intervalDays: z.coerce.number().int().min(1).max(366),
-    features: z.string(),
+    features: z.string().max(8000),
     active: z.string().optional(),
   });
   const parsed = schema.safeParse(Object.fromEntries(form));
@@ -143,7 +143,7 @@ async function deliver(email: Email, link: string): Promise<AdminFormState> {
 export async function sendResetLink(_: AdminFormState, form: FormData): Promise<AdminFormState> {
   const admin = await requireSuperAdmin();
   if (!await rateLimit(`admin-reset:${admin.id}`,5,60*60*1000)) return { error: 'Too many recovery requests. Try again later.' };
-  if (!await bcrypt.compare(String(form.get('password') ?? ''),admin.passwordHash)) return { error: 'Your current password is incorrect.' };
+  if (!await matchesPassword(String(form.get('password') ?? ''),admin.passwordHash)) return { error: 'Your current password is incorrect.' };
   const user = await db.user.findUniqueOrThrow({ where: { id: String(form.get('userId')) } });
   const token = crypto.randomBytes(32).toString('base64url');
   const result = await manage(admin.id,user.id,'reset',{passwordHash:admin.passwordHash,tokenHash:crypto.createHash('sha256').update(token).digest('hex')});

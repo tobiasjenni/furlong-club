@@ -11,8 +11,9 @@ export async function sendEmail(email: Email) {
       method: "POST",
       headers: { authorization: `Bearer ${process.env.RESEND_API_KEY}`, "content-type": "application/json" },
       body: JSON.stringify({ from: process.env.EMAIL_FROM ?? `${brand.name} <no-reply@${brand.domain}>`, ...email }),
+      signal: AbortSignal.timeout(15000),
     });
-    if (!res.ok) throw new Error(`Resend error ${res.status}: ${await res.text()}`);
+    if (!res.ok) throw new Error(`Email delivery failed (${res.status})`);
     return;
   }
   if (process.env.NODE_ENV === "production") throw new Error("Email delivery is not configured");
