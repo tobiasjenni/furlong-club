@@ -14,6 +14,7 @@ for (const path of ['/', '/trading', '/meet-harry', '/plans', '/login', '/signup
   if (/AI-generated illustration|paddock guide/i.test(body)) { console.error(`Release check failed: outdated host caption at ${path}`); failed = true; }
   if (/fictional character|fictional host|not a real person/i.test(body)) { console.error(`Release check failed: outdated Harry description at ${path}`); failed = true; }
   if (path === '/trading' && !/real trading enrollment is closed/i.test(body)) { console.error('Release check failed: draft trading enrollment must remain closed'); failed = true; }
+  if (['/', '/plans', '/trading'].includes(path) && (!/Trading with Harry/.test(visibleText) || !/membership fee/i.test(visibleText) || !/separate/i.test(visibleText))) { console.error(`Release check failed: trading membership and allocation terms missing at ${path}`); failed = true; }
   if (path === '/' && !response.headers.get('content-security-policy')) { console.error('Release check failed: missing security policy'); failed = true; }
   console.log(`Release route ${path}: ${response.status}`);
 }

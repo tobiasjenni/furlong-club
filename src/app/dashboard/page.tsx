@@ -9,6 +9,7 @@ import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { date, usd } from "@/lib/format";
 import { activeSubscription } from "@/lib/subscriptions";
+import { TradingMembership } from "@/components/TradingMembership";
 
 export const metadata = { title: "Dashboard" };
 
@@ -50,7 +51,10 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
         </div>
       </div>
 
-      <TradingSummary userId={user.id} />
+      <section aria-label="Trading with Harry membership" className="grid items-start gap-4 lg:grid-cols-2">
+        <TradingMembership />
+        <TradingSummary userId={user.id} />
+      </section>
 
       <section>
         <div className="flex items-end justify-between">

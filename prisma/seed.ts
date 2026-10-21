@@ -18,12 +18,12 @@ async function main() {
     {
       slug: "form",
       name: "Form Room",
-      tagline: "Build your racing foundations",
+      tagline: "Trading with Harry at the heart of your membership",
       priceCents: 2900,
       intervalDays: 33,
       tier: 1,
       sortOrder: 1,
-      features: ["Everything in Paddock", "Form and race-card lessons", "Going, draw and staking discipline", "Access to published Form Room videos"],
+      features: ["Planned Trading with Harry access", "Everything in Paddock", "Form and race-card lessons", "Going, draw and staking discipline", "Access to published Form Room videos"],
     },
     {
       slug: "inner-circle",
@@ -33,7 +33,7 @@ async function main() {
       intervalDays: 33,
       tier: 2,
       sortOrder: 2,
-      features: ["Everything in Form Room", "Published Inner Circle race-day videos", "Detailed race-card analysis", "One-off access with no automatic renewal"],
+      features: ["Planned Trading with Harry access", "Everything in Form Room", "Published Inner Circle race-day videos", "Detailed race-card analysis", "One-off access with no automatic renewal"],
     },
   ];
   for (const p of plans) {

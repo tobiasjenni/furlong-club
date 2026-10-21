@@ -12,6 +12,7 @@ import { manualDepositsEnabled } from "@/lib/manual-deposits";
 import { emailDelivers } from "@/lib/email";
 import { hasPlayableSource } from "@/lib/video";
 import Link from "next/link";
+import { TradingMembership } from "@/components/TradingMembership";
 
 export const metadata = { title: "Checkout" };
 
@@ -28,6 +29,7 @@ export default async function CheckoutPage({ params }: { params: Promise<{ plan:
         <h1 className="mt-1 text-3xl">{plan.name}</h1>
         <p className="mt-4 font-display text-4xl">{usd(plan.priceCents)}</p>
         <p className="muted text-sm">for {plan.intervalDays} days of access</p>
+        {plan.tier >= 1 && <div className="mt-5"><TradingMembership /></div>}
         <ul className="mt-5 space-y-2 text-sm text-cream/80">{plan.features.map((f) => <li key={f}>· {f}</li>)}</ul>
         <p className="muted mt-5 text-xs">One-off payment. No automatic renewal. New access begins when your purchase is confirmed. Buying the same active plan extends its current expiry.</p>
         <p className="muted mt-3 text-xs">{readyCount} video{readyCount === 1 ? "" : "s"} ready to watch on this plan. <Link href="/videos" className="text-gold-300 underline">Browse the library before paying.</Link></p>

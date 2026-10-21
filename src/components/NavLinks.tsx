@@ -21,7 +21,7 @@ export function DesktopNav({ links }: { links: NavLink[] }) {
             key={l.href}
             href={l.href}
             aria-current={active ? "page" : undefined}
-            className={`inline-flex min-h-11 items-center rounded-full px-3 py-2 transition ${active ? "bg-white/10 text-gold-300" : "text-cream/75 hover:text-gold-300"}`}
+            className={`inline-flex min-h-11 items-center rounded-full px-3 py-2 transition ${active ? "bg-white/10 text-gold-300" : l.href === "/trading" ? "bg-gold-400/10 font-semibold text-gold-300 hover:bg-gold-400/20" : "text-cream/75 hover:text-gold-300"}`}
           >
             {l.label}
           </Link>
@@ -67,7 +67,7 @@ export function MobileMenu({ links, children }: { links: NavLink[]; children: Re
         {links.map((l) => {
           const active = isActive(pathname, l.href);
           return (
-            <Link key={l.href} href={l.href} aria-current={active ? "page" : undefined} className={`block rounded-xl px-3 py-3 text-sm hover:bg-white/5 ${active ? "bg-white/5 text-gold-300" : ""}`}>
+            <Link key={l.href} href={l.href} aria-current={active ? "page" : undefined} className={`block rounded-xl px-3 py-3 text-sm hover:bg-white/5 ${active ? "bg-white/5 text-gold-300" : l.href === "/trading" ? "bg-gold-400/10 font-semibold text-gold-300" : ""}`}>
               {l.label}
             </Link>
           );

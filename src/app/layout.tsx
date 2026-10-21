@@ -10,14 +10,14 @@ const display = Fraunces({ subsets: ["latin"], variable: "--font-display", displ
 const sans = Inter({ subsets: ["latin"], variable: "--font-sans", display: "swap" });
 
 export const metadata: Metadata = {
-  title: { default: `${brand.name} · Learn to read the race`, template: `%s · ${brand.name}` },
-  description: `Horse racing education with ${brand.host.name}, drawing on over 40 years of experience reading horses and riders.`,
+  title: { default: `${brand.name} · Trading with Harry`, template: `%s · ${brand.name}` },
+  description: `Discover Trading with Harry, the main planned benefit of Form Room membership, and ${brand.host.name}’s 40+ years of racing experience. Trading enrollment is currently closed.`,
   metadataBase: new URL(`https://${brand.domain}`),
   openGraph: {
     type: "website",
     siteName: brand.name,
-    title: `${brand.name} · Learn to read the race`,
-    description: "Read horses, understand riders and study the form with Harry Whitcombe’s 40+ years of racing experience.",
+    title: `${brand.name} · Trading with Harry`,
+    description: "Trading with Harry is at the heart of Form Room. Explore the membership, separate allocation requirements and current availability.",
   },
   twitter: { card: "summary_large_image" },
 };

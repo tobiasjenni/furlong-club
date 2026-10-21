@@ -11,17 +11,17 @@ export async function SiteHeader() {
   const links = user
     ? [
         { href: "/dashboard", label: "Dashboard" },
+        { href: "/trading", label: "Trade with Harry" },
         { href: "/videos", label: "Videos" },
         { href: "/plans", label: "Plans" },
         { href: "/wallet", label: "Wallet" },
-        { href: "/trading", label: "Trading" },
         { href: "/account", label: "Account" },
         ...(isAdmin(user.role) ? [{ href: "/admin", label: "Admin" }] : []),
       ]
     : [
-        { href: "/#how", label: "How it works" },
+        { href: "/trading", label: "Trade with Harry" },
         { href: "/plans", label: "Plans" },
-        { href: "/trading", label: "Trading" },
+        { href: "/#how", label: "How it works" },
         { href: brand.host.page, label: `Meet ${brand.host.first}` },
       ];
   const initials = (user?.name ?? user?.email ?? "?").trim().slice(0, 1).toUpperCase();
