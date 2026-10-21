@@ -42,6 +42,10 @@ describe("session tokens", () => {
     const token = await signSession({ uid: "u1", role: "USER", sv: 3 });
     expect(await verifySession(token)).toEqual({ uid: "u1", role: "USER", sv: 3 });
   });
+  it("issues a different token for each browser sign-in even within the same second", async () => {
+    const claims = { uid: "u1", role: "USER" as const, sv: 3 };
+    expect(await signSession(claims)).not.toBe(await signSession(claims));
+  });
   it("rejects tokens signed with another secret", async () => {
     const token = await signSession({ uid: "u1", role: "ADMIN", sv: 0 });
     process.env.AUTH_SECRET = "y".repeat(40);

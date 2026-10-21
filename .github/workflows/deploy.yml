@@ -4,6 +4,12 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      operation:
+        description: Production operation (main branch only)
+        type: choice
+        options: [audit, deploy]
+        default: audit
 
 concurrency: deploy-production
 
@@ -12,13 +18,15 @@ permissions:
 
 jobs:
   audit:
-    if: github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/main'
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.operation == 'audit'
     runs-on: ubuntu-latest
     environment: production
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 22
           cache: npm
@@ -30,7 +38,7 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
   deploy:
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || inputs.operation == 'deploy')
     runs-on: ubuntu-latest
     timeout-minutes: 20
     environment: production
@@ -40,8 +48,10 @@ jobs:
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       APP_URL: https://furlong.club
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 22
           cache: npm
@@ -50,7 +60,7 @@ jobs:
         run: |
           npm run lint
           npm test
-          npm audit --omit=dev --audit-level=high
+          npm audit --audit-level=high
       - name: Apply database migrations
         run: npx prisma migrate deploy
       - name: Seed plans and the admin account

@@ -28,7 +28,7 @@ export function PasswordInput({ id, label, hint, error, inputRef, ...input }: Pa
   </div>;
 }
 
-export function PasswordPair({ name = "password", label = "Password", confirmationName = "passwordConfirm", confirmationLabel = "Confirm password", hint = "At least 10 characters. Use a long password you do not use elsewhere." }: {
+export function PasswordPair({ name = "password", label = "Password", confirmationName = "passwordConfirm", confirmationLabel = "Confirm password", hint = "At least 15 characters. Use a long password you do not use elsewhere." }: {
   name?: string; label?: string; confirmationName?: string; confirmationLabel?: string; hint?: string;
 }) {
   const [password, setPassword] = useState("");
@@ -40,7 +40,7 @@ export function PasswordPair({ name = "password", label = "Password", confirmati
     confirmationInput.current?.setCustomValidity(mismatch ? "Passwords do not match. Enter the same password again." : "");
   }, [mismatch]);
   return <div className="space-y-4">
-    <PasswordInput id={name} name={name} label={label} autoComplete="new-password" minLength={10} required hint={hint}
+    <PasswordInput id={name} name={name} label={label} autoComplete="new-password" minLength={15} required hint={hint}
       value={password} onChange={event => setPassword(event.target.value)} />
     <PasswordInput id={confirmationName} name={confirmationName} label={confirmationLabel} autoComplete="new-password" required
       inputRef={confirmationInput} value={confirmation} onChange={event => setConfirmation(event.target.value)}

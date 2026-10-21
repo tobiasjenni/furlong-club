@@ -10,7 +10,7 @@ import { db } from "@/lib/db";
 import { emailDelivers, passwordChangedMessage, resetPasswordMessage, sendEmail, verifyEmailMessage } from "@/lib/email";
 import { rateLimit } from "@/lib/rate-limit";
 import { clientIp, safeNext } from "@/lib/request";
-import { newPasswordSchema, passwordSchema } from "@/lib/passwords";
+import { matchesPassword, newPasswordSchema, passwordSchema } from "@/lib/passwords";
 import type { Role } from "@prisma/client";
 import { consumeToken, issueToken } from "@/lib/tokens";
 
@@ -152,7 +152,7 @@ export async function changePassword(_: FormState, form: FormData): Promise<Form
   if (!await rateLimit(`pw:${user.id}`, 5, 15 * 60 * 1000)) return { error: "Too many attempts, try again later." };
   const parsed = newPasswordSchema.safeParse({ password: form.get("next"), passwordConfirm: form.get("nextConfirm") });
   if (!parsed.success) return { error: parsed.error.issues[0].message };
-  if (!(await bcrypt.compare(String(form.get("current") ?? ""), user.passwordHash))) return { error: "Current password is incorrect." };
+  if (!(await matchesPassword(String(form.get("current") ?? ""), user.passwordHash))) return { error: "Current password is incorrect." };
   const changed = await db.$queryRaw<{ changed: boolean }[]>`SELECT auth_change_password(${user.id},${user.passwordHash},${await bcrypt.hash(parsed.data.password,12)}) AS changed`;
   if (!changed[0]?.changed) return { error: "Your account changed. Sign in again and retry." };
   await audit(user.id, "user.password_changed", user.id);
@@ -172,7 +172,7 @@ export async function closeAccount(_: FormState, form: FormData): Promise<FormSt
   if (user.role !== "USER") return { error: "Ask the owner to remove admin access before closing an admin account. The Super Admin owner account is protected." };
   if (!await rateLimit(`close:${user.id}`, 5, 15 * 60 * 1000)) return { error: "Too many attempts. Please try again later." };
   if (form.get("confirm") !== "CLOSE") return { error: 'Type CLOSE to confirm.' };
-  if (!(await bcrypt.compare(String(form.get("password") ?? ""), user.passwordHash))) return { error: "Password is incorrect." };
+  if (!(await matchesPassword(String(form.get("password") ?? ""), user.passwordHash))) return { error: "Password is incorrect." };
   const closed = await db.$queryRaw<{ result: string }[]>`SELECT wallet_close_account(${user.id}) AS result`;
   if (closed[0]?.result !== "closed") return { error: "Please contact support to resolve your wallet balance, pending deposits and any open trading allocations or payouts before closing your account." };
   await audit(user.id, "user.closed_account", user.id);
@@ -188,7 +188,7 @@ export async function changeEmail(_: FormState, form: FormData): Promise<FormSta
   if (!parsed.success) return { error: parsed.error.issues[0].message };
   const email = parsed.data;
   if (email === user.email) return { error: "That's already your email." };
-  if (!(await bcrypt.compare(String(form.get("password") ?? ""), user.passwordHash))) return { error: "Password is incorrect." };
+  if (!(await matchesPassword(String(form.get("password") ?? ""), user.passwordHash))) return { error: "Password is incorrect." };
   if (await db.user.findUnique({ where: { email } })) return { error: "That email is already used by another account." };
   const changed = await db.$queryRaw<{changed:boolean}[]>`SELECT auth_change_email(${user.id},${user.passwordHash},${user.sessionVersion}::integer,${email},${crypto.randomUUID()}) AS changed`;
   if (!changed[0]?.changed) return { error: "Your account changed. Sign in again and retry." };

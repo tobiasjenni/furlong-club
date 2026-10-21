@@ -1,6 +1,7 @@
-import { currentUser } from "@/lib/auth";
+import { currentUser, adminConfirmed } from "@/lib/auth";
 import { audit } from "@/lib/audit";
 import { db } from "@/lib/db";
+import { rateLimit } from "@/lib/rate-limit";
 
 function csv(value: unknown) {
   const s = value == null ? "" : String(value);
@@ -11,7 +12,8 @@ function csv(value: unknown) {
 
 export async function GET() {
   const admin = await currentUser();
-  if (admin?.role !== "SUPER_ADMIN") return new Response("Forbidden", { status: 403 });
+  if (admin?.role !== "SUPER_ADMIN" || !await adminConfirmed(admin)) return new Response("Confirm admin access first", { status: 403, headers: { "cache-control": "private, no-store" } });
+  if (!await rateLimit(`admin-export:${admin.id}`, 3, 60 * 60 * 1000)) return new Response("Too many exports", { status: 429, headers: { "cache-control": "private, no-store" } });
   const now = new Date();
   const users = await db.user.findMany({
     orderBy: { createdAt: "desc" },

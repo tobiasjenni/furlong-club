@@ -4,6 +4,7 @@ import { SESSION_COOKIE, verifySession } from "./lib/session";
 
 function privateResponse(response: NextResponse) {
   response.headers.set("X-Robots-Tag", "noindex, nofollow, noarchive");
+  response.headers.set("Cache-Control", "private, no-store");
   return response;
 }
 

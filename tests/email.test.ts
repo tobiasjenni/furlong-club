@@ -8,6 +8,14 @@ import { emailDelivers, sendEmail, verifyEmailMessage, resetPasswordMessage } fr
 const message = { to: "member@example.com", subject: "Confirm email", html: "<p>Confirm</p>", text: "Confirm" };
 beforeEach(() => { vi.clearAllMocks(); vi.stubEnv("EMAIL_PROVIDER", "cloudflare"); vi.stubEnv("EMAIL_FROM_ADDRESS", "notifications@furlong.club"); send.mockResolvedValue({ messageId: "test" }); context.mockReturnValue({ env: { EMAIL: { send } } }); });
 afterEach(() => { vi.unstubAllEnvs(); vi.useRealTimers(); });
+it.each(["", "production"])("never logs emails in CI or an unconfigured maintenance process: %s", async mode => {
+  vi.stubEnv("EMAIL_PROVIDER", "console"); vi.stubEnv("NODE_ENV", mode); vi.stubEnv("CI", "true");
+  const log = vi.spyOn(console, "log").mockImplementation(() => {});
+  try {
+    await expect(sendEmail({ ...message, text: "private recovery token" })).rejects.toThrow("not configured");
+    expect(log).not.toHaveBeenCalled();
+  } finally { log.mockRestore(); }
+});
 it("sends HTML and text through Cloudflare with the support reply address", async () => {
   expect(emailDelivers()).toBe(true);
   await sendEmail(message);

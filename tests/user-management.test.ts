@@ -23,6 +23,17 @@ afterAll(async()=>{await pg?.close();});
 beforeEach(async()=>{ owner=await create("SUPER_ADMIN"); admin=await create("ADMIN"); member=await create("USER"); });
 
 describe("owner authority and audit integrity",()=>{
+  it("confirms current admin credentials atomically and rejects revoked or stale confirmations", async () => {
+    const confirm = (uid: string, hash = "test-hash", version = 0) => scalar(`SELECT auth_confirm_admin($1,$2,$3,$4) AS result`, [uid, hash, version, crypto.randomUUID()]);
+    expect(await confirm(member)).toBe(false);
+    expect(await confirm(admin, "wrong")).toBe(false);
+    expect(await confirm(admin, "test-hash", 1)).toBe(false);
+    expect(await confirm(admin)).toBe(true);
+    expect(await confirm(owner)).toBe(true);
+    await manage(owner, admin, "role", roleData("USER"));
+    expect(await confirm(admin)).toBe(false);
+    expect(await scalar(`SELECT count(*)::int AS result FROM "AuditLog" WHERE action='admin.access_confirmed' AND "actorId" IN ($1,$2)`, [admin, owner])).toBe(2);
+  });
   it("lets only the owner promote and demote signed-in, verified members",async()=>{
     expect(await manage(member,member,"role",roleData())).toBe("forbidden");
     expect(await manage(admin,member,"role",roleData())).toBe("forbidden");

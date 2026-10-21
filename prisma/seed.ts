@@ -1,5 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { assertExistingOwner } from "./owner-bootstrap";
+import { passwordSchema } from "../src/lib/passwords";
 
 const db = new PrismaClient();
 
@@ -75,11 +77,15 @@ async function main() {
   const email = process.env.SEED_ADMIN_EMAIL;
   const password = process.env.SEED_ADMIN_PASSWORD;
   if (email && password) {
+    const ownerEmail = email.trim().toLowerCase();
+    const existingOwner = await db.user.findUnique({ where: { email: ownerEmail } });
+    assertExistingOwner(existingOwner);
+    if (!existingOwner && !passwordSchema.safeParse(password).success) throw new Error("Owner setup requires a valid strong password.");
     await db.user.upsert({
-      where: { email: email.toLowerCase() },
+      where: { email: ownerEmail },
       update: {},
       create: {
-        email: email.toLowerCase(),
+        email: ownerEmail,
         passwordHash: await bcrypt.hash(password, 12),
         name: "Admin",
         role: "SUPER_ADMIN",
@@ -87,17 +93,13 @@ async function main() {
         emailVerifiedAt: new Date(),
       },
     });
-    // Promote only the explicitly configured owner, preserve credentials and status.
-    const owner = await db.user.findUniqueOrThrow({ where: { email: email.toLowerCase() } });
-    if (owner.role !== 'SUPER_ADMIN' && owner.status === 'ACTIVE') {
-      await db.$transaction(async tx => {
-        await tx.user.update({ where: { id: owner.id }, data: { role: 'SUPER_ADMIN', sessionVersion: { increment: 1 } } });
-        await tx.authToken.deleteMany({ where: { userId: owner.id } });
-        await tx.auditLog.create({ data: { actorId: owner.id, action: 'owner.super_admin_bootstrapped', target: owner.id, meta: { previousRole: owner.role } } });
-      });
-    }
+    // Recheck after upsert so a concurrent signup cannot silently become the owner.
+    assertExistingOwner(await db.user.findUniqueOrThrow({ where: { email: ownerEmail } }));
     console.log('Configured owner ready.');
   }
 }
 
-main().finally(() => db.$disconnect());
+main().catch(error => {
+  console.error(error instanceof Error && error.message.startsWith("Owner setup") ? error.message : "Database setup failed. Check configuration securely.");
+  process.exitCode = 1;
+}).finally(() => db.$disconnect());

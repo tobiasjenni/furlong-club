@@ -15,6 +15,7 @@ function key() {
 export async function signSession(payload: SessionPayload) {
   return new SignJWT(payload)
     .setProtectedHeader({ alg: "HS256" })
+    .setJti(crypto.randomUUID())
     .setIssuedAt()
     .setExpirationTime(`${MAX_AGE}s`)
     .sign(key());
