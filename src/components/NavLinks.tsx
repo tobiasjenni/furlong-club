@@ -63,7 +63,7 @@ export function MobileMenu({ links, children }: { links: NavLink[]; children: Re
         <svg viewBox="0 0 24 24" className="h-5 w-5 group-open:hidden" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
         <svg viewBox="0 0 24 24" className="hidden h-5 w-5 group-open:block" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 6l12 12M18 6 6 18" /></svg>
       </summary>
-      <div className="absolute right-0 mt-2 max-h-[calc(100dvh-6rem)] w-64 overflow-y-auto overscroll-contain rounded-2xl border border-white/10 bg-turf-900 p-2 shadow-2xl" onClick={event => { if ((event.target as HTMLElement).closest("a")) ref.current?.removeAttribute("open"); }}>
+      <div className="absolute right-0 mt-2 max-h-[calc(100dvh-6rem)] w-64 overflow-y-auto overscroll-contain rounded-2xl border border-white/10 bg-turf-900 p-2 shadow-2xl" onClick={event => { if ((event.target as HTMLElement).closest("a, button")) ref.current?.removeAttribute("open"); }}>
         {links.map((l) => {
           const active = isActive(pathname, l.href);
           return (
