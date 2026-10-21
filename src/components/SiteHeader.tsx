@@ -27,7 +27,7 @@ export async function SiteHeader() {
   const initials = (user?.name ?? user?.email ?? "?").trim().slice(0, 1).toUpperCase();
 
   return (
-    <header className="sticky top-0 z-40 border-b border-white/10 bg-[#08140f]/90 backdrop-blur">
+    <header className="public-v2 sticky top-0 z-40 border-b border-white/10 bg-[#08140f]/90 backdrop-blur">
       <div className="container-page flex h-[76px] items-center justify-between gap-4">
         <Link href="/" className="shrink-0 rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-gold-400" aria-label={`${brand.name} home`}>
           <BrandLogo />

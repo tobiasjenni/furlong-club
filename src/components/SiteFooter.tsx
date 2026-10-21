@@ -4,7 +4,7 @@ import { BrandLogo } from "./Logo";
 
 export function SiteFooter() {
   return (
-    <footer className="mt-20 border-t border-white/10 bg-turf-950">
+    <footer className="public-v2 mt-20 border-t border-white/10 bg-turf-950">
       <div className="container-page grid gap-8 py-10 text-sm md:grid-cols-[2fr_1fr_1fr]">
         <div className="space-y-3">
           <Link href="/" className="inline-flex rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-gold-400" aria-label={`${brand.name} home`}>
