@@ -10,7 +10,8 @@ export async function sendEmail(email: Email) {
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { authorization: `Bearer ${process.env.RESEND_API_KEY}`, "content-type": "application/json" },
-      body: JSON.stringify({ from: process.env.EMAIL_FROM ?? `${brand.name} <no-reply@${brand.domain}>`, ...email }),
+      // Replies to any site email land in the support inbox.
+      body: JSON.stringify({ from: process.env.EMAIL_FROM ?? `${brand.name} <no-reply@${brand.domain}>`, reply_to: brand.supportEmail, ...email }),
     });
     if (!res.ok) throw new Error(`Resend error ${res.status}: ${await res.text()}`);
     return;
