@@ -1,3 +1,4 @@
+import { isAdmin } from "@/lib/roles";
 import { TradingSummary } from "@/components/TradingSummary";
 import { brand } from "@/lib/config";
 import Link from "next/link";
@@ -16,7 +17,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
   const { welcome, walletPurchase } = await searchParams;
   const sub = await activeSubscription(user.id);
   // Admins can preview every video.
-  const tier = user.role === "ADMIN" ? Infinity : sub?.plan.tier ?? 0;
+  const tier = isAdmin(user.role) ? Infinity : sub?.plan.tier ?? 0;
   const latest = await db.video.findMany({ where: { published: true }, orderBy: { publishedAt: "desc" }, take: 3 });
 
   return (
@@ -33,8 +34,8 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
         <div className="card">
           <p className="muted text-sm">Your plan</p>
           <p className="mt-1 font-display text-2xl">{sub?.plan.name ?? "Paddock (free)"}</p>
-          <p className="muted mt-1 text-sm">{sub ? `Renews or ends ${date(sub.endsAt)}` : "Upgrade to unlock the full library."}</p>
-          <Link href="/plans" className="btn-gold mt-4">{sub ? "Extend or upgrade" : "Upgrade"}</Link>
+          <p className="muted mt-1 text-sm">{sub ? `Access ends ${date(sub.endsAt)}. No automatic renewal.` : "Explore the library and compare your membership options."}</p>
+          <Link href="/plans" className="btn-gold mt-4">{sub ? "View plans or extend" : "Explore plans"}</Link>
         </div>
         <div className="card">
           <p className="muted text-sm">Wallet balance</p>
@@ -53,7 +54,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
 
       <section>
         <div className="flex items-end justify-between">
-          <h2 className="text-2xl">Latest from {brand.host.first}</h2>
+          <h2 className="text-2xl">Explore {brand.host.first}&apos;s library</h2>
           <Link href="/videos" className="text-sm text-gold-300 hover:underline">All videos →</Link>
         </div>
         <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

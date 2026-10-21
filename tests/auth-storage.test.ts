@@ -13,21 +13,18 @@ import { rateLimit } from "@/lib/rate-limit";
 
 beforeAll(async () => {
   pg = new PGlite();
-  await pg.exec(fs.readFileSync("prisma/migrations/20261020124520_init/migration.sql", "utf8"));
-  await pg.exec(fs.readFileSync("prisma/migrations/20261020160000_wallet/migration.sql", "utf8"));
-  await pg.exec(fs.readFileSync("prisma/migrations/20261021010000_release_hardening/migration.sql", "utf8"));
-  await pg.exec(fs.readFileSync("prisma/migrations/20261021013000_account_closure/migration.sql", "utf8"));
+  for (const dir of fs.readdirSync('prisma/migrations').filter(n => /^\d/.test(n)).sort()) await pg.exec(fs.readFileSync(`prisma/migrations/${dir}/migration.sql`,'utf8'));
   await pg.exec(`INSERT INTO "User" (id,email,"passwordHash","ageConfirmedAt","updatedAt") VALUES ('u','u@example.com','x',now(),now())`);
 }, 30000);
 afterAll(async () => { await pg?.close(); });
-beforeEach(async () => { await pg.exec('DELETE FROM "AuthToken"; DELETE FROM "RateLimit"'); });
+beforeEach(async () => { await pg.exec('DELETE FROM "AuthToken"; DELETE FROM "RateLimit"; UPDATE "User" SET status=\'ACTIVE\',"sessionVersion"=0 WHERE id=\'u\''); });
 
 describe("database-backed auth tokens", () => {
   it("stores only a hash and consumes a token once across repeated claims", async () => {
     const token = await issueToken("u", "RESET_PASSWORD");
     const stored = (await pg.query<{ tokenHash: string }>('SELECT "tokenHash" FROM "AuthToken"')).rows[0];
     expect(stored.tokenHash).not.toContain(token);
-    const claims = await Promise.all(Array.from({ length: 10 }, () => consumeToken(token, "RESET_PASSWORD")));
+    const claims = await Promise.all(Array.from({ length: 10 }, () => consumeToken(token, "RESET_PASSWORD", "new-password-hash")));
     expect(claims.filter(Boolean)).toEqual(["u"]);
   });
   it("invalidates an earlier link when a new link is issued", async () => {

@@ -8,7 +8,7 @@ export const metadata = { title: "Join free" };
 export default async function SignupPage() {
   if (await currentUser()) redirect("/dashboard");
   return (
-    <AuthShell title="Join the club" subtitle="Free account, free intro videos. Upgrade whenever you like.">
+    <AuthShell title="Join the club for free" subtitle="Explore the catalogue, manage your wallet and choose paid access when it suits you.">
       <SignupForm />
     </AuthShell>
   );

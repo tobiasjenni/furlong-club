@@ -11,6 +11,10 @@ export function bunnyEmbedUrl(videoId: string, libraryId: string, tokenKey: stri
 }
 
 // Returns what the player should load, or null when the video has no playable source configured.
+export function hasPlayableSource(video: Pick<Video, "bunnyVideoId" | "embedUrl">) {
+  return Boolean(video.embedUrl || (video.bunnyVideoId && process.env.BUNNY_LIBRARY_ID && process.env.BUNNY_TOKEN_KEY));
+}
+
 export function playback(video: Pick<Video, "bunnyVideoId" | "embedUrl">): { kind: "iframe" | "file"; src: string } | null {
   const libraryId = process.env.BUNNY_LIBRARY_ID;
   const tokenKey = process.env.BUNNY_TOKEN_KEY;

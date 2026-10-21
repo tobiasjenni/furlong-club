@@ -19,10 +19,12 @@ try {
   const flags = Object.fromEntries(bindings.filter(b => b.type === 'plain_text' && ['APP_ENV','PAYMENT_PROVIDER','WALLET_ENABLED','DATABASE_DRIVER','DEPOSIT_MODE','TRADING_REQUESTS_ENABLED'].includes(b.name)).map(b => [b.name,b.text]));
   const counts = await db.$queryRaw`SELECT
     (SELECT count(*)::int FROM "User") AS users,
-    (SELECT count(*)::int FROM "User" WHERE role='ADMIN' AND status='ACTIVE') AS admins,
+    (SELECT count(*)::int FROM "User" WHERE role IN ('ADMIN','SUPER_ADMIN') AND status='ACTIVE') AS admins,
+    (SELECT count(*)::int FROM "User" WHERE role='SUPER_ADMIN' AND status='ACTIVE') AS "superAdmins",
     (SELECT count(*)::int FROM "User" WHERE "balanceCents"<0) AS "negativeBalances",
     (SELECT count(*)::int FROM "User" WHERE "balanceCents"<>0) AS "nonzeroBalances",
     (SELECT count(*)::int FROM "Plan" WHERE active) AS "activePlans",
+    (SELECT count(*)::int FROM "Plan" WHERE active AND "priceCents">0 AND "intervalDays"=30) AS "outdatedPaidPlans",
     (SELECT count(*)::int FROM "Video" WHERE published) AS "publishedVideos",
     (SELECT count(*)::int FROM "Video" WHERE published AND ("bunnyVideoId" IS NOT NULL OR "embedUrl" IS NOT NULL)) AS "videosWithSources",
     (SELECT count(*)::int FROM "Payment") AS payments,
@@ -46,7 +48,7 @@ try {
     routes.push({path,status:result.status});
   }
   console.log('RELEASE_AUDIT ' + JSON.stringify({flags,secretNames,database:counts[0],migrations:tables[0],ledger:ledger?.[0],trading,routes}));
-  if (!counts[0].admins || counts[0].negativeBalances || ledger?.[0].balanceMismatches || ledger?.[0].unbalancedPostings || ledger?.[0].lockedPrincipalMismatches || trading?.enrollmentEnabled || flags.TRADING_REQUESTS_ENABLED!=='false' || routes.some(r=>r.status!==200)) process.exitCode=1;
+  if (!counts[0].superAdmins || counts[0].outdatedPaidPlans || !counts[0].admins || counts[0].negativeBalances || ledger?.[0].balanceMismatches || ledger?.[0].unbalancedPostings || ledger?.[0].lockedPrincipalMismatches || trading?.enrollmentEnabled || flags.TRADING_REQUESTS_ENABLED!=='false' || routes.some(r=>r.status!==200)) process.exitCode=1;
 } catch (error) {
   // Database/driver error objects may embed a connection string. Keep logs redacted.
   console.error('Production audit failed. Inspect database connectivity and Worker access securely.');

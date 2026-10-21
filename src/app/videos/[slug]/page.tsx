@@ -1,4 +1,4 @@
-import { brand } from "@/lib/config";
+import { isAdmin } from "@/lib/roles";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { HostPortrait } from "@/components/HostPortrait";
@@ -16,8 +16,8 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 export default async function VideoPage({ params }: { params: Promise<{ slug: string }> }) {
   const user = await requireUser();
   const video = await db.video.findUnique({ where: { slug: (await params).slug } });
-  if (!video || (!video.published && user.role !== "ADMIN")) notFound();
-  if (video.minTier > (await userTier(user.id)) && user.role !== "ADMIN") redirect("/plans");
+  if (!video || (!video.published && !isAdmin(user.role))) notFound();
+  if (video.minTier > (await userTier(user.id)) && !isAdmin(user.role)) redirect("/plans");
 
   const source = playback(video);
   return (
@@ -27,8 +27,8 @@ export default async function VideoPage({ params }: { params: Promise<{ slug: st
         {!source ? (
           <div className="silk-stripes flex h-full flex-col items-center justify-center gap-3 bg-turf-900 p-6 text-center">
             <HostPortrait className="h-24 w-24 sm:h-32 sm:w-32" rounded="rounded-full" />
-            <p className="font-display text-xl">{brand.host.first} is still in the edit suite</p>
-            <p className="max-w-sm text-sm text-cream/60">This video is being prepared and will appear here as soon as it&apos;s ready.</p>
+            <p className="font-display text-xl">Video in preparation</p>
+            <p className="max-w-sm text-sm text-cream/60">This lesson is not available to watch yet. Check the library for published videos.</p>
           </div>
         ) : source.kind === "file" ? (
           <video src={source.src} controls controlsList="nodownload" className="h-full w-full" />

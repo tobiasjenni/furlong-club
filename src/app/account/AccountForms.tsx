@@ -10,7 +10,7 @@ export function ProfileForm({ name, country, marketing }: { name: string; countr
     <form action={action} className="space-y-4">
       <div><label className="label" htmlFor="name">Name</label><input className="input" id="name" name="name" defaultValue={name} required /></div>
       <div><label className="label" htmlFor="country">Country</label><input className="input" id="country" name="country" defaultValue={country} /></div>
-      <label className="flex gap-3 text-sm"><input type="checkbox" name="marketing" defaultChecked={marketing} className="mt-1 accent-gold-400" /><span>Email me new videos and race-day reminders</span></label>
+      <label className="flex gap-3 text-sm"><input type="checkbox" name="marketing" defaultChecked={marketing} className="mt-1 accent-gold-400" /><span>Email me club updates and new video notices</span></label>
       <FormMessage state={state} />
       <SubmitButton className="btn-gold">Save profile</SubmitButton>
     </form>

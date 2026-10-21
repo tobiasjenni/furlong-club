@@ -1,3 +1,4 @@
+import { isAdmin } from "@/lib/roles";
 import { NextResponse, type NextRequest } from "next/server";
 import { SESSION_COOKIE, verifySession } from "./lib/session";
 
@@ -8,7 +9,7 @@ export async function middleware(req: NextRequest) {
     url.searchParams.set("next", req.nextUrl.pathname);
     return NextResponse.redirect(url);
   }
-  if (req.nextUrl.pathname.startsWith("/admin") && session.role !== "ADMIN") {
+  if (req.nextUrl.pathname.startsWith("/admin") && !isAdmin(session.role)) {
     return NextResponse.redirect(new URL("/dashboard", req.url));
   }
   return NextResponse.next();

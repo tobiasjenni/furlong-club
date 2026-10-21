@@ -29,6 +29,9 @@ export function manualDepositLabel(status: string, providerStatus: string | null
   if (status === "CONFIRMING") return "Awaiting admin approval";
   if (providerStatus === "admin_rejected") return "Not approved";
   if (providerStatus === "cancelled") return "Cancelled";
+  if (status === "EXPIRED") return "Expired";
+  if (status === "FAILED") return "Not completed";
+  if (status === "PARTIAL") return "Needs review";
   return "Awaiting your transfer";
 }
 

@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "next build --webpack",
     "start": "next start",
     "lint": "tsc --noEmit",
     "db:migrate": "prisma migrate dev",
@@ -27,7 +27,7 @@
     "bcryptjs": "2.4.3",
     "jose": "5.9.6",
     "lossless-json": "^4.3.2",
-    "next": "15.5.28",
+    "next": "16.4.2",
     "qrcode": "1.5.4",
     "react": "19.1.0",
     "react-dom": "19.1.0",

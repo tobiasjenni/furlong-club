@@ -10,6 +10,7 @@ datasource db {
 enum Role {
   USER
   ADMIN
+  SUPER_ADMIN
 }
 
 enum UserStatus {
@@ -84,6 +85,7 @@ model AuthToken {
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId    String
   type      TokenType
+  sessionVersion Int @default(0)
   tokenHash String    @unique
   expiresAt DateTime
   usedAt    DateTime?
@@ -106,7 +108,7 @@ model Plan {
   name          String
   tagline       String
   priceCents    Int
-  intervalDays  Int             @default(30)
+  intervalDays  Int             @default(33)
   tier          Int
   features      String[]
   active        Boolean         @default(true)

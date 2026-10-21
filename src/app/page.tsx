@@ -4,32 +4,40 @@ import { PlanCard } from "@/components/PlanCard";
 import { HostPortrait } from "@/components/HostPortrait";
 import { brand } from "@/lib/config";
 import { db } from "@/lib/db";
+import { currentUser } from "@/lib/auth";
+import { hasPlayableSource } from "@/lib/video";
 
 export const dynamic = "force-dynamic";
 
 const steps = [
-  { title: "Join free", body: "Create your free account and explore the member area." },
-  { title: "Learn the form", body: "Harry walks you through race cards, the going, the draw and staking discipline." },
-  { title: "Race-day breakdowns", body: "Members get Harry's take on the day's feature races before the off." },
-];
-
-const highlights = [
-  { value: "UK", label: "Racing covered" },
-  { value: "Weekly", label: "New breakdowns" },
-  { value: "30 days", label: "Plans, no auto-renew" },
-  { value: "18+", label: "Responsible gambling first" },
+  { title: "Join free", body: "Create your Paddock account and explore the club before choosing a paid plan." },
+  { title: "Explore the library", body: "Browse lessons on form, the going, the draw and staking discipline. Each title shows whether it is ready to watch." },
+  { title: "Choose your access", body: "Pick the plan that suits you. Pay once for the period shown, and extend only when you choose." },
 ];
 
 const faqs = [
   { q: "Is Furlong Club a bookmaker?", a: "No. We teach you how to read a race and share our opinion on the day's cards. We accept membership payments and club credit, but never take bets or bet on your behalf. If you choose to bet, you do it yourself with a licensed bookmaker." },
   { q: "Who is Harry Whitcombe?", a: "Harry Whitcombe is the host of Furlong Club. The current portrait on the site is an AI-generated illustration." },
-  { q: "How do I pay?", a: "Paid plans are paid upfront in USDT or USDC and run for 30 days. They do not renew automatically, so you are never charged without choosing to." },
-  { q: "Can I cancel?", a: "There is nothing to cancel: when your 30 days end, your plan simply stops. You keep your free account and the intro videos." },
+  { q: "How do I pay?", a: "Add USDT or USDC to your club wallet, report your transfer, and wait for an admin to approve the deposit. Then use your available club credit to activate a plan. Your access period is shown on the plan and at checkout." },
+  { q: "Will I be charged again?", a: "No. Paid plans are one-off purchases with no automatic renewal. When your access period ends, paid access stops and your free account stays open. Extend only if you choose to." },
+  { q: "Are all videos available now?", a: "Check the video library before choosing a paid plan. Titles marked In preparation are not available to watch yet; joining or upgrading does not make those videos available sooner." },
+  { q: "Is Trading with Harry included in membership?", a: "No. Trading with Harry is a separate proposed service with its own allocation, lock and payout terms. Real trading enrollment is currently closed. A membership payment does not create a trading allocation." },
   { q: "Do you guarantee winnings?", a: "No one can. Our videos are education and opinion, not advice. Only bet what you can afford to lose, and stop if it stops being fun." },
 ];
 
 export default async function Home() {
-  const plans = await db.plan.findMany({ where: { active: true }, orderBy: { sortOrder: "asc" } });
+  const [plans, videos, user] = await Promise.all([
+    db.plan.findMany({ where: { active: true }, orderBy: { sortOrder: "asc" } }),
+    db.video.findMany({ where: { published: true }, select: { minTier: true, bunnyVideoId: true, embedUrl: true } }),
+    currentUser(),
+  ]);
+  const periods = [...new Set(plans.filter(p => p.priceCents > 0).map(p => p.intervalDays))];
+  const highlights = [
+    { value: "UK", label: "Racing focus" },
+    { value: "Form & racecraft", label: "Learn the essentials" },
+    { value: periods.length === 1 ? `${periods[0]} days` : "Your choice", label: "Plans, no auto-renew" },
+    { value: "18+", label: "Responsible gambling first" },
+  ];
   return (
     <>
       <section className="silk-stripes relative overflow-hidden border-b border-white/10">
@@ -40,14 +48,14 @@ export default async function Home() {
               Read the race <span className="text-gold-400">before</span> the gates open.
             </h1>
             <p className="mt-5 max-w-xl text-lg text-cream/75">
-              {brand.name} is a video club for racing fans. Learn how to study form, judge the going and manage your
-              stake, then watch {brand.host.first} break down the big races on the card.
+              A clearer view of the form. Explore race cards, understand the going and build a disciplined approach to staking,
+              with {brand.host.first} as your guide. Start with a free account and find your place in the club.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <Link href="/signup" className="btn-gold px-7 py-3 text-base">Join free</Link>
-              <Link href="/plans" className="btn-ghost px-7 py-3 text-base">See plans</Link>
+              <Link href={user ? "/dashboard" : "/signup"} className="btn-gold px-7 py-3 text-base">{user ? "Open your dashboard" : "Join free"}</Link>
+              <Link href="/plans" className="btn-ghost px-7 py-3 text-base">Explore plans</Link>
             </div>
-            <p className="muted mt-4 text-xs">18+ only · Pay with USDT or USDC · Cancel anytime</p>
+            <p className="muted mt-4 text-xs">Free to join · No automatic renewal · 18+ only</p>
           </div>
           <div className="relative">
             <HostPortrait className="mx-auto w-full max-w-[340px] shadow-2xl" />
@@ -88,7 +96,7 @@ export default async function Home() {
             <p className="mt-3 text-cream/75">
               {brand.host.name} is the host of {brand.name}. Join Harry for racing education, race-day analysis and a closer look at the form.
             </p>
-            <Link href={brand.host.page} className="mt-4 inline-block text-gold-300 hover:underline">Read {brand.host.first}&apos;s story →</Link>
+            <Link href={brand.host.page} className="mt-4 inline-block text-gold-300 hover:underline">Meet {brand.host.first} →</Link>
           </div>
         </div>
       </section>
@@ -97,10 +105,10 @@ export default async function Home() {
 
       <section id="plans" className="container-page py-16 md:py-20">
         <h2 className="text-3xl md:text-4xl">Choose your plan</h2>
-        <p className="muted mt-2">Start free. Upgrade when you want the full library.</p>
+        <p className="muted mt-2">Start with Paddock for free. Compare each plan&apos;s access and published videos before choosing.</p>
         <div className="mt-8 grid gap-4 md:grid-cols-3">
           {plans.map((p) => (
-            <PlanCard key={p.id} plan={p} highlight={p.tier === 1} cta={{ href: p.priceCents ? `/checkout/${p.slug}` : "/signup", label: p.priceCents ? `Get ${p.name}` : "Join free" }} />
+            <PlanCard key={p.id} plan={p} availableVideos={videos.filter(v => v.minTier <= p.tier && hasPlayableSource(v)).length} highlight={p.tier === 1} cta={{ href: p.priceCents ? `/checkout/${p.slug}` : user ? "/dashboard" : "/signup", label: p.priceCents ? `Choose ${p.name}` : user ? "Open dashboard" : "Join free" }} />
           ))}
         </div>
       </section>

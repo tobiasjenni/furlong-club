@@ -30,7 +30,7 @@ function layout(heading: string, body: string, cta?: { href: string; label: stri
 <p style="font-size:18px;font-weight:bold;color:#e9c46a">${escape(brand.name)}</p>
 <h1 style="font-size:22px">${escape(heading)}</h1>
 <p style="line-height:1.6;color:#d8d2c4">${escape(body)}</p>${button}
-<p style="font-size:12px;color:#8a9a90;margin-top:32px">18+ only. Betting carries risk. Help: BeGambleAware.org</p>
+<p style="font-size:12px;color:#8a9a90;margin-top:32px">18+ only. Betting carries risk. Help: GamCare</p>
 </div></body></html>`;
 }
 

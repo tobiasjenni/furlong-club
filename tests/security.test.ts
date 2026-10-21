@@ -48,6 +48,13 @@ describe("session tokens", () => {
     expect(await verifySession(token)).toBeNull();
     process.env.AUTH_SECRET = "x".repeat(40);
   });
+  it("preserves the Super Admin role", async () => {
+    expect(await verifySession(await signSession({ uid: "owner", role: "SUPER_ADMIN", sv: 4 }))).toEqual({ uid: "owner", role: "SUPER_ADMIN", sv: 4 });
+  });
+  it("rejects malformed roles and session versions even with a valid signature", async () => {
+    expect(await verifySession(await signSession({ uid: "u", role: "OWNER" as "USER", sv: 0 }))).toBeNull();
+    expect(await verifySession(await signSession({ uid: "u", role: "USER", sv: -1 }))).toBeNull();
+  });
   it("rejects garbage", async () => {
     expect(await verifySession("abc.def.ghi")).toBeNull();
   });

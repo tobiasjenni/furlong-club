@@ -1,3 +1,4 @@
+import { roleLabel } from "@/lib/roles";
 import Link from "next/link";
 import { requireAdmin } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -19,7 +20,7 @@ const nav = [
 ];
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const [pending, tradingPending, tradingDue] = await Promise.all([
     db.payment.count({ where: { provider: "manual", status: "CONFIRMING" } }),
     db.tradingAllocation.count({ where: { status: "PENDING" } }),
@@ -28,7 +29,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   return (
     <div className="container-page py-8">
       <div className="mb-6 flex items-center gap-3">
-        <span className="badge bg-gold-400 text-turf-950">Admin</span>
+        <span className="badge bg-gold-400 text-turf-950">{roleLabel(admin.role)}</span>
         <h1 className="text-2xl">Back office</h1>
       </div>
       <nav className="-mx-4 mb-6 flex gap-2 overflow-x-auto px-4 pb-1">

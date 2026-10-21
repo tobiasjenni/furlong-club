@@ -1,3 +1,4 @@
+import { isAdmin } from "@/lib/roles";
 import "server-only";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
@@ -23,11 +24,17 @@ export async function requireUser() {
 export async function requireAdmin() {
   const user = await currentUser();
   if (!user) redirect("/login");
-  if (user.role !== "ADMIN") redirect("/dashboard");
+  if (!isAdmin(user.role)) redirect("/dashboard");
   return user;
 }
 
-export async function startSession(user: { id: string; role: "USER" | "ADMIN"; sessionVersion: number }) {
+export async function requireSuperAdmin() {
+  const user = await requireAdmin();
+  if (user.role !== "SUPER_ADMIN") redirect("/admin");
+  return user;
+}
+
+export async function startSession(user: { id: string; role: "USER" | "ADMIN" | "SUPER_ADMIN"; sessionVersion: number }) {
   const token = await signSession({ uid: user.id, role: user.role, sv: user.sessionVersion });
   (await cookies()).set(SESSION_COOKIE, token, sessionCookieOptions);
 }

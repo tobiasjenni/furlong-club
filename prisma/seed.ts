@@ -10,27 +10,30 @@ async function main() {
       name: "Paddock",
       tagline: "Free with an account",
       priceCents: 0,
+      intervalDays: 33,
       tier: 0,
       sortOrder: 0,
-      features: ["Intro videos with Harry", "Glossary of racing terms", "Weekly newsletter"],
+      features: ["Free member dashboard", "Video catalogue previews", "Optional club updates"],
     },
     {
       slug: "form",
       name: "Form Room",
-      tagline: "The full training library",
+      tagline: "Build your racing foundations",
       priceCents: 2900,
+      intervalDays: 33,
       tier: 1,
       sortOrder: 1,
-      features: ["Everything in Paddock", "Full training video library", "Weekly race-card breakdowns", "Reading the form & going"],
+      features: ["Everything in Paddock", "Form and race-card lessons", "Going, draw and staking discipline", "Access to published Form Room videos"],
     },
     {
       slug: "inner-circle",
       name: "Inner Circle",
-      tagline: "Daily tips and live sessions",
+      tagline: "Go deeper into race-day analysis",
       priceCents: 7900,
+      intervalDays: 33,
       tier: 2,
       sortOrder: 2,
-      features: ["Everything in Form Room", "Daily race-day tip videos", "Monthly live Q&A", "Early access to new series"],
+      features: ["Everything in Form Room", "Published Inner Circle race-day videos", "Detailed race-card analysis", "One-off access with no automatic renewal"],
     },
   ];
   for (const p of plans) {
@@ -74,17 +77,26 @@ async function main() {
   if (email && password) {
     await db.user.upsert({
       where: { email: email.toLowerCase() },
-      update: { role: "ADMIN", status: "ACTIVE", emailVerifiedAt: new Date() },
+      update: {},
       create: {
         email: email.toLowerCase(),
         passwordHash: await bcrypt.hash(password, 12),
         name: "Admin",
-        role: "ADMIN",
+        role: "SUPER_ADMIN",
         ageConfirmedAt: new Date(),
         emailVerifiedAt: new Date(),
       },
     });
-    console.log(`Admin ready: ${email}`);
+    // Promote only the explicitly configured owner, preserve credentials and status.
+    const owner = await db.user.findUniqueOrThrow({ where: { email: email.toLowerCase() } });
+    if (owner.role !== 'SUPER_ADMIN' && owner.status === 'ACTIVE') {
+      await db.$transaction(async tx => {
+        await tx.user.update({ where: { id: owner.id }, data: { role: 'SUPER_ADMIN', sessionVersion: { increment: 1 } } });
+        await tx.authToken.deleteMany({ where: { userId: owner.id } });
+        await tx.auditLog.create({ data: { actorId: owner.id, action: 'owner.super_admin_bootstrapped', target: owner.id, meta: { previousRole: owner.role } } });
+      });
+    }
+    console.log('Configured owner ready.');
   }
 }
 

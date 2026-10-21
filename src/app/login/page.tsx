@@ -9,7 +9,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   if (await currentUser()) redirect("/dashboard");
   const { next, reset } = await searchParams;
   return (
-    <AuthShell title="Welcome back" subtitle="Sign in to watch your videos and manage your plan.">
+    <AuthShell title="Welcome back" subtitle="Your membership, wallet and trading records, in one place.">
       <LoginForm next={next} notice={reset ? "Password updated. Please sign in with your new password." : undefined} />
     </AuthShell>
   );

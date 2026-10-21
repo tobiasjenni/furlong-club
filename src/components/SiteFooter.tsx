@@ -37,7 +37,7 @@ export function SiteFooter() {
           <p>© {new Date().getFullYear()} {brand.name}. All rights reserved.</p>
           <p className="flex items-center gap-2">
             <span className="badge border border-cream/30 text-cream/70">18+</span>
-            Gambling can be addictive. Help: <a className="underline" href="https://www.begambleaware.org" target="_blank" rel="noreferrer">BeGambleAware.org</a>
+            Gambling can be addictive. Help: <a className="underline" href="https://www.gamcare.org.uk/" target="_blank" rel="noreferrer">GamCare</a>
           </p>
         </div>
       </div>
