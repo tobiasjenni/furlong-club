@@ -1,11 +1,12 @@
 import Link from "next/link";
 import type { Plan } from "@prisma/client";
 import { usd } from "@/lib/format";
+import { TradingMembership } from "./TradingMembership";
 
 export function PlanCard({ plan, highlight = false, cta, availableVideos }: { plan: Plan; highlight?: boolean; cta?: { href: string; label: string }; availableVideos?: number }) {
   return (
-    <div className={`card flex flex-col ${highlight ? "border-gold-400/60 ring-1 ring-gold-400/40" : ""}`}>
-      {highlight && <span className="badge mb-3 w-fit bg-gold-400 text-turf-950">Recommended</span>}
+    <div id={`plan-${plan.slug}`} className={`card flex flex-col ${highlight ? "border-gold-400/60 ring-1 ring-gold-400/40" : ""}`}>
+      {highlight && <span className="badge mb-3 w-fit bg-gold-400 text-turf-950">Trading with Harry membership</span>}
       <h3 className="text-2xl">{plan.name}</h3>
       <p className="muted mt-1 text-sm">{plan.tagline}</p>
       <p className="mt-5 flex flex-wrap items-baseline gap-x-2 gap-y-1">
@@ -13,6 +14,7 @@ export function PlanCard({ plan, highlight = false, cta, availableVideos }: { pl
         {plan.priceCents > 0 && <span className="muted whitespace-nowrap text-sm">/ {plan.intervalDays} days</span>}
       </p>
       {plan.priceCents > 0 && <p className="muted mt-1 text-xs">One payment · No automatic renewal</p>}
+      {plan.tier >= 1 && plan.priceCents > 0 && <TradingMembership compact />}
       {availableVideos !== undefined && <p className={`mt-3 text-xs ${availableVideos ? "text-emerald-300" : "text-gold-300"}`}>{availableVideos ? `${availableVideos} video${availableVideos === 1 ? "" : "s"} ready to watch` : "Video library in preparation"}</p>}
       <ul className="mt-5 flex-1 space-y-2.5 text-sm">
         {plan.features.map((f) => (
