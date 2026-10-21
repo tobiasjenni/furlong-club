@@ -78,6 +78,47 @@ model User {
   tokens          AuthToken[]
   walletJournal   WalletJournal[]
   tradingAllocations TradingAllocation[]
+  adminPasskeys AdminPasskey[]
+  adminChallenges AdminSecurityChallenge[]
+  adminRecoveryCodes AdminRecoveryCode[]
+}
+
+model AdminPasskey {
+  id String @id
+  userId String
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  publicKey String
+  counter BigInt @default(0)
+  transports String[] @default([])
+  label String
+  backedUp Boolean @default(false)
+  createdAt DateTime @default(now())
+  lastUsedAt DateTime?
+  verifiedAt DateTime?
+  @@index([userId])
+}
+
+model AdminSecurityChallenge {
+  id String @id
+  userId String
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  challenge String
+  purpose String
+  sessionHash String
+  sessionVersion Int
+  initial Boolean
+  expiresAt DateTime
+  usedAt DateTime?
+  @@index([expiresAt])
+}
+
+model AdminRecoveryCode {
+  hash String @id
+  userId String
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  usedAt DateTime?
+  @@index([userId])
 }
 
 model AuthToken {

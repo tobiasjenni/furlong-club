@@ -54,7 +54,7 @@ describe("short admin confirmation", () => {
   const user = { id: "admin", sessionVersion: 2 };
   it("expires after 15 minutes and binds to the user, session and revocation version", async () => {
     vi.stubEnv("AUTH_SECRET", "s".repeat(40)); vi.useFakeTimers();
-    const token = await signAdminConfirmation(user, "session-A");
+    const token = await signAdminConfirmation(user, "session-A", "passkey");
     expect(await verifyAdminConfirmation(token, user, "session-A")).toBe(true);
     expect(await verifyAdminConfirmation(token, user, "session-B")).toBe(false);
     expect(await verifyAdminConfirmation(token, { ...user, id: "other" }, "session-A")).toBe(false);
