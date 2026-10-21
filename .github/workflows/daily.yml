@@ -17,6 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: production
     env:
+      APP_ENV: production
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
       RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
       APP_URL: https://furlong.club
@@ -31,3 +32,5 @@ jobs:
       - run: npm ci
       - name: Renewal reminders and clean-up
         run: npm run daily
+        env:
+          NODE_ENV: production

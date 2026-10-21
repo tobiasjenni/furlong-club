@@ -99,4 +99,7 @@ async function main() {
   }
 }
 
-main().finally(() => db.$disconnect());
+main().catch(error => {
+  console.error(error instanceof Error && error.message.startsWith("Owner setup") ? error.message : "Database setup failed. Check configuration securely.");
+  process.exitCode = 1;
+}).finally(() => db.$disconnect());

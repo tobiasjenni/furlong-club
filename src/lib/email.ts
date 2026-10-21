@@ -38,7 +38,9 @@ export async function sendEmail(email: Email) {
     if (!res.ok) throw new Error(`Email delivery failed (${res.status})`);
     return;
   }
-  if (process.env.NODE_ENV === "production") throw new Error("Email delivery is not configured");
+  // An unset NODE_ENV (for example in a maintenance job) must never print customer
+  // messages or usable recovery tokens into public CI logs.
+  if (process.env.NODE_ENV !== "development" || process.env.APP_ENV === "production" || process.env.CI) throw new Error("Email delivery is not configured");
   console.log(`\n[email] to=${email.to} subject="${email.subject}"\n${email.text}\n`);
 }
 
