@@ -23,7 +23,7 @@ async function main() {
       intervalDays: 33,
       tier: 1,
       sortOrder: 1,
-      features: ["Planned Trading with Harry access", "Everything in Paddock", "Form and race-card lessons", "Going, draw and staking discipline", "Access to published Form Room videos"],
+      features: ["Everything in Paddock", "Form and race-card lessons", "Trading with Harry"],
     },
     {
       slug: "inner-circle",
