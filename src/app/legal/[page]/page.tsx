@@ -1,5 +1,7 @@
 import { notFound } from "next/navigation";
 import { brand } from "@/lib/config";
+import { pageMetadata, type PublicPath } from "@/lib/seo";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 
 // Placeholder copy. Replace with text reviewed by your lawyers before launch.
 const pages: Record<string, { title: string; body: string[] }> = {
@@ -35,7 +37,9 @@ const pages: Record<string, { title: string; body: string[] }> = {
 export const dynamicParams = false;
 
 export async function generateMetadata({ params }: { params: Promise<{ page: string }> }) {
-  return { title: pages[(await params).page]?.title ?? "Not found" };
+  const page = (await params).page;
+  if (!pages[page]) notFound();
+  return pageMetadata(`/legal/${page}` as PublicPath);
 }
 
 export function generateStaticParams() {
@@ -43,10 +47,12 @@ export function generateStaticParams() {
 }
 
 export default async function LegalPage({ params }: { params: Promise<{ page: string }> }) {
-  const content = pages[(await params).page];
+  const page = (await params).page;
+  const content = pages[page];
   if (!content) notFound();
   return (
     <div className="container-page max-w-3xl py-12 md:py-16">
+      <Breadcrumbs path={`/legal/${page}`} label={content.title} />
       <h1 className="text-4xl">{content.title}</h1>
       <div className="mt-6 space-y-4 text-cream/80">
         {content.body.map((p) => <p key={p}>{p}</p>)}

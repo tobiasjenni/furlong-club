@@ -1,10 +1,11 @@
+import { privateMetadata } from "@/lib/seo";
 import { AuthShell } from "@/components/AuthShell";
 import { ForgotForm } from "./ForgotForm";
 import { emailDelivers } from "@/lib/email";
 import { brand } from "@/lib/config";
 import Link from "next/link";
 
-export const metadata = { title: "Forgot password" };
+export const metadata = { ...privateMetadata, title: "Forgot password" };
 
 export default function ForgotPasswordPage() {
   return (

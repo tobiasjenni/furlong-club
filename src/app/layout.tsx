@@ -5,21 +5,18 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { brand } from "@/lib/config";
 import "./globals.css";
 import { walletTestMode } from "@/lib/environment";
+import { pageMetadata, siteOrigin } from "@/lib/seo";
 
 const display = Fraunces({ subsets: ["latin"], variable: "--font-display", display: "swap" });
 const sans = Inter({ subsets: ["latin"], variable: "--font-sans", display: "swap" });
 
 export const metadata: Metadata = {
+  ...pageMetadata("/"),
   title: { default: `${brand.name} · Trading with Harry`, template: `%s · ${brand.name}` },
-  description: `Discover Trading with Harry, the main planned benefit of Form Room membership, and ${brand.host.name}’s 40+ years of racing experience. Trading enrollment is currently closed.`,
-  metadataBase: new URL(`https://${brand.domain}`),
-  openGraph: {
-    type: "website",
-    siteName: brand.name,
-    title: `${brand.name} · Trading with Harry`,
-    description: "Trading with Harry is at the heart of Form Room. Explore the membership, separate allocation requirements and current availability.",
-  },
-  twitter: { card: "summary_large_image" },
+  metadataBase: new URL(siteOrigin),
+  applicationName: brand.name,
+  category: "Horse racing membership and education",
+  icons: { apple: "/apple-icon.png" },
 };
 
 export const viewport: Viewport = { themeColor: "#06140f", width: "device-width", initialScale: 1 };

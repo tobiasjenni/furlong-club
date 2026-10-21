@@ -22,12 +22,19 @@ const csp = [
 const nextConfig = {
   poweredByHeader: false,
   async redirects() {
-    return [{ source: "/about-rob", destination: "/meet-harry", permanent: true }];
+    return [
+      { source: "/:path*", has: [{ type: "host", value: "www.furlong.club" }], destination: "https://furlong.club/:path*", permanent: true },
+      { source: "/about-rob", destination: "/meet-harry", permanent: true },
+    ];
   },
   // Lets the Cloudflare build resolve Prisma to its WebAssembly (workerd) build.
   serverExternalPackages: ["@prisma/client", ".prisma/client"],
   async headers() {
     return [
+      {
+        source: "/:section(admin|account|dashboard|wallet|checkout|videos|api|login|signup|forgot-password|reset-password|verify-email)/:path*",
+        headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow, noarchive" }],
+      },
       {
         source: "/(.*)",
         headers: [

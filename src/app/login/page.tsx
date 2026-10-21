@@ -1,10 +1,11 @@
+import { privateMetadata } from "@/lib/seo";
 import { redirect } from "next/navigation";
 import { AuthShell } from "@/components/AuthShell";
 import { safeNext } from "@/lib/request";
 import { currentUser } from "@/lib/auth";
 import { LoginForm } from "./LoginForm";
 
-export const metadata = { title: "Sign in" };
+export const metadata = { ...privateMetadata, title: "Sign in" };
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string; reset?: string }> }) {
   const { next: requested, reset } = await searchParams;
