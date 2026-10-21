@@ -13,7 +13,7 @@ import "./landing.css";
 export const dynamic = "force-dynamic";
 export const metadata = pageMetadata("/");
 const faqs = [
-  { q: "What is Trading with Harry?", a: "A proposed service for Harry to trade a dedicated allocation on your behalf. Planned access is the main benefit of Form Room and is also included in Inner Circle. Real enrollment is currently closed while final terms are prepared. Membership and allocation capital are separate payments." },
+  { q: "What is Trading with Harry?", a: "A proposed service for Harry to trade a dedicated allocation on your behalf. Planned access is the main benefit of Form Room and is also included in Inner Circle. Real enrollment is currently closed while final terms are prepared. The membership fee and allocation capital are separate payments." },
   { q: "When does the 33-day lock start?", a: "The lock starts only when an admin approves an allocation. Creating an account, paying for membership or submitting a request does not start it. The allocation range is $500–$10,000. After the lock, an admin records the actual result and manually pays any amount due to your saved external wallet." },
   { q: "How do USDT and USDC deposits work?", a: "Choose an amount, token and supported network in your wallet. Send only to the address shown for that request, then report the transaction ID. An admin verifies the incoming transfer before adding club credit. Pending deposits cannot be spent." },
   { q: "Are returns guaranteed?", a: "No. Actual results can include losses, including loss of all principal. Proposed targets are unverified, and no daily profit is automatically credited. Your charts show actual recorded results, never assumed earnings." },
