@@ -2,7 +2,7 @@ import { Prisma } from "@prisma/client";
 
 // One database snapshot. The only parameter is the authenticated member's ID.
 // Membership spending and external payouts change value; they are never counted as profit.
-export function portalSnapshotQuery(userId: string) {
+export function portalSnapshotQuery(userId: string, history = true) {
   return Prisma.sql`
     WITH me AS (SELECT id,"balanceCents" FROM "User" WHERE id=${userId}),
     a AS (SELECT t.* FROM "TradingAllocation" t JOIN me ON me.id=t."userId"),
@@ -20,7 +20,7 @@ export function portalSnapshotQuery(userId: string) {
       FROM "Payment" p JOIN me ON p."userId"=me.id
       WHERE p.purpose='WALLET_TOPUP' AND p.status IN ('PENDING','CONFIRMING','PARTIAL')
       AND (p."expiresAt" IS NULL OR p."expiresAt">(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'))),
-    events AS (
+    ${history ? Prisma.sql`events AS (
       SELECT j."createdAt" AS at,j."userDeltaCents"::bigint+j."lockedDeltaCents"::bigint AS value_delta,0::bigint AS profit_delta,0 AS result_count
       FROM "WalletJournal" j JOIN me ON j."userId"=me.id
       UNION ALL SELECT "resultAt","profitCents"::bigint,"profitCents"::bigint,1 FROM a
@@ -37,7 +37,7 @@ export function portalSnapshotQuery(userId: string) {
       opening.value+sum(COALESCE(daily.value_delta,0)) OVER (ORDER BY days.day) AS value,
       opening.profit+sum(COALESCE(daily.profit_delta,0)) OVER (ORDER BY days.day) AS profit,
       COALESCE(daily.profit_delta,0) AS daily_profit,COALESCE(daily.result_count,0) AS result_count
-      FROM days CROSS JOIN opening LEFT JOIN daily ON daily.day=days.day)
+      FROM days CROSS JOIN opening LEFT JOIN daily ON daily.day=days.day)` : Prisma.sql`curve AS (SELECT NULL::date AS day,0::bigint AS value,0::bigint AS profit,0::bigint AS daily_profit,0::bigint AS result_count WHERE false)`}
     SELECT jsonb_build_object(
       'availableCents',me."balanceCents",'activePrincipalCents',totals.active,'committedCents',totals.committed,
       'payoutDueCents',totals.due,'valueCents',me."balanceCents"::bigint+totals.active+totals.due,

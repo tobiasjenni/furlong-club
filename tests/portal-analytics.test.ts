@@ -5,15 +5,16 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { portalSnapshotQuery } from "../src/lib/portal-query";
 import { safeSnapshot, snapshotIsReconciled, type PortalSnapshot } from "../src/lib/portal-metrics";
 import { portalActivityQuery, type PortalActivityPage } from "../src/lib/portal-activity";
+import { adminCountsQuery, adminOverviewQuery } from "../src/lib/admin-query";
 
 let pg: PGlite, member: string, admin: string;
 const uuid = () => crypto.randomUUID();
 const person = async (role = "USER") => { const id = uuid(); await pg.query(`INSERT INTO "User" (id,email,"passwordHash","ageConfirmedAt","emailVerifiedAt","updatedAt",role) VALUES ($1,$2,'test',now(),now(),now(),$3::"Role")`, [id, id + "@example.com", role]); return id; };
 const fund = async (id = member, days = 50) => { const key = uuid(); await pg.query(`INSERT INTO "WalletJournal" (id,"operationKey","userId",kind,description,"userDeltaCents","clearingDeltaCents","revenueDeltaCents","createdAt") VALUES ($1,$1,$2,'OPENING','Opening test credit',1000000,-1000000,0,(CURRENT_TIMESTAMP AT TIME ZONE 'UTC')-($3::int * interval '1 day'))`, [key, id, days]); };
 async function snapshot(id = member) { const q = portalSnapshotQuery(id); return (await pg.query<{ snapshot: PortalSnapshot }>(q.text, q.values)).rows[0].snapshot; }
-async function mature() {
+async function mature(ageDays = 40) {
   const id = uuid();
-  await pg.query(`INSERT INTO "TradingAllocation" (id,"userId","requestKey","principalCents",currency,network,"payoutAddress","termsVersion","termsSnapshot",status,"approvedAt","approvedById","unlocksAt") VALUES ($1,$2,$1,50000,'USDT','ERC20','0x1111111111111111111111111111111111111111','draft-v1','{}','ACTIVE',(CURRENT_TIMESTAMP AT TIME ZONE 'UTC')-interval '40 days',$3,(CURRENT_TIMESTAMP AT TIME ZONE 'UTC')-interval '7 days')`, [id, member, admin]);
+  await pg.query(`INSERT INTO "TradingAllocation" (id,"userId","requestKey","principalCents",currency,network,"payoutAddress","termsVersion","termsSnapshot",status,"approvedAt","approvedById","unlocksAt") VALUES ($1,$2,$1,50000,'USDT','ERC20','0x1111111111111111111111111111111111111111','draft-v1','{}','ACTIVE',(CURRENT_TIMESTAMP AT TIME ZONE 'UTC')-($4::int * interval '1 day'),$3,(CURRENT_TIMESTAMP AT TIME ZONE 'UTC')+((33-$4::int) * interval '1 day'))`, [id, member, admin, ageDays]);
   await pg.query(`INSERT INTO "WalletJournal" (id,"operationKey","userId","allocationId",kind,description,"userDeltaCents","clearingDeltaCents","revenueDeltaCents","lockedDeltaCents","createdAt") VALUES ($1,$1,$2,$3,'TRADING_LOCK','Test allocation lock',-50000,0,0,50000,(CURRENT_TIMESTAMP AT TIME ZONE 'UTC')-interval '40 days')`, [uuid(), member, id]);
   return id;
 }
@@ -25,6 +26,25 @@ afterAll(async () => { await pg?.close(); });
 beforeEach(async () => { member = await person(); admin = await person("ADMIN"); });
 
 describe("V2 financial overview from the existing records", () => {
+  it("returns identical financial totals without generating chart history for summary pages", async () => {
+    await fund(member, 400); const id = await mature(); await result(id, -2500);
+    const full = await snapshot();
+    const query = portalSnapshotQuery(member, false);
+    const summary = safeSnapshot((await pg.query<{ snapshot: PortalSnapshot }>(query.text, query.values)).rows[0].snapshot);
+    expect(full.series).toHaveLength(366); expect(summary.series).toEqual([]);
+    const { series: _series, asOf: _time, ...expected } = full;
+    const { series: _empty, asOf: _now, ...actual } = summary;
+    expect(actual).toEqual(expected);
+  });
+  it("batches admin counts and excludes future lock maturities", async () => {
+    const counts = async () => { const q = adminCountsQuery(); return (await pg.query<{ deposits: number; pending: number; due: number }>(q.text, q.values)).rows[0]; };
+    const before = await counts(); await fund(); await mature();
+    expect((await counts()).due).toBe(before.due + 1);
+    await mature(1);
+    expect((await counts()).due).toBe(before.due + 1);
+    const q = adminOverviewQuery(); const overview = (await pg.query<{ users: number; revenue: number }>(q.text, q.values)).rows[0];
+    expect(overview.users).toBeGreaterThanOrEqual(2); expect(overview.revenue).toBe(0);
+  });
   it("has an honest empty state without inventing value or yield", async () => {
     const s = await snapshot(); expect(s.series).toEqual([]); expect(s.valueCents).toBe(0); expect(s.recordedProfitCents).toBe(0); expect(s.resultCount).toBe(0); expect(snapshotIsReconciled(s)).toBe(true);
   });

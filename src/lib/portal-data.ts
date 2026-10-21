@@ -6,12 +6,20 @@ import { activeSubscription } from "./subscriptions";
 import { portalSnapshotQuery } from "./portal-query";
 import { safeSnapshot, type PortalSnapshot } from "./portal-metrics";
 
-export const portalData = cache(async () => {
+export const portalIdentity = cache(async () => {
   const user = await requireUser();
-  const [rows, subscription] = await Promise.all([
-    db.$queryRaw<{ snapshot: PortalSnapshot }[]>(portalSnapshotQuery(user.id)),
-    activeSubscription(user.id),
+  const subscription = await activeSubscription(user.id);
+  return { user, subscription };
+});
+
+async function financialData(history: boolean) {
+  const user = await requireUser();
+  const [rows, identity] = await Promise.all([
+    db.$queryRaw<{ snapshot: PortalSnapshot }[]>(portalSnapshotQuery(user.id, history)), portalIdentity(),
   ]);
   if (!rows[0]) throw new Error("Account metrics are unavailable");
-  return { user, subscription, snapshot: safeSnapshot(rows[0].snapshot) };
-});
+  return { ...identity, snapshot: safeSnapshot(rows[0].snapshot) };
+}
+// Request-scoped only: balances and permissions are never cached across users.
+export const portalData = cache(() => financialData(true));
+export const portalSummary = cache(() => financialData(false));

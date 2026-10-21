@@ -25,4 +25,12 @@ Release checks require the icon links inside the HTML head for public and sign-i
 
 No Search Console ownership verification, sitemap submission or indexing request has been performed by this code change. Existing customer accounts, deposits and trading records are unaffected.
 
+## Member workspace addresses and response times
+
+The signed-in workspace uses `/dashboard`, `/account`, `/wallet`, `/activity`, `/performance`, `/planner`, `/allocations`, `/membership`, `/deposits/:id` and `/support`. Public `/trading` and `/plans` remain separate. Old `/v2` links permanently redirect to the matching clean URL, preserving query parameters. All workspace paths still require sign-in and return private/no-store and noindex headers; they are excluded from the sitemap.
+
+The shared member layout loads identity and streams the membership label without calculating a chart. Only Overview and Performance request chart history. Wallet and Allocations use the same financial totals without the history calculation; Account, Planner, Transactions, Membership and Support avoid it. Financial/auth data is deduplicated only within a request, never cached across users or across requests.
+
+Account and other form-only pages no longer refresh on a timer. Financial screens refresh only while visible and when no input is focused, without overlapping an in-progress refresh. Successful profile and financial actions invalidate the shared member layout. Admin notification counts are fetched in one query and polled through one protected endpoint; overview metrics are batched, and loading boundaries keep navigation responsive while fresh reports finish. Existing MFA and per-request account revocation checks remain required.
+
 References: [Google titles](https://developers.google.com/search/docs/appearance/title-link), [descriptions](https://developers.google.com/search/docs/appearance/snippet), [site names](https://developers.google.com/search/docs/appearance/site-names), [noindex](https://developers.google.com/search/docs/crawling-indexing/block-indexing), and [Next.js metadata](https://nextjs.org/docs/app/getting-started/metadata-and-og-images).

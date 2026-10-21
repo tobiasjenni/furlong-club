@@ -11,7 +11,7 @@ import { AutoRefresh } from "@/app/checkout/pay/[id]/AutoRefresh";
 export const networkNames: Record<string, string> = { TRC20: "Tron (TRC-20)", ERC20: "Ethereum (ERC-20)", POLYGON: "Polygon" };
 
 export async function ManualDepositPage({ payment, portal = false }: { payment: Payment; portal?: boolean }) {
-  const walletHref = portal ? "/v2/wallet" : "/wallet";
+  const walletHref = "/wallet";
   const formatDate = portal ? dateTimeUtc : dateTime;
   const pending = payment.status === "PENDING";
   const reviewing = payment.status === "CONFIRMING";

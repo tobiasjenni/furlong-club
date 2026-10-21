@@ -2,9 +2,9 @@ import { privateMetadata } from "@/lib/seo";
 import { roleLabel } from "@/lib/roles";
 import Link from "next/link";
 import { requireAdmin } from "@/lib/auth";
-import { db } from "@/lib/db";
-import { PendingTradingNotice } from "@/components/PendingTradingNotice";
-import { PendingDepositNotice } from "@/components/PendingDepositNotice";
+import { Suspense } from "react";
+import { adminCounts } from "@/lib/admin-data";
+import { AdminNotices } from "@/components/AdminNotices";
 
 export const metadata = { ...privateMetadata, title: { default: "Admin", template: "%s · Admin" } };
 
@@ -23,11 +23,6 @@ const nav = [
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const admin = await requireAdmin();
-  const [pending, tradingPending, tradingDue] = await Promise.all([
-    db.payment.count({ where: { provider: "manual", status: "CONFIRMING" } }),
-    db.tradingAllocation.count({ where: { status: "PENDING" } }),
-    db.tradingAllocation.count({ where: { OR: [{ status: "ACTIVE", unlocksAt: { lte: new Date() } }, { status: "PAYOUT_READY" }] } }),
-  ]);
   return (
     <div className="container-page py-8">
       <div className="mb-6 flex items-center gap-3">
@@ -39,9 +34,12 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <Link key={n.href} href={n.href} className="btn-ghost shrink-0 px-4 py-2">{n.label}</Link>
         ))}
       </nav>
-      <PendingDepositNotice initialCount={pending} />
-      <PendingTradingNotice initialPending={tradingPending} initialDue={tradingDue} />
+      <Suspense fallback={null}><Notifications /></Suspense>
       {children}
     </div>
   );
+}
+
+async function Notifications() {
+  return <AdminNotices initial={await adminCounts()} />;
 }
