@@ -74,6 +74,8 @@ for (const [path, width, height] of [["/social/furlong-club.png", 1200, 630], ["
 if (!staging && new URL(origin).hostname === "furlong.club") {
   const response = await fetch("https://www.furlong.club/trading?source=seo-check", { redirect: "manual", signal: AbortSignal.timeout(20000) });
   check(response.status === 308 && response.headers.get("location") === `${canonicalOrigin}/trading?source=seo-check`, "www must permanently redirect to the canonical host and preserve the query");
+  const insecure = await fetch("http://furlong.club/trading?source=seo-check", { redirect: "manual", signal: AbortSignal.timeout(20000) });
+  check([301, 308].includes(insecure.status) && insecure.headers.get("location") === `${canonicalOrigin}/trading?source=seo-check`, "HTTP must redirect to HTTPS and preserve the path and query");
 }
 if (failures.length) { for (const failure of failures) console.error(`SEO check failed: ${failure}`); process.exitCode = 1; }
 else console.log(`SEO checks passed: ${publicPaths.length} public pages, ${authPaths.length} auth pages, 6 protected routes, sitemap, crawler rules and image assets.`);

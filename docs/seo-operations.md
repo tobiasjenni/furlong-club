@@ -6,7 +6,7 @@ The homepage identifies Furlong Club as an Organization and WebSite. Harry’s p
 
 Member pages, checkout, admin, APIs and authentication pages have noindex response headers. Private layouts and authentication metadata also disable indexing and clear inherited canonical/sharing metadata. Authentication pages are crawlable so crawlers can read noindex. Authenticated member pages still require sign-in independently of search rules. Staging blocks all crawlers, uses noindex metadata/headers and returns an empty sitemap.
 
-`www.furlong.club` permanently redirects to `furlong.club`, preserving the path and query. Canonical URLs use HTTPS and the same host. No fabricated modification dates are emitted in the sitemap.
+`www.furlong.club` permanently redirects to `furlong.club`, preserving the path and query. HTTP requests on the canonical domain redirect to HTTPS using Cloudflare’s original-protocol header. Canonical URLs use HTTPS and the same host. No fabricated modification dates are emitted in the sitemap.
 
 Run `node scripts/check-seo.mjs` after publishing. To check the isolated test site, set APP_URL to its URL and add `--staging`. The deploy workflows run these checks automatically. They inspect crawler HTML, JSON syntax, canonical links, private redirects, image dimensions and the sitemap; they do not certify Google rich-result eligibility or rankings.
 

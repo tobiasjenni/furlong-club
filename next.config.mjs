@@ -24,6 +24,7 @@ const nextConfig = {
   async redirects() {
     return [
       { source: "/:path*", has: [{ type: "host", value: "www.furlong.club" }], destination: "https://furlong.club/:path*", permanent: true },
+      { source: "/:path*", has: [{ type: "host", value: "furlong.club" }, { type: "header", key: "x-forwarded-proto", value: "http" }], destination: "https://furlong.club/:path*", permanent: true },
       { source: "/about-rob", destination: "/meet-harry", permanent: true },
     ];
   },
