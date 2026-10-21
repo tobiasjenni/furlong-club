@@ -1,9 +1,10 @@
+import { privateMetadata } from "@/lib/seo";
 import { AuthShell } from "@/components/AuthShell";
 import { ResetForm } from "./ResetForm";
 import Link from "next/link";
 import { validPasswordReset } from "@/lib/tokens";
 
-export const metadata = { title: "Reset password", referrer: "no-referrer", robots: { index: false, follow: false } };
+export const metadata = { ...privateMetadata, title: "Reset password", referrer: "no-referrer" };
 
 export default async function ResetPasswordPage({ searchParams }: { searchParams: Promise<{ token?: string }> }) {
   const { token = "" } = await searchParams;

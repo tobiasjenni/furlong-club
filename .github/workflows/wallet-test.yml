@@ -1,7 +1,7 @@
 name: Deploy wallet test site
 on:
   push:
-    branches: [feat/stablecoin-wallet-ledger, feat/manual-deposit-review, feat/harry-trading-lock, feat/site-wording-33-days, feat/smooth-secure-signup, feat/highlight-harry-membership]
+    branches: [feat/stablecoin-wallet-ledger, feat/manual-deposit-review, feat/harry-trading-lock, feat/site-wording-33-days, feat/smooth-secure-signup, feat/highlight-harry-membership, feat/search-appearance-seo]
   workflow_dispatch:
 permissions:
   contents: read
@@ -46,6 +46,7 @@ jobs:
       - name: Verify test site is responding
         run: |
           curl --fail --retry-all-errors --retry 6 --retry-delay 5 --max-time 20 "$APP_URL/login" --output /dev/null
+          node scripts/check-seo.mjs --staging
       - name: Remove temporary secrets file
         if: always()
         run: rm -f "$RUNNER_TEMP/wallet-test-secrets.json"

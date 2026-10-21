@@ -7,8 +7,11 @@ import { db } from "@/lib/db";
 import { currentUser } from "@/lib/auth";
 import { hasPlayableSource } from "@/lib/video";
 import { usd } from "@/lib/format";
+import { organization, pageMetadata, siteUrl, website } from "@/lib/seo";
+import { JsonLd } from "@/components/JsonLd";
 
 export const dynamic = "force-dynamic";
+export const metadata = pageMetadata("/");
 
 const steps = [
   { title: "Join free", body: "Create your Paddock account and explore the club before choosing a paid plan." },
@@ -43,6 +46,7 @@ export default async function Home() {
   ];
   return (
     <>
+      <JsonLd data={{ "@context": "https://schema.org", "@graph": [organization, website, { "@type": "WebPage", "@id": siteUrl("/#webpage"), url: siteUrl(), name: "Trading with Harry & Horse Racing | Furlong Club", isPartOf: { "@id": website["@id"] }, about: { "@id": organization["@id"] }, inLanguage: "en" }] }} />
       <section className="silk-stripes relative overflow-hidden border-b border-white/10">
         <div className="container-page grid items-center gap-10 py-14 md:grid-cols-[1.2fr_1fr] md:py-24">
           <div>

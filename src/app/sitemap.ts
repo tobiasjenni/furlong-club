@@ -1,8 +1,7 @@
 import type { MetadataRoute } from "next";
-import { brand } from "@/lib/config";
+import { publicPages, siteUrl } from "@/lib/seo";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const base = `https://${brand.domain}`;
-  const paths = ["/", "/trading", "/plans", brand.host.page, "/signup", "/login", "/legal/terms", "/legal/privacy", "/legal/responsible-gambling"];
-  return paths.map((p) => ({ url: `${base}${p === "/" ? "" : p}`, changeFrequency: "weekly", priority: p === "/" ? 1 : 0.6 }));
+  if (process.env.APP_ENV === "staging") return [];
+  return Object.keys(publicPages).map(path => ({ url: siteUrl(path) }));
 }

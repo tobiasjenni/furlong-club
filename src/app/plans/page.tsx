@@ -5,8 +5,10 @@ import { activeSubscription } from "@/lib/subscriptions";
 import { hasPlayableSource } from "@/lib/video";
 import Link from "next/link";
 import { usd } from "@/lib/format";
+import { pageMetadata } from "@/lib/seo";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 
-export const metadata = { title: "Plans" };
+export const metadata = pageMetadata("/plans");
 export const dynamic = "force-dynamic";
 
 export default async function PlansPage() {
@@ -19,6 +21,7 @@ export default async function PlansPage() {
   const formPlan = plans.find(p => p.slug === "form" && p.priceCents > 0);
   return (
     <div className="container-page py-12 md:py-16">
+      <Breadcrumbs path="/plans" label="Membership plans" />
       <h1 className="text-4xl">Find your place in the club</h1>
       <p className="mt-3 max-w-3xl text-lg text-cream/85">Trading with Harry is at the heart of Form Room. Choose the membership built around Harry&apos;s racing experience, with trading access planned once enrollment opens.</p>
       <p className="muted mt-3 max-w-3xl text-sm">The membership fee and trading allocation are separate. Real trading enrollment is currently closed. Start with a free account to explore; paid plans run for the period shown with no automatic renewal.</p>

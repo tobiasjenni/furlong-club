@@ -1,7 +1,8 @@
+import { privateMetadata } from "@/lib/seo";
 import Link from "next/link";
 import { consumeToken } from "@/lib/tokens";
 
-export const metadata = { title: "Confirm email" };
+export const metadata = { ...privateMetadata, title: "Confirm email" };
 export const dynamic = "force-dynamic";
 
 export default async function VerifyEmail({ searchParams }: { searchParams: Promise<{ token?: string }> }) {

@@ -1,13 +1,18 @@
 import Link from "next/link";
 import { HostPortrait } from "@/components/HostPortrait";
 import { brand } from "@/lib/config";
+import { organization, pageMetadata, siteUrl } from "@/lib/seo";
+import { JsonLd } from "@/components/JsonLd";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 
-export const metadata = { title: `Meet ${brand.host.name}`, description: "More than 40 years of experience reading horses and riders. Meet Harry Whitcombe, the host of Furlong Club." };
+export const metadata = pageMetadata("/meet-harry");
 
 export default function MeetHost() {
   return <div className="container-page grid gap-10 py-12 md:grid-cols-[1fr_1.3fr] md:py-16">
 
     <article className="order-1 space-y-5 text-cream/85 md:order-2">
+      <Breadcrumbs path="/meet-harry" label={`Meet ${brand.host.first}`} />
+      <JsonLd data={{ "@context": "https://schema.org", "@type": "ProfilePage", "@id": siteUrl("/meet-harry#profile"), url: siteUrl("/meet-harry"), name: `Meet ${brand.host.name}`, mainEntity: { "@type": "Person", "@id": siteUrl("/meet-harry#harry"), name: brand.host.name, url: siteUrl("/meet-harry"), description: "Furlong Club host with more than 40 years of experience reading horses and riders.", knowsAbout: ["Horse racing", "Reading horses and riders", "Race conditions"], affiliation: { "@id": organization["@id"] } } }} />
       <p className="text-sm text-gold-300">Experience behind the insight</p><h1 className="text-3xl text-cream sm:text-4xl">Meet {brand.host.name}</h1>
       <p className="text-lg leading-relaxed">More than 40 years of reading horses and riders, brought to Furlong Club.</p>
       <p>Harry looks beyond a set of form figures. His experience centres on understanding the horse, the rider and how they work together in the conditions of a race.</p>

@@ -1,3 +1,4 @@
+import { privateMetadata } from "@/lib/seo";
 import { roleLabel } from "@/lib/roles";
 import Link from "next/link";
 import { requireAdmin } from "@/lib/auth";
@@ -5,7 +6,7 @@ import { db } from "@/lib/db";
 import { PendingTradingNotice } from "@/components/PendingTradingNotice";
 import { PendingDepositNotice } from "@/components/PendingDepositNotice";
 
-export const metadata = { title: { default: "Admin", template: "%s · Admin" }, robots: { index: false } };
+export const metadata = { ...privateMetadata, title: { default: "Admin", template: "%s · Admin" } };
 
 const nav = [
   { href: "/admin", label: "Overview" },

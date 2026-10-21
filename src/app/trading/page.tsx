@@ -9,8 +9,10 @@ import { TradingSummary } from "@/components/TradingSummary";
 import { RequestTradingForm } from "@/components/TradingForms";
 import { transactionUrl } from "@/lib/manual-deposits";
 import { AutoRefresh } from "@/app/checkout/pay/[id]/AutoRefresh";
+import { pageMetadata } from "@/lib/seo";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 
-export const metadata = { title: "Trading with Harry" };
+export const metadata = pageMetadata("/trading");
 export const dynamic = "force-dynamic";
 
 export default async function TradingPage({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
@@ -23,6 +25,7 @@ export default async function TradingPage({ searchParams }: { searchParams: Prom
     db.tradingAllocation.count({ where: { userId: user.id, status: "PENDING" } }),
   ]) : [[], 0, 0];
   return <div className="container-page max-w-5xl space-y-6 py-10">
+    <Breadcrumbs path="/trading" label="Trading with Harry" />
     <h1 className="text-3xl md:text-4xl">Trading with Harry</h1>
     <TradingOffer showLink={false} />
     <section className="card"><h2 className="text-2xl">How the proposed flow works</h2><ol className="mt-4 grid gap-4 text-sm sm:grid-cols-3">
