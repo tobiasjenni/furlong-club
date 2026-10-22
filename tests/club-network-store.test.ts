@@ -16,7 +16,7 @@ beforeAll(async () => {
   vi.stubEnv("DATABASE_URL", "postgresql://test.invalid/test");
   pg = new PGlite();
   for (const dir of fs.readdirSync("prisma/migrations").filter(n => /^\d/.test(n)).sort()) await pg.exec(fs.readFileSync(`prisma/migrations/${dir}/migration.sql`, "utf8"));
-});
+}, 30000);
 afterAll(async () => { await pg?.close(); vi.unstubAllEnvs(); });
 beforeEach(() => { transport.calls = 0; transport.failBefore = 0; transport.failAfter = 0; });
 it("persists admission idempotently and distinguishes invitation versions/networks", async () => {
