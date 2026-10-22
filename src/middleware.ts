@@ -1,7 +1,7 @@
 import { isAdmin } from "@/lib/roles";
 import { NextResponse, type NextRequest } from "next/server";
 import { SESSION_COOKIE, verifySession } from "./lib/session";
-import { CLUB_COOKIE, clubCookieOptions, clubGateEnabled, clubNext, gateExempt, gateLoginEndpoint, gateMachineEndpoint, signClubAdmission, verifyClubAdmission } from "./lib/club-gate";
+import { CLUB_COOKIE, clubCookieOptions, clubGateEnabled, clubNext, gateExempt, gateAccountPath, gateMachineEndpoint, signClubAdmission, verifyClubAdmission } from "./lib/club-gate";
 import { isMemberPath } from "./lib/member-routes";
 import { clubNetworkKey } from "./lib/club-network";
 import { clubMemberAdmitted, clubNetworkAdmitted } from "./lib/club-network-store";
@@ -15,7 +15,7 @@ function privateResponse(response: NextResponse) {
 export async function middleware(req: NextRequest) {
   const path = req.nextUrl.pathname;
   const locked = clubGateEnabled();
-  const publicRequest = gateExempt(path) && (["GET", "HEAD"].includes(req.method) || path === "/api/club-entry" || gateMachineEndpoint(path) || gateLoginEndpoint(path));
+  const publicRequest = gateExempt(path) && (["GET", "HEAD"].includes(req.method) || path === "/api/club-entry" || gateMachineEndpoint(path) || gateAccountPath(path));
   // Always validate the cookie before routing, including public entrance requests.
   let admitted = await verifyClubAdmission(req.cookies.get(CLUB_COOKIE)?.value);
   const session = await verifySession(req.cookies.get(SESSION_COOKIE)?.value);

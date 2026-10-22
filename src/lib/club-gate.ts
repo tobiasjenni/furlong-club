@@ -38,12 +38,13 @@ export const clubCookieOptions = { httpOnly: true, secure: process.env.NODE_ENV 
 export function gateMachineEndpoint(path: string) {
   return ["/api/cron/daily", "/api/cron/payments", "/api/payments/webhook/nowpayments"].includes(path);
 }
-export function gateLoginEndpoint(path: string) {
+// Exact public account-form paths; this predicate does not authenticate anyone.
+export function gateAccountPath(path: string) {
   return ["/login", "/forgot-password", "/reset-password", "/verify-email"].includes(path);
 }
 export function gateExempt(path: string) {
   return ["/entrance", "/api/club-entry", "/robots.txt", "/sitemap.xml", "/favicon.ico", "/favicon-96x96.png", "/icon.svg", "/apple-icon.png", "/brand-logo.png", "/club-entrance.webp"].includes(path)
-    || path.startsWith("/_next/static/") || path === "/_next/image" || gateMachineEndpoint(path) || gateLoginEndpoint(path);
+    || path.startsWith("/_next/static/") || path === "/_next/image" || gateMachineEndpoint(path) || gateAccountPath(path);
 }
 export function clubNext(value: unknown) {
   if (typeof value !== "string" || !value.startsWith("/") || value.startsWith("//") || /[\\\u0000-\u0020\u007f]|%(?:0[0-9a-f]|1[0-9a-f]|5c|7f)/i.test(value)) return "/";
