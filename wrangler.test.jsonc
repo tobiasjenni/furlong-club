@@ -9,6 +9,7 @@
   "routes": [],
   "observability": { "enabled": true },
   "vars": {
+    "CLUB_GATE_ENABLED": "true",
     "APP_ENV": "staging",
     "ENABLE_TEST_PAYMENTS": "true",
     "APP_URL": "https://example.invalid",

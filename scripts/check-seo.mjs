@@ -1,4 +1,5 @@
 // Read-only checks of the HTML and headers a crawler receives after deployment.
+if (process.env.CLUB_GATE_ENABLED === 'true') { await import('./check-club-gate.mjs'); process.exit(0); }
 const origin = process.env.APP_URL || "https://furlong.club";
 const staging = process.argv.includes("--staging");
 const canonicalOrigin = "https://furlong.club";

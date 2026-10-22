@@ -94,7 +94,7 @@ export default async function AdminUser({ params, searchParams }: { params: Prom
                 <p className="muted mt-1 text-xs">Reported {dateTime(payment.submittedAt)}</p>
                 <p className="mt-2 break-all text-xs">Receiving address: <code>{payment.poolAddress}</code></p>
                 {explorer && <a href={explorer} target="_blank" rel="noreferrer" className="mt-2 inline-block text-xs text-gold-300 underline">Inspect reported transaction ↗</a>}</div>
-              <ReviewDepositForm id={payment.id} submittedHash={payment.submittedTxHash} amount={(payment.amountCents / 100).toFixed(2)} token={payment.currency} network={payment.network} />
+              {superAdmin ? <ReviewDepositForm id={payment.id} submittedHash={payment.submittedTxHash} amount={(payment.amountCents / 100).toFixed(2)} token={payment.currency} network={payment.network} /> : <p className="muted text-sm">Awaiting Super Admin review.</p>}
             </div>;
           })}
         </div>

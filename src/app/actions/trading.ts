@@ -1,7 +1,7 @@
 "use server";
 import crypto from "node:crypto";
 import { revalidatePath } from "next/cache";
-import { requireAdmin, requireUser } from "@/lib/auth";
+import { requireSuperAdmin, requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { rateLimit } from "@/lib/rate-limit";
 import { normalizePayoutAddress, tradingOptions, tradingRequestsEnabled, tradingTermsVersion } from "@/lib/trading";
@@ -57,7 +57,7 @@ export async function cancelTrading(_: FormState, form: FormData): Promise<FormS
 }
 
 export async function manageTrading(_: FormState, form: FormData): Promise<FormState> {
-  const admin = await requireAdmin();
+  const admin = await requireSuperAdmin();
   if (!await rateLimit(`trading-manage:${admin.id}`, 30, 60000)) return { error: "Please wait a minute before trying again." };
   const id = String(form.get("id") ?? "").slice(0, 100);
   const operation = String(form.get("operation") ?? "");

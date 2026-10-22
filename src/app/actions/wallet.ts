@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { requireAdmin, requireUser } from "@/lib/auth";
+import { requireSuperAdmin, requireUser } from "@/lib/auth";
 import { checkoutOptions, walletEnabled } from "@/lib/config";
 import { db } from "@/lib/db";
 import { createTopup, reconcilePayment } from "@/lib/payments";
@@ -61,7 +61,7 @@ export async function cancelManualDeposit(_: FormState, form: FormData): Promise
 }
 
 export async function reviewManualDeposit(_: FormState, form: FormData): Promise<FormState> {
-  const admin = await requireAdmin();
+  const admin = await requireSuperAdmin();
   if (!await rateLimit(`review-deposit:${admin.id}`, 30, 60000)) return { error: "Please wait a minute before reviewing another deposit." };
   const parsed = z.object({ id: z.string().min(1).max(100), decision: z.enum(["approve", "reject"]), note: z.string().trim().min(5, "Add a review note of at least 5 characters.").max(1000) }).safeParse(Object.fromEntries(form));
   if (!parsed.success) return { error: parsed.error.issues[0].message };
@@ -116,7 +116,7 @@ export async function refreshMyPayment(form: FormData) {
 }
 
 export async function refreshAdminPayment(form: FormData) {
-  await requireAdmin();
+  await requireSuperAdmin();
   const payment = await db.payment.findUnique({ where: { id: String(form.get("id")) } });
   if (!payment || !await rateLimit(`payment-refresh:${payment.id}`, 3, 60000)) return;
   try { await reconcilePayment(payment, "admin-refresh"); }

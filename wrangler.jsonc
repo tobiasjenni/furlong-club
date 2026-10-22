@@ -13,6 +13,7 @@
   "observability": { "enabled": true },
   // Non-secret settings. Secrets (DATABASE_URL, AUTH_SECRET, CRON_SECRET, RESEND_API_KEY, ...) are pushed by the deploy workflow.
   "vars": {
+    "CLUB_GATE_ENABLED": "true",
     "EMAIL_PROVIDER": "cloudflare",
     "EMAIL_FROM_ADDRESS": "notifications@furlong.club",
     "APP_URL": "https://furlong.club",

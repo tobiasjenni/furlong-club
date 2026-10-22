@@ -23,7 +23,7 @@ const pay = async (id: string, amount: number) => (await pg.query<{ result: stri
 
 beforeAll(async () => { pg = new PGlite(); for (const dir of fs.readdirSync("prisma/migrations").filter(n => /^\d/.test(n)).sort()) await pg.exec(fs.readFileSync(`prisma/migrations/${dir}/migration.sql`, "utf8")); }, 30000);
 afterAll(async () => { await pg?.close(); });
-beforeEach(async () => { member = await person(); admin = await person("ADMIN"); });
+beforeEach(async () => { member = await person(); admin = await person("SUPER_ADMIN"); });
 
 describe("V2 financial overview from the existing records", () => {
   it("joins the highest active membership, keeps filters and bounds CRM pagination without returning password hashes", async () => {

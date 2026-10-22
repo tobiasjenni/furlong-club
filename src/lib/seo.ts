@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { brand } from "./config";
+import { clubGateEnabled } from "./club-gate";
 
 export const siteOrigin = `https://${brand.domain}`;
 export const siteUrl = (path = "/") => new URL(path, `${siteOrigin}/`).href;
@@ -23,7 +24,7 @@ export const privateMetadata: Metadata = {
 
 export function pageMetadata(path: PublicPath): Metadata {
   const { title, description } = publicPages[path];
-  const index = process.env.APP_ENV !== "staging";
+  const index = !clubGateEnabled() && process.env.APP_ENV !== "staging";
   const fullTitle = `${title} | ${brand.name}`;
   const images = [{ url: siteUrl("/social/furlong-club.png"), width: 1200, height: 630, alt: "Furlong Club — Trading with Harry and horse racing insights" }];
   return {

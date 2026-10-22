@@ -1,0 +1,7 @@
+# Entrance artwork
+
+Asset: `public/club-entrance.webp` (1536×1024, optimized from the original generated PNG). Created using built-in image generation. The butler is a fictional scene character, not a portrait of Harry.
+
+Prompt:
+
+> Create a premium photorealistic website entrance background, landscape 3:2 composition. An old London private members club in Mayfair at blue hour: a magnificent CLOSED deep British racing green paneled timber door with a polished aged-brass lion knocker and brass fittings, carved dark stone and traditional London townhouse architecture, warm amber gas-style wall lanterns, damp cobblestone doorstep, understated ivy, refined cinematic atmosphere. A dignified fictional British butler around 60, neatly groomed, wearing black morning coat, white shirt, black waistcoat and white gloves, stands beside the door on the right, welcoming yet discreet, natural warm expression. Door occupies left-center, butler on right, keep both in the central 70 percent so mobile cropping can retain the doorway and part of the butler. Editorial architectural photography, believable proportions and anatomy, detailed materials, soft restrained gold accents, deep green and charcoal palette, no fantasy, no cartoon. No writing, no signage, no typography, no watermarks, no UI or password drawn in the image. The website will overlay its own accessible password form. This is a new background asset for Furlong Club, not a portrait of Harry.

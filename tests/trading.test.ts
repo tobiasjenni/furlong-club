@@ -38,7 +38,7 @@ beforeAll(async () => {
 }, 30000);
 afterAll(async () => { await pg?.close(); });
 beforeEach(async () => {
-  member = await user(); admin = await user("ADMIN"); allocation = crypto.randomUUID(); requestKey = crypto.randomUUID();
+  member = await user(); admin = await user("SUPER_ADMIN"); allocation = crypto.randomUUID(); requestKey = crypto.randomUUID();
   await fund();
   await pg.exec(`UPDATE "TradingProgram" SET "enrollmentEnabled"=true WHERE id='harry'`);
 });
@@ -92,8 +92,10 @@ describe("allocation approval, lock and accounting", () => {
   });
   it("does not let members or demoted/suspended admins approve", async () => {
     await request(); expect(await review(true, allocation, member)).toBe("forbidden");
-    await pg.query(`UPDATE "User" SET role='USER' WHERE id=$1`, [admin]); expect(await review()).toBe("forbidden");
-    await pg.query(`UPDATE "User" SET role='ADMIN',status='SUSPENDED' WHERE id=$1`, [admin]); expect(await review()).toBe("forbidden");
+    const observer = await user("ADMIN");
+    expect(await review(true, allocation, observer)).toBe("forbidden");
+    expect(await review(false, allocation, observer)).toBe("forbidden");
+    await pg.query(`UPDATE "User" SET status='SUSPENDED' WHERE id=$1`, [observer]); expect(await review(true, allocation, observer)).toBe("forbidden");
   });
   it("requires review notes and lets members cancel only their own pending requests", async () => {
     await request(); expect(await review(true, allocation, admin, "x")).toBe("invalid_note");
@@ -125,6 +127,14 @@ describe("allocation approval, lock and accounting", () => {
 });
 
 describe("actual result and manual external payout", () => {
+  it("denies read-only Admin result and payout writes without changing the ledger", async () => {
+    await mature(); const observer = await user("ADMIN");
+    expect(await result(2500, allocation, observer)).toBe("forbidden");
+    expect(await result()).toBe("recorded");
+    expect(await payout(hash(), 52500, allocation, observer)).toBe("forbidden");
+    expect(await locked()).toBe(50000);
+    expect(await scalar(`SELECT status AS result FROM "TradingAllocation" WHERE id=$1`, [allocation])).toBe("PAYOUT_READY");
+  });
   it("rejects early result and payout, without auto-accruing target returns", async () => {
     await request(); await review(); expect(await result()).toBe("locked"); expect(await payout()).toBe("not_ready");
     expect(await scalar(`SELECT "profitCents" AS result FROM "TradingAllocation" WHERE id=$1`, [allocation])).toBeNull();

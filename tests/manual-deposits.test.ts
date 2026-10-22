@@ -24,7 +24,7 @@ beforeAll(async () => {
 }, 30000);
 afterAll(async () => { await pg?.close(); });
 beforeEach(async () => {
-  member = await user(); admin = await user("ADMIN"); payment = crypto.randomUUID(); hash = "0x" + crypto.randomBytes(32).toString("hex");
+  member = await user(); admin = await user("SUPER_ADMIN"); payment = crypto.randomUUID(); hash = "0x" + crypto.randomBytes(32).toString("hex");
   expect(await create()).toBe("created");
 });
 
@@ -54,8 +54,11 @@ describe("manual deposit lifecycle and financial controls", () => {
   });
   it("rechecks the admin's current role/status", async () => {
     await report();
-    await pg.query(`UPDATE "User" SET status='SUSPENDED' WHERE id=$1`, [admin]);
-    expect(await review()).toBe("forbidden");
+    const observer = await user("ADMIN");
+    expect(await review(payment, observer)).toBe("forbidden");
+    expect(await review(payment, observer, false)).toBe("forbidden");
+    await pg.query(`UPDATE "User" SET status='SUSPENDED' WHERE id=$1`, [observer]);
+    expect(await review(payment, observer)).toBe("forbidden");
     expect(await balance()).toBe(0);
   });
   it("approves exactly once and preserves reviewer, hash, receipt and balanced journal", async () => {

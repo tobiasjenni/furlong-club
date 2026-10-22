@@ -14,6 +14,8 @@ jobs:
     timeout-minutes: 15
     env:
       APP_ENV: staging
+      CLUB_GATE_ENABLED: 'true'
+      WALLET_TEST_CLUB_PASSWORD_HASH: ${{ secrets.WALLET_TEST_CLUB_PASSWORD_HASH }}
       ENABLE_TEST_PAYMENTS: 'true'
       PAYMENT_PROVIDER: mock
       WALLET_ENABLED: 'true'
