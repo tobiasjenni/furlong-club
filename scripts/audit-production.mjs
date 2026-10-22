@@ -59,7 +59,8 @@ try {
     const result = await fetch(`https://furlong.club${path}`, { redirect: 'manual', signal: AbortSignal.timeout(20000) });
     const locked = flags.CLUB_GATE_ENABLED === 'true';
     const expected = locked && !rememberedNetwork && !['/icon.svg','/robots.txt'].includes(path) ? 307 : 200;
-    const gateHeaders = !locked || (/no-store/.test(result.headers.get('cache-control') || '') && /noindex/.test(result.headers.get('x-robots-tag') || ''));
+    // Public icons can be served directly by Cloudflare's static asset cache.
+    const gateHeaders = !locked || path === '/icon.svg' || (/no-store/.test(result.headers.get('cache-control') || '') && /noindex/.test(result.headers.get('x-robots-tag') || ''));
     const correctEntrance = expected !== 307 || new URL(result.headers.get('location'), 'https://furlong.club').pathname === '/entrance';
     routes.push({path,status:result.status,expected,gateHeaders,correctEntrance});
   }
