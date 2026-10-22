@@ -3,17 +3,24 @@ import { useState } from "react";
 
 export function CopyButton({ value }: { value: string }) {
   const [copied, setCopied] = useState(false);
+  const [failed, setFailed] = useState(false);
   return (
+    <span className="shrink-0">
     <button
       type="button"
       className="btn-ghost shrink-0 px-3 py-1.5 text-xs"
       onClick={async () => {
-        await navigator.clipboard.writeText(value);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 1500);
+        setFailed(false);
+        try {
+          await navigator.clipboard.writeText(value);
+          setCopied(true);
+          setTimeout(() => setCopied(false), 1500);
+        } catch { setCopied(false); setFailed(true); }
       }}
     >
       {copied ? "Copied" : "Copy"}
     </button>
+    {failed && <span role="status" className="mt-2 block max-w-32 text-xs text-gold-300">Copy unavailable. Select and copy the address manually.</span>}
+    </span>
   );
 }

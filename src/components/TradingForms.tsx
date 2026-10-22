@@ -6,17 +6,24 @@ import { SubmitButton } from "./SubmitButton";
 import Link from "next/link";
 
 export function RequestTradingForm({ requestKey, termsVersion, options, disabled }: { requestKey: string; termsVersion: string; options: readonly { label: string }[]; disabled: boolean }) {
-  const [state, action] = useActionState(requestTrading, null);
-  return <form action={action} className="space-y-4">
-    <input type="hidden" name="requestKey" value={requestKey} /><input type="hidden" name="termsVersion" value={termsVersion} />
-    <div><label htmlFor="trading-amount" className="label">Allocation · USD accounting value</label><input id="trading-amount" name="amount" type="number" min="500" max="10000" step="0.01" required className="input" placeholder="500" disabled={disabled} /></div>
-    <div><label htmlFor="trading-option" className="label">Receive your payout in</label><select id="trading-option" name="option" className="input" disabled={disabled}>{options.map((o, i) => <option key={o.label} value={i}>{o.label}</option>)}</select></div>
-    <div><label htmlFor="trading-address" className="label">Your external receiving wallet address</label><input id="trading-address" name="address" className="input font-mono text-xs" autoComplete="off" maxLength={100} required disabled={disabled} /></div>
-    <div><label htmlFor="trading-address-confirm" className="label">Enter your receiving address again</label><input id="trading-address-confirm" name="confirmAddress" className="input font-mono text-xs" autoComplete="off" maxLength={100} required disabled={disabled} /></div>
+  const [state, action, pending] = useActionState(requestTrading, null);
+  const [intentKey] = useState(requestKey);
+  const [amount, setAmount] = useState("");
+  const [option, setOption] = useState("0");
+  const [address, setAddress] = useState("");
+  const [confirmation, setConfirmation] = useState("");
+  const [destinationConfirmed, setDestinationConfirmed] = useState(false);
+  const [risk, setRisk] = useState(false);
+  return <form action={action} className="space-y-4" aria-busy={pending}>
+    <input type="hidden" name="requestKey" value={intentKey} /><input type="hidden" name="termsVersion" value={termsVersion} />
+    <div><label htmlFor="trading-amount" className="label">Allocation · USD accounting value</label><input id="trading-amount" name="amount" type="number" inputMode="decimal" min="500" max="10000" step="0.01" value={amount} onChange={event => setAmount(event.target.value)} required className="input" placeholder="500" disabled={disabled} /></div>
+    <div><label htmlFor="trading-option" className="label">Receive your payout in</label><select id="trading-option" name="option" className="input" value={option} onChange={event => { setOption(event.target.value); setDestinationConfirmed(false); }} disabled={disabled}>{options.map((o, i) => <option key={o.label} value={i}>{o.label}</option>)}</select></div>
+    <div><label htmlFor="trading-address" className="label">Your external receiving wallet address</label><input id="trading-address" name="address" className="input font-mono text-xs" autoComplete="off" autoCapitalize="none" spellCheck={false} maxLength={100} value={address} onChange={event => { setAddress(event.target.value); setDestinationConfirmed(false); }} required disabled={disabled} /></div>
+    <div><label htmlFor="trading-address-confirm" className="label">Enter your receiving address again</label><input id="trading-address-confirm" name="confirmAddress" className="input font-mono text-xs" autoComplete="off" autoCapitalize="none" spellCheck={false} maxLength={100} value={confirmation} onChange={event => { setConfirmation(event.target.value); setDestinationConfirmed(false); }} required disabled={disabled} /></div>
     <p className="muted text-xs">Use a wallet you control that supports the selected token and network. The destination cannot be edited after requesting. Cancel a pending request and create a new one to correct it.</p>
-    <label className="flex items-start gap-3 text-sm"><input name="destinationConfirmed" type="checkbox" required disabled={disabled} className="mt-1 accent-gold-400" /><span>I checked this receiving address and network and can receive the selected stablecoin there.</span></label>
-    <label className="flex items-start gap-3 text-sm"><input name="risk" type="checkbox" required disabled={disabled} className="mt-1 accent-gold-400" /><span>I accept <Link className="text-gold-300 underline" href="/legal/terms#trading-terms" target="_blank" rel="noreferrer">allocation terms {termsVersion}</Link>: approval locks the allocation for 33 days with no early withdrawal. The proposed daily targets are unverified and not guaranteed. I can lose some or all of my money. No daily earnings accrue in this app. Payout uses actual recorded results and is sent manually after review; it is not automatic on day 33. Outgoing network fees are paid by the operator.</span></label>
-    <FormMessage state={state} /><SubmitButton disabled={disabled}>Request Super Admin approval</SubmitButton>
+    <label className="flex items-start gap-3 text-sm"><input name="destinationConfirmed" type="checkbox" checked={destinationConfirmed} onChange={event => setDestinationConfirmed(event.target.checked)} required disabled={disabled} className="mt-1 accent-gold-400" /><span>I checked this receiving address and network and can receive the selected stablecoin there.</span></label>
+    <label className="flex items-start gap-3 text-sm"><input name="risk" type="checkbox" checked={risk} onChange={event => setRisk(event.target.checked)} required disabled={disabled} className="mt-1 accent-gold-400" /><span>I accept <Link className="text-gold-300 underline" href="/legal/terms#trading-terms" target="_blank" rel="noreferrer">allocation terms {termsVersion}</Link>: approval locks the allocation for 33 days with no early withdrawal. The proposed daily targets are unverified and not guaranteed. I can lose some or all of my money. No daily earnings accrue in this app. Payout uses actual recorded results and is sent manually after review; it is not automatic on day 33. Outgoing network fees are paid by the operator.</span></label>
+    <FormMessage state={state} focusOnError /><SubmitButton disabled={disabled} pendingLabel="Saving your request…">Request Super Admin approval</SubmitButton>
     <p className="muted text-xs">This request does not reserve funds. Keep enough available balance until approval. Maximum $10,000 across open allocations.</p>
   </form>;
 }

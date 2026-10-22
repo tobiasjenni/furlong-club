@@ -20,10 +20,10 @@ export function DangerZone({ protectedAccount = false }: { protectedAccount?: bo
           Any wallet credit, pending deposits or open trading allocations and payouts must be resolved first. Contact support if you need to pause access while those are reviewed.
         </p>
         <form action={action} className="mt-4 space-y-3">
-          <input name="password" type="password" placeholder="Your password" className="input" autoComplete="current-password" required />
-          <input name="confirm" placeholder="Type CLOSE to confirm" className="input" required />
-          <FormMessage state={state} />
-          <SubmitButton className="btn-danger">Close my account</SubmitButton>
+          <div><label className="label" htmlFor="close-password">Your password</label><input id="close-password" name="password" type="password" className="input" autoComplete="current-password" required /></div>
+          <div><label className="label" htmlFor="close-confirm">Type CLOSE to confirm</label><input id="close-confirm" name="confirm" className="input" autoComplete="off" autoCapitalize="characters" spellCheck={false} pattern="CLOSE" required /></div>
+          <FormMessage state={state} focusOnError />
+          <SubmitButton className="btn-danger" pendingLabel="Closing account…">Close my account</SubmitButton>
         </form>
       </div>}
     </div>

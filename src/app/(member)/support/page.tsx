@@ -1,3 +1,4 @@
+import { emailVerificationRequired } from "@/lib/email-verification";
 import Link from "next/link";
 import { PortalHeading } from "@/components/v2/PortalCommon";
 import { PortalIcon } from "@/components/v2/PortalIcon";
@@ -10,7 +11,7 @@ const faqs = [
   { question: "Does payment happen automatically when the lock ends?", answer: "No. After maturity, an admin records the actual profit or loss and manually sends any amount due to your saved external wallet. The payout is only marked complete after the external transaction is verified and recorded." },
   { question: "Can I withdraw any available club credit?", answer: "General credit withdrawals and transfers to other members are not supported. Trading allocations have their own approved destination and external payout process. Contact support about payment mistakes, a needed review or an account closure with unresolved funds." },
   { question: "Does membership open a trading allocation?", answer: "No. Form Room and Inner Circle include access to request a separately funded $500–$10,000 allocation. Deposit USDT or USDC through Wallet & deposits, report your transfer and wait for Super Admin approval. Then request an allocation with your external receiving wallet. Buying a plan does not create or approve an allocation." },
-  { question: "I cannot confirm my email or reset my password.", answer: "Use the confirmation or recovery links on the account and sign-in pages. If email delivery is unavailable, contact support from your registered email address. The Super Admin can review email ownership and assist eligible accounts with recovery after verification. Never send your password, private keys or seed phrase to support." },
+  { question: "I cannot confirm my email or reset my password.", answer: !emailVerificationRequired() ? "Email confirmation is temporarily not required. You can use your account straight away. If you forgot your password, use Forgot password on the sign-in page. If no recovery email arrives, contact support from your registered address. Never send your password, private keys or seed phrase to support." : "Use the confirmation or recovery links on the account and sign-in pages. If email delivery is unavailable, contact support from your registered email address. The Super Admin can review email ownership and assist eligible accounts with recovery after verification. Never send your password, private keys or seed phrase to support." },
 ];
 export const metadata = { title: "Help & support" };
 export default function PortalSupport() {

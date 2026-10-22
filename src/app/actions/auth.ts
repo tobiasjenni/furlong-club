@@ -152,7 +152,7 @@ export async function resetPassword(_: FormState, form: FormData): Promise<FormS
 
 export async function updateProfile(_: FormState, form: FormData): Promise<FormState> {
   const user = await requireUser();
-  const schema = z.object({ name: z.string().trim().min(1).max(80), country: z.string().trim().max(60), marketing: z.string().optional() });
+  const schema = z.object({ name: z.string().trim().min(1, "Please enter your name").max(80, "Keep your name within 80 characters"), country: z.string().trim().max(60, "Keep your country within 60 characters"), marketing: z.string().optional() });
   const parsed = schema.safeParse(Object.fromEntries(form));
   if (!parsed.success) return { error: parsed.error.issues[0].message };
   await db.user.update({

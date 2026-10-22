@@ -5,16 +5,18 @@ import { FormMessage } from "./FormMessage";
 import { SubmitButton } from "./SubmitButton";
 
 export function ReportDepositForm({ id }: { id: string }) {
-  const [state, action] = useActionState(reportManualDeposit, null);
-  return <form action={action} className="space-y-4 border-t border-white/10 pt-5">
+  const [state, action, pending] = useActionState(reportManualDeposit, null);
+  const [hash, setHash] = useState("");
+  const [sent, setSent] = useState(false);
+  return <form action={action} className="space-y-4 border-t border-white/10 pt-5" aria-busy={pending}>
     <input type="hidden" name="id" value={id} />
     <h2 className="text-xl">Already sent your payment?</h2>
     <div><label className="label" htmlFor={`tx-${id}`}>Transaction ID / hash</label>
-      <input id={`tx-${id}`} name="transactionHash" className="input font-mono text-xs" placeholder="Paste the transaction ID from your wallet" autoComplete="off" required maxLength={66} pattern="(0x)?[a-fA-F0-9]{64}" />
+      <input id={`tx-${id}`} name="transactionHash" className="input font-mono text-xs" placeholder="Paste the transaction ID from your wallet" autoComplete="off" autoCapitalize="none" spellCheck={false} value={hash} onChange={event => setHash(event.target.value)} required maxLength={66} pattern="(0x)?[a-fA-F0-9]{64}" />
       <p className="muted mt-2 text-xs">Find this in your sending wallet&apos;s transaction details after sending.</p></div>
-    <label className="flex items-start gap-3 text-sm"><input name="sent" type="checkbox" required className="mt-1 accent-gold-400" /><span>I have sent the exact token amount on the network shown above.</span></label>
-    <FormMessage state={state} />
-    <SubmitButton>I have sent this payment</SubmitButton>
+    <label className="flex items-start gap-3 text-sm"><input name="sent" type="checkbox" checked={sent} onChange={event => setSent(event.target.checked)} required className="mt-1 accent-gold-400" /><span>I have sent the exact token amount on the network shown above.</span></label>
+    <FormMessage state={state} focusOnError />
+    <SubmitButton pendingLabel="Reporting your payment…">I have sent this payment</SubmitButton>
     <p className="muted text-xs">Your wallet is credited only after an admin verifies the incoming transfer.</p>
   </form>;
 }
