@@ -23,7 +23,20 @@ if (!rememberedNetwork) {
   assert.equal((await request('/wallet', { method: 'POST', headers: { Origin: origin, 'Next-Action': 'probe' } })).status, 403);
   assert.equal((await request('/entrance', { method: 'POST', headers: { Origin: origin, 'Next-Action': 'probe' } })).status, 403);
 }
-assert.equal((await request('/', { headers: { RSC: '1', 'Next-Router-Prefetch': '1' } })).status, rememberedNetwork ? 200 : 307);
+const prefetchHeaders = { RSC: '1', 'Next-Router-Prefetch': '1' };
+let prefetch = await request('/', { headers: prefetchHeaders });
+// Next.js canonicalizes a missing RSC cache key after the entrance admits us.
+if (rememberedNetwork && prefetch.status === 307) {
+  const canonical = new URL(prefetch.headers.get('location'), origin);
+  assert.equal(canonical.origin, new URL(origin).origin);
+  assert.equal(canonical.pathname, '/');
+  assert.deepEqual([...canonical.searchParams.keys()], ['_rsc']);
+  assert.match(canonical.searchParams.get('_rsc'), /^[a-zA-Z0-9_-]+$/);
+  prefetch = await request(canonical.pathname + canonical.search, { headers: prefetchHeaders });
+}
+assert.equal(prefetch.status, rememberedNetwork ? 200 : 307);
+if (rememberedNetwork) assert.match(prefetch.headers.get('content-type'), /text\/x-component/);
+else assert.equal(new URL(prefetch.headers.get('location'), origin).pathname, '/entrance');
 const page = await request('/entrance?preview=1');
 assert.equal(page.status, 200); const html = await page.text();
 assert.match(html, /Some doors open/); assert.match(html, /Club password/);
