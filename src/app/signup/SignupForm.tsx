@@ -15,7 +15,7 @@ export function SignupForm({ next, verificationRequired = true }: { next?: strin
   const [terms, setTerms] = useState(false);
   const [marketing, setMarketing] = useState(false);
   return (
-    <form action={action} className="space-y-4" aria-busy={pending}>
+    <form action={action} onReset={event => event.preventDefault()} className="space-y-4" aria-busy={pending}>
       <input type="hidden" name="next" value={next ?? ""} />
       <div>
         <label className="label" htmlFor="name">Name</label>

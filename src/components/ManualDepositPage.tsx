@@ -40,7 +40,7 @@ export async function ManualDepositPage({ payment, portal = false }: { payment: 
       {pending && <>
         <p className="text-sm text-cream/80">Use only <strong>{payment.currency}</strong> on <strong>{network}</strong>. Send from your own wallet or exchange account and keep your transaction receipt.</p>
         {qr && <img src={qr} alt={`${payment.currency} receiving address on ${network}`} className="mx-auto h-56 w-56 rounded-xl" />}
-        <div><p className="label">Club receiving address · {network}</p><div className="flex items-center gap-2 rounded-xl border border-white/15 bg-turf-950/60 p-3"><code className="min-w-0 flex-1 break-all text-xs">{payment.payAddress}</code>{!test && <CopyButton value={payment.payAddress!} />}</div></div>
+        <div><p className="label">Club receiving address · {network}</p><div className="flex items-center gap-2 rounded-xl border border-white/15 bg-turf-950/60 p-3"><code className="min-w-0 flex-1 select-all break-all text-xs">{payment.payAddress}</code>{!test && <CopyButton value={payment.payAddress!} />}</div></div>
         <ReportDepositForm id={payment.id} />
         <CancelDepositForm id={payment.id} portal={portal} />
       </>}

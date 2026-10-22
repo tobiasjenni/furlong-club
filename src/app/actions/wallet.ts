@@ -12,6 +12,7 @@ import { decimal } from "@/lib/payments/validation";
 import { rateLimit } from "@/lib/rate-limit";
 import type { FormState } from "./auth";
 import { createManualDeposit, depositsReady, manualDepositsEnabled } from "@/lib/manual-deposits";
+import { membershipReturnPath } from "@/lib/membership-funding";
 
 export async function startTopup(_: FormState, form: FormData): Promise<FormState> {
   const user = await requireUser();
@@ -32,7 +33,9 @@ export async function startTopup(_: FormState, form: FormData): Promise<FormStat
     } else id = (await createTopup(user.id, amount.toNumber(), option)).id;
   }
   catch { return { error: manualDepositsEnabled ? "Unable to create this deposit. Please try again shortly." : "Unable to create this payment. The provider may require a higher minimum; please try another amount or network." }; }
-  redirect(["member", "v2"].includes(String(form.get("experience"))) ? `/deposits/${id}` : `/checkout/pay/${id}`);
+  const returnTo = membershipReturnPath(form.get("returnTo"));
+  const receipt = ["member", "v2"].includes(String(form.get("experience"))) ? `/deposits/${id}` : `/checkout/pay/${id}`;
+  redirect(receipt + (returnTo ? `?next=${encodeURIComponent(returnTo)}` : ""));
 }
 
 function refreshDepositPages(id: string, userId: string) {
