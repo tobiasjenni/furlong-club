@@ -6,11 +6,11 @@ import { login } from "@/app/actions/auth";
 import { FormMessage } from "@/components/FormMessage";
 import { SubmitButton } from "@/components/SubmitButton";
 
-export function LoginForm({ next, notice }: { next?: string; notice?: string }) {
+export function LoginForm({ next, notice, showSignupLink = true }: { next?: string; notice?: string; showSignupLink?: boolean }) {
   const [state, action, pending] = useActionState(login, null);
   const [email, setEmail] = useState("");
   return (
-    <form action={action} className="space-y-4" aria-busy={pending}>
+    <form action={action} className="space-y-4" aria-busy={pending} onReset={event => event.preventDefault()}>
       {notice && !state && <FormMessage state={{ ok: notice }} />}
       <input type="hidden" name="next" value={next ?? ""} />
       <div>
@@ -21,9 +21,9 @@ export function LoginForm({ next, notice }: { next?: string; notice?: string }) 
       <p className="text-right"><Link href="/forgot-password" className="text-xs text-gold-300 hover:underline">Forgot password?</Link></p>
       <FormMessage state={state} focusOnError />
       <SubmitButton pendingLabel="Signing in…">Sign in</SubmitButton>
-      <p className="muted text-center text-sm">
+      {showSignupLink && <p className="muted text-center text-sm">
         New here? <Link href={next ? `/signup?next=${encodeURIComponent(next)}` : "/signup"} className="text-gold-300 hover:underline">Create a free account</Link>
-      </p>
+      </p>}
     </form>
   );
 }

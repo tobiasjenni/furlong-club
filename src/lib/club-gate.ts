@@ -1,7 +1,9 @@
 import { SignJWT, jwtVerify } from "jose";
 
 export const CLUB_COOKIE = "fc_club_entry";
-export const CLUB_ADMISSION_SECONDS = 365 * 24 * 60 * 60;
+// An invitation opens a short guest visit, never a permanent browser/IP bypass.
+export const CLUB_ADMISSION_SECONDS = 2 * 60 * 60;
+const admissionPolicy = "guest-visit-v2";
 export const clubGateEnabled = () => process.env.CLUB_GATE_ENABLED === "true";
 const issuer = "furlong-club-entrance";
 function key() {
@@ -20,16 +22,15 @@ async function version() {
     .map(byte => byte.toString(16).padStart(2, "0")).join("");
 }
 export async function signClubAdmission() {
-  return new SignJWT({ version: await version() }).setProtectedHeader({ alg: "HS256" })
+  return new SignJWT({ version: await version(), policy: admissionPolicy }).setProtectedHeader({ alg: "HS256" })
     .setIssuer(issuer).setAudience("club-entry").setIssuedAt().setExpirationTime(`${CLUB_ADMISSION_SECONDS}s`).sign(key());
 }
 export async function verifyClubAdmission(token: string | undefined) {
   if (!token) return false;
   try {
     const { payload } = await jwtVerify(token, key(), { algorithms: ["HS256"], issuer, audience: "club-entry", maxTokenAge: `${CLUB_ADMISSION_SECONDS}s` });
-    // Admission remembers this browser across network changes. Older signed
-    // network-bound cookies remain valid until their original expiry.
-    return payload.version === await version();
+    // Deliberately retire the previous year-long/network-remembered policy.
+    return payload.policy === admissionPolicy && payload.version === await version();
   } catch { return false; }
 }
 export const clubCookieOptions = { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax" as const, path: "/", maxAge: CLUB_ADMISSION_SECONDS };
@@ -40,7 +41,7 @@ export function gateMachineEndpoint(path: string) {
 }
 // Exact public account-form paths; this predicate does not authenticate anyone.
 export function gateAccountPath(path: string) {
-  return ["/login", "/forgot-password", "/reset-password", "/verify-email"].includes(path);
+  return ["/entrance", "/login", "/forgot-password", "/reset-password", "/verify-email"].includes(path);
 }
 export function gateExempt(path: string) {
   return ["/entrance", "/api/club-entry", "/robots.txt", "/sitemap.xml", "/favicon.ico", "/favicon-96x96.png", "/icon.svg", "/apple-icon.png", "/brand-logo.png", "/club-entrance.webp"].includes(path)

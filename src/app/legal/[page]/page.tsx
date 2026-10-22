@@ -20,7 +20,7 @@ const pages: Record<string, { title: string; body: string[] }> = {
     title: "Privacy policy",
     body: [
       "We store your name, email, optional country, login times, payment records and any trading requests, accepted terms, payout addresses, results and transaction references to run your account. Financial records and audit history are retained when an account closes.",
-      "The private club entrance remembers an admitted public IP using a keyed fingerprint and admission time, rather than storing the raw address in the entrance record. This record lasts until removed or the club invitation changes. Devices sharing that public IP share entrance access; personal account login remains separate. A protected browser cookie remembers entrance for one year across network changes and is refreshed by personal sign-in. Existing members can always access sign-in and password recovery directly.",
+      "The private club entrance offers personal member sign-in or an invitation password. An invitation grants this browser a protected guest-access cookie for two hours; it does not sign in to a personal account or grant staff access. Personal sign-in replaces guest access, and signing out clears both cookies. Network or IP address does not grant entrance access. Historical keyed network-admission records from the earlier policy no longer grant access. Existing members can always access sign-in and password recovery directly.",
       "We do not sell your data. Marketing emails are only sent if you opt in, and you can opt out at any time from your account page.",
       `To request a copy or deletion of your data, email ${brand.supportEmail}.`,
     ],

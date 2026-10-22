@@ -4,8 +4,8 @@ import { clubGateEnabled, clubPasswordHash, clubNext, signClubAdmission, CLUB_CO
 import { rateLimit } from "@/lib/rate-limit";
 import { clientIp } from "@/lib/request";
 import { BodyLimitError, limitedText } from "@/lib/http-body";
-import { clubNetworkKey } from "@/lib/club-network";
-import { rememberClubNetwork } from "@/lib/club-network-store";
+import { SESSION_COOKIE } from "@/lib/session";
+import { ADMIN_COOKIE, ADMIN_PASSWORD_COOKIE } from "@/lib/admin-session";
 
 const response = (body: object, status = 200) => NextResponse.json(body, { status, headers: { "Cache-Control": "private, no-store", "X-Robots-Tag": "noindex, nofollow" } });
 export async function POST(request: Request) {
@@ -22,9 +22,12 @@ export async function POST(request: Request) {
   } catch (error) { return response({ error: "Please enter the club password." }, error instanceof BodyLimitError ? 413 : 400); }
   if (typeof input.password !== "string" || new TextEncoder().encode(input.password).length > 72 || !await bcrypt.compare(input.password, hash)) return response({ error: "That password does not open the door. Please try again." }, 401);
   try {
-    const network = await clubNetworkKey(request.headers);
-    if (network) await rememberClubNetwork(network);
     const result = response({ next: clubNext(input.next) });
+    // Explicit guest entry replaces any expired/revoked personal login instead
+    // of leaving the visitor stuck behind an unusable session cookie.
+    result.cookies.delete(SESSION_COOKIE);
+    result.cookies.delete(ADMIN_COOKIE);
+    result.cookies.delete(ADMIN_PASSWORD_COOKIE);
     result.cookies.set(CLUB_COOKIE, await signClubAdmission(), clubCookieOptions);
     return result;
   } catch {
