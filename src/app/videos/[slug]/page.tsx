@@ -22,7 +22,7 @@ export default async function VideoPage({ params }: { params: Promise<{ slug: st
   const source = playback(video);
   return (
     <div className="mx-auto max-w-4xl space-y-6">
-      <Link href="/videos" className="text-sm text-gold-300 hover:underline">← All videos</Link>
+      <Link prefetch={false} href="/videos" className="text-sm text-gold-300 hover:underline">← All videos</Link>
       <div className="aspect-video overflow-hidden rounded-2xl border border-white/10 bg-black">
         {!source ? (
           <div className="silk-stripes flex h-full flex-col items-center justify-center gap-3 bg-turf-900 p-6 text-center">

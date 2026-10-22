@@ -18,7 +18,7 @@ export function WalletPurchase({ planId, planSlug, priceCents, balanceCents, req
     <input type="hidden" name="planId" value={planId} /><input type="hidden" name="priceCents" value={priceCents} />
     <input type="hidden" name="requestKey" value={purchaseKey} />
     <FormMessage state={state} focusOnError />
-    {balanceCents < priceCents ? <><p className="muted text-sm">You need {usd(priceCents - balanceCents)} more club credit. After your deposit is approved, return here to confirm the membership purchase.</p><Link className="btn-ghost" href={`/wallet?membership=${encodeURIComponent(planSlug)}#add-funds`}>Add funds for this membership</Link></>
+    {balanceCents < priceCents ? <><p className="muted text-sm">You need {usd(priceCents - balanceCents)} more club credit. After your deposit is approved, return here to confirm the membership purchase.</p><Link prefetch={false} className="btn-ghost" href={`/wallet?membership=${encodeURIComponent(planSlug)}#add-funds`}>Add funds for this membership</Link></>
       : <SubmitButton disabled={disabled} pendingLabel="Confirming your membership…">Pay {usd(priceCents)} from wallet</SubmitButton>}
   </form>;
 }
