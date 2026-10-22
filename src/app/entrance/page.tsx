@@ -1,6 +1,7 @@
 import { privateMetadata } from "@/lib/seo";
 import { clubNext } from "@/lib/club-gate";
 import { EntranceForm } from "./EntranceForm";
+import Link from "next/link";
 import "./entrance.css";
 
 export const metadata = { ...privateMetadata, title: { absolute: "The Private Entrance · Furlong Club" }, description: "Welcome to the private entrance of Furlong Club." };
@@ -14,6 +15,7 @@ export default async function Entrance({ searchParams }: { searchParams: Promise
       <h1 id="entrance-title">Some doors open<br />by invitation.</h1>
       <p className="club-door-greeting">“Good evening. Your club password, please.”</p>
       <EntranceForm next={clubNext((await searchParams).next)} />
+      <p className="mt-5 text-center text-sm"><Link href="/login" className="text-gold-300 underline underline-offset-4">Already a member? Sign in</Link></p>
       <p className="club-door-footnote">Your invitation opens the club. Your personal login keeps your account private.</p>
     </section>
     <p className="club-door-caption">Furlong Club <span>·</span> A private welcome awaits</p>

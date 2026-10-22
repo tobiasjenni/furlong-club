@@ -23,3 +23,9 @@ export async function rememberClubNetwork(key: string) {
   validate(key);
   await admissionQuery(() => database()`INSERT INTO "ClubAdmission" (key) VALUES (${key}) ON CONFLICT (key) DO NOTHING`);
 }
+export async function clubMemberAdmitted(userId: string, sessionVersion: number) {
+  if (!userId || !Number.isSafeInteger(sessionVersion) || sessionVersion < 0) return false;
+  const rows = await admissionQuery(() => database()`SELECT 1 FROM "User"
+    WHERE id = ${userId} AND "sessionVersion" = ${sessionVersion} AND status = 'ACTIVE' LIMIT 1`);
+  return rows.length === 1;
+}

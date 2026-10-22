@@ -25,7 +25,7 @@ export async function POST(request: Request) {
     const network = await clubNetworkKey(request.headers);
     if (network) await rememberClubNetwork(network);
     const result = response({ next: clubNext(input.next) });
-    result.cookies.set(CLUB_COOKIE, await signClubAdmission(network), clubCookieOptions);
+    result.cookies.set(CLUB_COOKIE, await signClubAdmission(), clubCookieOptions);
     return result;
   } catch {
     return response({ error: "The club entrance is temporarily unavailable. Please try again later." }, 503);

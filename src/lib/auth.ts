@@ -6,6 +6,7 @@ import { cache } from "react";
 import { db } from "./db";
 import { SESSION_COOKIE, sessionCookieOptions, signSession, verifySession } from "./session";
 import { ADMIN_COOKIE, ADMIN_PASSWORD_COOKIE, verifyAdminConfirmation } from "./admin-session";
+import { CLUB_COOKIE, clubCookieOptions, clubGateEnabled, signClubAdmission } from "./club-gate";
 
 export const currentUser = cache(async () => {
   const store = await cookies();
@@ -43,9 +44,12 @@ export async function requireSuperAdmin() {
 
 export async function startSession(user: { id: string; role: "USER" | "ADMIN" | "SUPER_ADMIN"; sessionVersion: number }) {
   const token = await signSession({ uid: user.id, role: user.role, sv: user.sessionVersion });
-  (await cookies()).set(SESSION_COOKIE, token, sessionCookieOptions);
-  (await cookies()).delete(ADMIN_COOKIE);
-  (await cookies()).delete(ADMIN_PASSWORD_COOKIE);
+  const store = await cookies();
+  const admission = clubGateEnabled() ? await signClubAdmission() : null;
+  store.set(SESSION_COOKIE, token, sessionCookieOptions);
+  if (admission) store.set(CLUB_COOKIE, admission, clubCookieOptions);
+  store.delete(ADMIN_COOKIE);
+  store.delete(ADMIN_PASSWORD_COOKIE);
 }
 
 export async function endSession() {

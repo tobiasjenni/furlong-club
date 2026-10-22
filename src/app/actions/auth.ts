@@ -14,6 +14,7 @@ import { clientIp, safeNext } from "@/lib/request";
 import { matchesPassword, newPasswordSchema, passwordSchema } from "@/lib/passwords";
 import type { Role } from "@prisma/client";
 import { consumeToken, issueToken } from "@/lib/tokens";
+import { hasClubInvitation } from "@/lib/club-invitation";
 
 export type FormState = { error?: string; ok?: string } | null;
 
@@ -38,6 +39,9 @@ async function sendVerification(user: { id: string; email: string }) {
 }
 
 export async function signup(_: FormState, form: FormData): Promise<FormState> {
+  try {
+    if (!await hasClubInvitation()) return { error: "Please open the club entrance before creating an account." };
+  } catch { return { error: "The club entrance is temporarily unavailable. Please try again later." }; }
   if (!await rateLimit(`signup:${await clientIp()}`, 10, 60 * 60 * 1000)) return { error: "Too many attempts, try again later." };
   const parsed = signupSchema.safeParse(Object.fromEntries(form));
   if (!parsed.success) return { error: parsed.error.issues[0].message };
