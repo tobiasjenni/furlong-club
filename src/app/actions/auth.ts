@@ -67,9 +67,13 @@ export async function signup(_: FormState, form: FormData): Promise<FormState> {
     return { error: "We could not create your account right now. Please try again." };
   }
   await audit(user.id, "user.signup", user.id);
-  await sendVerification(user).catch(() => console.error("verification email failed"));
+  let verificationSent = true;
+  await sendVerification(user).catch(() => {
+    verificationSent = false;
+    console.error("verification email failed");
+  });
   await startSession(user);
-  redirect(safeNext(form.get("next"),"/dashboard?welcome=1"));
+  redirect(safeNext(form.get("next"), verificationSent ? "/dashboard?welcome=1" : "/dashboard?welcome=1&verification=unavailable"));
 }
 
 export async function login(_: FormState, form: FormData): Promise<FormState> {
@@ -107,14 +111,18 @@ export async function resendVerification(_: FormState): Promise<FormState> {
   if (user.emailVerifiedAt) return { ok: "Your email is already confirmed." };
   if (!emailDelivers()) return { error: "Please contact support@furlong.club to confirm your email while email delivery is unavailable." };
   if (!await rateLimit(`verify:${user.id}`, 3, 60 * 60 * 1000)) return { error: "We've sent a few already. Please check your inbox and spam folder." };
-  await sendVerification(user);
+  try { await sendVerification(user); }
+  catch {
+    console.error("Verification email could not be delivered");
+    return { error: "We could not send your link right now. Please try again later or contact support@furlong.club. Your account is still available." };
+  }
   return { ok: `We've sent a new link to ${user.email}.` };
 }
 
 export async function requestPasswordReset(_: FormState, form: FormData): Promise<FormState> {
   if (!emailDelivers()) return { error: "Email recovery is currently unavailable. Please contact support@furlong.club for help." };
   const email = String(form.get("email") ?? "").trim().toLowerCase();
-  const sent = { ok: "If an account exists for that email, we've sent a reset link. It's valid for one hour." };
+  const sent = { ok: "If that email matches an account, check your inbox and spam folder for a reset link. Links are valid for one hour. If it does not arrive, try again later or contact support@furlong.club." };
   if (!await rateLimit(`reset-ip:${await clientIp()}`, 10, 60 * 60 * 1000) || !await rateLimit(`reset:${email}`, 3, 60 * 60 * 1000)) return sent;
   if (!z.string().email().max(254).safeParse(email).success) return sent;
   const user = await db.user.findUnique({ where: { email } });

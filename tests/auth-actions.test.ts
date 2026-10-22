@@ -9,6 +9,7 @@ let current: Record<string, unknown>;
 let sessionVersion: number | undefined;
 let messages: {to:string;token?:string}[];
 let beforeSignIn: (() => Promise<void>) | undefined;
+let deliveryFails = false;
 const invitation = vi.hoisted(() => ({ allowed: true }));
 vi.mock("@/lib/club-invitation", () => ({ hasClubInvitation: async () => invitation.allowed }));
 const sql=(parts: TemplateStringsArray)=>parts.reduce((s,p,i)=>s+(i?`$${i}`:"")+p,"");
@@ -28,10 +29,10 @@ vi.mock("@/lib/db",()=>({db:{
   auditLog:{create:async({data}:{data:{actorId:string;action:string;target:string}})=>pg.query(`INSERT INTO "AuditLog"(id,"actorId",action,target) VALUES($1,$2,$3,$4)`,[crypto.randomUUID(),data.actorId,data.action,data.target])},
 }}));
 vi.mock("@/lib/auth",()=>({requireUser:async()=>current,startSession:async(u:{sessionVersion:number})=>{sessionVersion=u.sessionVersion;},endSession:async()=>{},revokeSessions:async()=>{throw new Error('Unexpected second session revocation');}}));
-vi.mock("@/lib/email",()=>({emailDelivers:()=>true,sendEmail:async(m:{to:string;token?:string})=>{messages.push(m);},verifyEmailMessage:(to:string,token:string)=>({to,token}),passwordChangedMessage:(to:string)=>({to}),resetPasswordMessage:(to:string,token:string)=>({to,token})}));
+vi.mock("@/lib/email",()=>({emailDelivers:()=>true,sendEmail:async(m:{to:string;token?:string})=>{if(deliveryFails)throw new Error('Simulated provider failure');messages.push(m);},verifyEmailMessage:(to:string,token:string)=>({to,token}),passwordChangedMessage:(to:string)=>({to}),resetPasswordMessage:(to:string,token:string)=>({to,token})}));
 vi.mock("next/headers",()=>({headers:async()=>new Headers()}));
 vi.mock("next/navigation",()=>({redirect:(path:string)=>{throw new Error(`REDIRECT:${path}`);}}));
-import { changeEmail, changePassword, resetPassword, signup, login } from "@/app/actions/auth";
+import { changeEmail, changePassword, requestPasswordReset, resendVerification, resetPassword, signup, login } from "@/app/actions/auth";
 import { consumeToken, issueToken, validPasswordReset } from "@/lib/tokens";
 
 const form=(values:Record<string,string>)=>{const f=new FormData();for(const [k,v]of Object.entries(values))f.set(k,v);return f;};
@@ -41,6 +42,7 @@ beforeAll(async()=>{
 afterAll(async()=>{await pg?.close();});
 beforeEach(async()=>{
   invitation.allowed = true;
+  deliveryFails = false;
   await pg.exec('DELETE FROM "RateLimit"');beforeSignIn=undefined;
   const id=crypto.randomUUID();await pg.query(`INSERT INTO "User"(id,email,"passwordHash","ageConfirmedAt","updatedAt") VALUES($1,$2,$3,now(),now())`,[id,`${id}@example.com`,await bcrypt.hash('existing-password',4)]);
   current=(await pg.query<Record<string,unknown>>(`SELECT * FROM "User" WHERE id=$1`,[id])).rows[0];messages=[];sessionVersion=undefined;
@@ -139,4 +141,53 @@ it("automatically emails a new member a single-use link that confirms only that 
   expect(await consumeToken(messages[0].token!, 'VERIFY_EMAIL')).toBe(user.id);
   expect(await consumeToken(messages[0].token!, 'VERIFY_EMAIL')).toBeNull();
   expect((await pg.query<{emailVerifiedAt:Date|null}>(`SELECT "emailVerifiedAt" FROM "User" WHERE id=$1`, [user.id])).rows[0].emailVerifiedAt).not.toBeNull();
+});
+
+it("completes registration with a clear recovery notice when verification delivery fails", async () => {
+  deliveryFails = true;
+  const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+  try {
+    const data = registration({ email: ` Mixed-${crypto.randomUUID()}@EXAMPLE.COM ` });
+    await expect(signup(null, data)).rejects.toThrow('REDIRECT:/dashboard?welcome=1&verification=unavailable');
+    const user = (await pg.query<{emailVerifiedAt:Date|null;marketingOptIn:boolean;country:string|null;role:string}>(`SELECT "emailVerifiedAt","marketingOptIn",country,role FROM "User" WHERE email=$1`, [String(data.get('email')).trim().toLowerCase()])).rows[0];
+    expect(user).toMatchObject({ emailVerifiedAt:null, marketingOptIn:false, country:null, role:'USER' });
+    expect(sessionVersion).toBe(0);
+    expect(messages).toHaveLength(0);
+  } finally { log.mockRestore(); }
+});
+
+it("offers a usable error and a working retry after a verification email rejection", async () => {
+  deliveryFails = true;
+  const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+  try {
+    expect((await resendVerification(null))?.error).toContain('try again later');
+    deliveryFails = false;
+    expect((await resendVerification(null))?.ok).toContain(String(current.email));
+    expect(messages).toHaveLength(1);
+    expect(await consumeToken(messages[0].token!, 'VERIFY_EMAIL')).toBe(current.id);
+  } finally { log.mockRestore(); }
+});
+
+it("recovers through the emailed link, keeps account existence private, and rejects the old password", async () => {
+  const unknown = await requestPasswordReset(null, form({ email: 'unknown@example.com' }));
+  const known = await requestPasswordReset(null, form({ email: ` ${String(current.email).toUpperCase()} ` }));
+  expect(known).toEqual(unknown);
+  expect(messages).toHaveLength(1);
+  expect(messages[0].to).toBe(current.email);
+  const token = messages[0].token!;
+  expect(await validPasswordReset(token)).toBe(true);
+  await expect(resetPassword(null, form({ token, password:'new-recovery-passphrase', passwordConfirm:'new-recovery-passphrase' }))).rejects.toThrow('REDIRECT:/login?reset=1');
+  expect(await validPasswordReset(token)).toBe(false);
+  expect((await login(null, form({ email:String(current.email), password:'existing-password' })))?.error).toContain('incorrect');
+  await expect(login(null, form({ email:String(current.email), password:'new-recovery-passphrase' }))).rejects.toThrow('REDIRECT:/dashboard');
+  expect(sessionVersion).toBe(1);
+});
+
+it("does not expose a provider exception or account existence when recovery delivery fails", async () => {
+  deliveryFails = true;
+  const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+  try {
+    expect(await requestPasswordReset(null, form({ email:String(current.email) }))).toEqual(await requestPasswordReset(null, form({ email:'unknown@example.com' })));
+    expect(sessionVersion).toBeUndefined();
+  } finally { log.mockRestore(); }
 });
