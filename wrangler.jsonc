@@ -23,6 +23,6 @@
     "PAYMENT_PROVIDER": "nowpayments",
     "DEPOSIT_MODE": "manual",
     "WALLET_ENABLED": "true",
-    "TRADING_REQUESTS_ENABLED": "false"
+    "TRADING_REQUESTS_ENABLED": "true"
   }
 }

@@ -1,6 +1,8 @@
 # Search appearance and indexing
 
-Public page titles, descriptions, canonical URLs and sharing cards are defined in `src/lib/seo.ts`. The sitemap includes only those seven public pages. Keep the copy accurate when the offer changes; trading remains a proposal with closed enrollment. Do not add unverified returns, ratings, credentials or testimonials to structured data.
+The private-club entrance currently blocks public indexing: robots disallows the site, the sitemap is empty and responses are noindex. Deployment verifies this with `scripts/check-club-gate.mjs`. A shared invitation password does not grant member or admin access. Manual trading allocation requests are now open subject to membership, approved funds and Super Admin review; proposed returns remain unverified and non-contractual.
+
+Page titles, descriptions, canonical URLs and sharing cards are defined in `src/lib/seo.ts`. The following public-search configuration applies only if the entrance lock is later disabled. Do not add unverified returns, ratings, credentials or testimonials to structured data.
 
 The homepage identifies Furlong Club as an Organization and WebSite. Harry’s public biography describes a Person through ProfilePage data. Breadcrumb data matches visible Home links on public detail pages. The sharing image has its editable source in `public/social/furlong-club.svg`; publish a matching 1200×630 PNG when changing it. The organization logo is a 512×512 rendering of the existing monogram.
 

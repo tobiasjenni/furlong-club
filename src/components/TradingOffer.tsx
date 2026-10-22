@@ -1,9 +1,11 @@
 import Link from "next/link";
+import { tradingEnrollmentOpen } from "@/lib/trading-program";
 import { proposedTradingTargets } from "@/lib/trading-marketing";
 
-export function TradingOffer({ showLink = true }: { showLink?: boolean }) {
+export async function TradingOffer({ showLink = true }: { showLink?: boolean }) {
+  const open = await tradingEnrollmentOpen();
   return <section className="card space-y-5 border-gold-400/40 bg-gold-400/5">
-    <div><p className="text-xs uppercase tracking-wider text-gold-300">The centrepiece of Form Room</p><h2 className="mt-2 text-3xl">Trading with Harry</h2><p className="mt-3 text-cream/85">Harry&apos;s experience. Your dedicated allocation. One clear record of the lock, actual results and payout.</p><p className="muted mt-3 text-sm">Planned access is part of Form Room and Inner Circle membership. The membership fee does not fund your allocation: the $500–$10,000 allocation is additional. Final terms are being prepared; real trading enrollment is closed.</p></div>
+    <div><p className="text-xs uppercase tracking-wider text-gold-300">The centrepiece of Form Room</p><h2 className="mt-2 text-3xl">Trading with Harry</h2><p className="mt-3 text-cream/85">Harry&apos;s experience. Your dedicated allocation. One clear record of the lock, actual results and payout.</p><p className="muted mt-3 text-sm">Access is part of Form Room and Inner Circle membership. Your membership fee does not fund the separate $500–$10,000 allocation. {open ? "Allocation requests are open, subject to Super Admin approval." : "New allocation requests are currently paused."}</p></div>
     <dl className="grid gap-4 sm:grid-cols-3">
       <div className="rounded-xl bg-white/5 p-4"><dt className="muted text-xs">Allocation range</dt><dd className="mt-2 text-2xl text-gold-300">$500–$10,000</dd></div>
       <div className="rounded-xl bg-white/5 p-4"><dt className="muted text-xs">Lock from admin approval</dt><dd className="mt-2 text-2xl">33 days</dd></div>

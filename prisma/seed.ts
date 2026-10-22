@@ -35,7 +35,7 @@ async function main() {
       intervalDays: 33,
       tier: 2,
       sortOrder: 2,
-      features: ["Planned Trading with Harry access", "Everything in Form Room", "Published Inner Circle race-day videos", "Detailed race-card analysis", "One-off access with no automatic renewal"],
+      features: ["Trading with Harry access", "Everything in Form Room", "Published Inner Circle race-day videos", "Detailed race-card analysis", "One-off access with no automatic renewal"],
     },
   ];
   for (const p of plans) {
