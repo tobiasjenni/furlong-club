@@ -5,7 +5,13 @@ import { NextRequest } from "next/server";
 import { CLUB_COOKIE, clubNext, gateExempt, signClubAdmission, verifyClubAdmission } from "@/lib/club-gate";
 import { middleware } from "@/middleware";
 import { signSession, SESSION_COOKIE } from "@/lib/session";
+import { clubNetworkKey, trustedClubIp } from "@/lib/club-network";
 const counters = vi.hoisted(() => ({ allow: true, calls: 0 }));
+const networks = vi.hoisted(() => ({ admitted: new Set<string>(), reads: 0, fail: false }));
+vi.mock("@/lib/club-network-store", () => ({
+  clubNetworkAdmitted: async (key: string) => { networks.reads++; if (networks.fail) throw new Error("Storage unavailable"); return networks.admitted.has(key); },
+  rememberClubNetwork: async (key: string) => { if (networks.fail) throw new Error("Storage unavailable"); networks.admitted.add(key); },
+}));
 vi.mock("@/lib/rate-limit", () => ({ rateLimit: async () => { counters.calls++; return counters.allow; } }));
 vi.mock("@/lib/request", () => ({ clientIp: async () => "test-ip" }));
 import { POST } from "@/app/api/club-entry/route";
@@ -15,6 +21,7 @@ beforeEach(() => {
   vi.stubEnv("AUTH_SECRET", "t".repeat(40)); vi.stubEnv("APP_URL", "https://furlong.club");
   vi.stubEnv("CLUB_GATE_ENABLED", "true"); vi.stubEnv("CLUB_PASSWORD_HASH", hash);
   counters.allow = true; counters.calls = 0;
+  networks.admitted.clear(); networks.reads = 0; networks.fail = false;
 });
 afterEach(() => vi.unstubAllEnvs());
 const request = (path: string, options: NonNullable<ConstructorParameters<typeof NextRequest>[1]> = {}) => new NextRequest("https://furlong.club" + path, options);
@@ -77,3 +84,69 @@ it("checks password, bounds input, rejects cross-origin requests and throttles a
   expect(r.headers.get("cache-control")).toContain("no-store");
 });
 it.each(["https://evil.invalid", "//evil.invalid", "/\\evil", "/%5cevil", "/entrance", "/api/cron/daily", "/_next/data/build.json"])("rejects unsafe return destination %s", value => expect(clubNext(value)).toBe("/"));
+
+const networkHeaders = (ip = "8.8.8.8") => new Headers({ "cf-connecting-ip": ip });
+const networkEntry = () => POST(new Request("https://furlong.club/api/club-entry", {
+  method: "POST", headers: { origin: "https://furlong.club", "content-type": "application/json", "cf-connecting-ip": "8.8.8.8" },
+  body: JSON.stringify({ password: "Test-club-entry-password" }),
+}));
+it("remembers a successful password once per trusted network across browsers, preserving personal login", async () => {
+  vi.stubEnv("DATABASE_DRIVER", "neon-http");
+  expect((await middleware(request("/", { headers: networkHeaders() }))).status).toBe(307);
+  expect((await networkEntry()).status).toBe(200);
+  expect([...networks.admitted]).toEqual([expect.stringMatching(/^[0-9a-f]{64}$/)]);
+  expect([...networks.admitted][0]).not.toContain("8.8.8.8");
+  const freshBrowser = await middleware(request("/", { headers: networkHeaders() }));
+  expect(freshBrowser.status).toBe(200);
+  expect(freshBrowser.cookies.get(CLUB_COOKIE)?.value).toBeTruthy();
+  const account = await middleware(request("/account", { headers: networkHeaders() }));
+  expect(new URL(account.headers.get("location")!).pathname).toBe("/login");
+  expect(account.cookies.get(CLUB_COOKIE)?.value).toBeTruthy();
+  expect((await middleware(request("/", { headers: networkHeaders("1.1.1.1") }))).status).toBe(307);
+});
+it("binds the fast cookie to the network and skips database reads on normal visits", async () => {
+  vi.stubEnv("DATABASE_DRIVER", "neon-http");
+  const key = await clubNetworkKey(networkHeaders());
+  const cookie = `${CLUB_COOKIE}=${await signClubAdmission(key)}`;
+  expect((await middleware(request("/", { headers: { "cf-connecting-ip": "8.8.8.8", cookie } }))).status).toBe(200);
+  expect(networks.reads).toBe(0);
+  expect((await middleware(request("/", { headers: { "cf-connecting-ip": "1.1.1.1", cookie } }))).status).toBe(307);
+});
+it("password rotation revokes both the cookie and remembered network", async () => {
+  vi.stubEnv("DATABASE_DRIVER", "neon-http");
+  await networkEntry();
+  const cookie = `${CLUB_COOKIE}=${await signClubAdmission(await clubNetworkKey(networkHeaders()))}`;
+  vi.stubEnv("CLUB_PASSWORD_HASH", await bcrypt.hash("rotated-club-password", 12));
+  expect((await middleware(request("/", { headers: { "cf-connecting-ip": "8.8.8.8", cookie } }))).status).toBe(307);
+});
+it("skips an admitted entrance, sanitizes the destination, and keeps artwork preview public", async () => {
+  vi.stubEnv("DATABASE_DRIVER", "neon-http"); await networkEntry();
+  const enter = await middleware(request("/entrance?next=%2Faccount", { headers: networkHeaders() }));
+  expect(new URL(enter.headers.get("location")!).pathname).toBe("/account");
+  const unsafe = await middleware(request("/entrance?next=https://evil.invalid", { headers: networkHeaders() }));
+  expect(new URL(unsafe.headers.get("location")!).pathname).toBe("/");
+  expect((await middleware(request("/entrance?preview=1", { headers: networkHeaders() }))).status).toBe(200);
+  expect((await middleware(request("/?preview=1", { headers: networkHeaders("1.1.1.1") }))).status).toBe(307);
+});
+it("fails closed on network storage failure without issuing an admission cookie", async () => {
+  vi.stubEnv("DATABASE_DRIVER", "neon-http"); networks.fail = true;
+  const r = await middleware(request("/", { headers: networkHeaders() }));
+  expect(r.status).toBe(503); expect(r.headers.get("set-cookie")).toBeNull();
+  const entry = await networkEntry(); expect(entry.status).toBe(503); expect(entry.headers.get("set-cookie")).toBeNull();
+  expect((await middleware(request("/api/cron/payments", { headers: networkHeaders() }))).status).toBe(200);
+});
+it("does not trust arbitrary forwarded headers or non-Cloudflare deployments", async () => {
+  expect(trustedClubIp(networkHeaders())).toBeNull();
+  vi.stubEnv("DATABASE_DRIVER", "neon-http");
+  expect(trustedClubIp(new Headers({ "x-forwarded-for": "8.8.8.8", "x-real-ip": "8.8.8.8" }))).toBeNull();
+  expect(trustedClubIp(new Headers({ "cf-connecting-ip": "8.8.8.8", "cf-worker": "other.example" }))).toBeNull();
+});
+it.each(["unknown", "", "8.8.8.8,1.1.1.1", "8.8.8.999", "127.0.0.1", "10.0.0.1", "192.168.1.1", "240.0.0.1", "::1", "fe80::1234", "fd00::1", "2a06:98c0:3600::103", "[2606:4700::1111]", "2606:4700::1111%eth0"])("never remembers an invalid, private or shared proxy address: %s", async ip => {
+  vi.stubEnv("DATABASE_DRIVER", "neon-http");
+  expect(await clubNetworkKey(networkHeaders(ip))).toBeNull();
+});
+it("normalizes IPv6 spellings and IPv4-mapped addresses to one keyed identity", async () => {
+  vi.stubEnv("DATABASE_DRIVER", "neon-http");
+  expect(await clubNetworkKey(networkHeaders("2606:4700:0000:0000:0000:0000:0000:1111"))).toBe(await clubNetworkKey(networkHeaders("2606:4700::1111")));
+  expect(await clubNetworkKey(networkHeaders("::ffff:8.8.8.8"))).toBe(await clubNetworkKey(networkHeaders()));
+});

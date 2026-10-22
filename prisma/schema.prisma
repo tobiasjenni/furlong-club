@@ -386,6 +386,11 @@ model TradingPayoutClaim {
   createdAt    DateTime @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)"))
 }
 
+model ClubAdmission {
+  key        String   @id
+  admittedAt DateTime @default(now())
+}
+
 model ChainTransferClaim {
   key          String @id
   paymentId    String?
