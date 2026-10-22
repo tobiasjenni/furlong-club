@@ -55,12 +55,10 @@ try {
     to_regprocedure('public.auth_confirm_admin(text,text,integer,text)') IS NOT NULL AS "adminConfirmationApplied",
     EXISTS(SELECT 1 FROM "_prisma_migrations" WHERE migration_name='20261022090000_read_only_admin' AND finished_at IS NOT NULL AND rolled_back_at IS NULL) AS "readOnlyAdminApplied"`;
   const routes = [];
-  const firstPage = await fetch('https://furlong.club/', { redirect: 'manual', signal: AbortSignal.timeout(20000) });
-  const rememberedNetwork = flags.CLUB_GATE_ENABLED === 'true' && firstPage.status === 200;
   for (const path of ['/','/trading','/plans','/login','/signup','/legal/terms','/icon.svg','/robots.txt']) {
     const result = await fetch(`https://furlong.club${path}`, { redirect: 'manual', signal: AbortSignal.timeout(20000) });
     const locked = flags.CLUB_GATE_ENABLED === 'true';
-    const expected = locked && !rememberedNetwork && !['/login','/icon.svg','/robots.txt'].includes(path) ? 307 : 200;
+    const expected = locked && !['/login','/icon.svg','/robots.txt'].includes(path) ? 307 : 200;
     // Public icons can be served directly by Cloudflare's static asset cache.
     const gateHeaders = !locked || path === '/icon.svg' || (/no-store/.test(result.headers.get('cache-control') || '') && /noindex/.test(result.headers.get('x-robots-tag') || ''));
     const correctEntrance = expected !== 307 || new URL(result.headers.get('location'), 'https://furlong.club').pathname === '/entrance';

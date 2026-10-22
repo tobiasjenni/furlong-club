@@ -9,6 +9,9 @@ import { signSession, verifySession } from "@/lib/session";
 import { bunnyEmbedUrl } from "@/lib/video";
 
 describe("safeNext", () => {
+  it("cannot send a completed personal login back into the entrance", () => {
+    expect(safeNext("/entrance?next=%2Fwallet")).toBe("/dashboard");
+  });
   it("keeps same-site paths", () => {
     expect(safeNext("/videos/abc")).toBe("/videos/abc");
   });

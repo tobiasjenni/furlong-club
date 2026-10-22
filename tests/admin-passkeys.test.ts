@@ -71,7 +71,7 @@ it("registers a real verified public key, stores only recovery hashes and requir
   const { device, result } = await enroll();
   expect(result.recoveryCodes).toHaveLength(8); expect(result.needsVerification).toBe(true);
   expect(store.has(ADMIN_COOKIE)).toBe(false); expect(store.get(SESSION_COOKIE)!.value).not.toBe(oldSession);
-  expect(await verifyClubAdmission(store.get(CLUB_COOKIE)?.value)).toBe(true);
+  expect(await verifyClubAdmission(store.get(CLUB_COOKIE)?.value)).toBe(false);
   const hashes = (await pg.query<{ hash: string }>('SELECT hash FROM "AdminRecoveryCode" WHERE "userId"=$1', [uid])).rows;
   expect(hashes).toHaveLength(8); expect(JSON.stringify(hashes)).not.toContain(result.recoveryCodes[0]);
   expect((await verify(device)).status).toBe(200);

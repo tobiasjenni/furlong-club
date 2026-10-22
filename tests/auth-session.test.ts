@@ -15,18 +15,19 @@ beforeEach(() => {
   vi.stubEnv("CLUB_PASSWORD_HASH", "$2a$12$" + "a".repeat(53));
 });
 afterEach(() => vi.unstubAllEnvs());
-it("successful personal login remembers club admission for one year and logout preserves it", async () => {
+it("personal login replaces guest access and logout clears both kinds of access", async () => {
+  state.cookies.set(CLUB_COOKIE, await signClubAdmission());
   await startSession({ id: "member", role: "USER", sessionVersion: 2 });
   expect(await verifySession(state.cookies.get(SESSION_COOKIE))).toEqual({ uid: "member", role: "USER", sv: 2 });
-  expect(await verifyClubAdmission(state.cookies.get(CLUB_COOKIE))).toBe(true);
-  expect(state.options.get(CLUB_COOKIE)?.maxAge).toBe(365 * 24 * 60 * 60);
+  expect(state.cookies.has(CLUB_COOKIE)).toBe(false);
+  state.cookies.set(CLUB_COOKIE, await signClubAdmission());
   await endSession(); expect(state.cookies.has(SESSION_COOKIE)).toBe(false);
-  expect(await verifyClubAdmission(state.cookies.get(CLUB_COOKIE))).toBe(true);
+  expect(await verifyClubAdmission(state.cookies.get(CLUB_COOKIE))).toBe(false);
 });
-it("signup invitation requires a valid browser admission or a remembered trusted network", async () => {
+it("signup requires a current guest invitation; remembered networks never grant it", async () => {
   expect(await hasClubInvitation()).toBe(false);
   state.cookies.set(CLUB_COOKIE, "forged"); expect(await hasClubInvitation()).toBe(false);
   state.cookies.set(CLUB_COOKIE, await signClubAdmission()); expect(await hasClubInvitation()).toBe(true);
   state.cookies.clear(); vi.stubEnv("DATABASE_DRIVER", "neon-http"); state.headers.set("cf-connecting-ip", "8.8.8.8");
-  expect(await hasClubInvitation()).toBe(false); state.admitted = true; expect(await hasClubInvitation()).toBe(true);
+  expect(await hasClubInvitation()).toBe(false); state.admitted = true; expect(await hasClubInvitation()).toBe(false);
 });
