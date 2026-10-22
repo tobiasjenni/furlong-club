@@ -8,7 +8,7 @@ export function ReportDepositForm({ id }: { id: string }) {
   const [state, action, pending] = useActionState(reportManualDeposit, null);
   const [hash, setHash] = useState("");
   const [sent, setSent] = useState(false);
-  return <form action={action} className="space-y-4 border-t border-white/10 pt-5" aria-busy={pending}>
+  return <form action={action} onReset={event => event.preventDefault()} className="space-y-4 border-t border-white/10 pt-5" aria-busy={pending}>
     <input type="hidden" name="id" value={id} />
     <h2 className="text-xl">Already sent your payment?</h2>
     <div><label className="label" htmlFor={`tx-${id}`}>Transaction ID / hash</label>

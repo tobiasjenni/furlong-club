@@ -14,7 +14,7 @@ export function RequestTradingForm({ requestKey, termsVersion, options, disabled
   const [confirmation, setConfirmation] = useState("");
   const [destinationConfirmed, setDestinationConfirmed] = useState(false);
   const [risk, setRisk] = useState(false);
-  return <form action={action} className="space-y-4" aria-busy={pending}>
+  return <form action={action} onReset={event => event.preventDefault()} className="space-y-4" aria-busy={pending}>
     <input type="hidden" name="requestKey" value={intentKey} /><input type="hidden" name="termsVersion" value={termsVersion} />
     <div><label htmlFor="trading-amount" className="label">Allocation · USD accounting value</label><input id="trading-amount" name="amount" type="number" inputMode="decimal" min="500" max="10000" step="0.01" value={amount} onChange={event => setAmount(event.target.value)} required className="input" placeholder="500" disabled={disabled} /></div>
     <div><label htmlFor="trading-option" className="label">Receive your payout in</label><select id="trading-option" name="option" className="input" value={option} onChange={event => { setOption(event.target.value); setDestinationConfirmed(false); }} disabled={disabled}>{options.map((o, i) => <option key={o.label} value={i}>{o.label}</option>)}</select></div>

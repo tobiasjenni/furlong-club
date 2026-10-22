@@ -9,7 +9,7 @@ export function TopupForm({ options, disabled, manual, portal = false, defaultAm
   const [amount, setAmount] = useState(String(defaultAmount));
   const [selected, setSelected] = useState(options.find(o => o.enabled)?.value ?? options[0]?.value ?? 0);
   const currency = options.find(o => o.value === selected)?.currency ?? "USDT";
-  return <form action={action} className="space-y-4" aria-busy={pending}>
+  return <form action={action} onReset={event => event.preventDefault()} className="space-y-4" aria-busy={pending}>
     {portal && <input type="hidden" name="experience" value="member" />}
     {returnTo && <input type="hidden" name="returnTo" value={returnTo} />}
     <label className="label" htmlFor="topup-amount">{manual ? `Amount to send (${currency})` : "Amount to add (USD)"}</label>
