@@ -2,7 +2,7 @@ import bcrypt from "bcryptjs";
 import { SignJWT, decodeJwt } from "jose";
 import { beforeAll, beforeEach, afterEach, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
-import { CLUB_COOKIE, CLUB_ADMISSION_SECONDS, clubNext, gateExempt, signClubAdmission, verifyClubAdmission } from "@/lib/club-gate";
+import { CLUB_COOKIE, CLUB_ADMISSION_SECONDS, clubNext, clubInvitationNext, gateExempt, signClubAdmission, verifyClubAdmission } from "@/lib/club-gate";
 import { middleware } from "@/middleware";
 import { signSession, SESSION_COOKIE } from "@/lib/session";
 import { clubNetworkKey, trustedClubIp } from "@/lib/club-network";
@@ -129,6 +129,13 @@ it("checks invitation password, bounds input, rejects cross-origin and throttles
   expect(response.cookies.get(SESSION_COOKIE)?.value).toBe("");
 });
 it.each(["https://evil.invalid", "//evil.invalid", "/\\evil", "/%5cevil", "/entrance", "/api/cron/daily", "/_next/data/build.json"])("rejects unsafe return destination %s", value => expect(clubNext(value)).toBe("/"));
+it("invited guests register before following a private destination, while public links remain direct", () => {
+  expect(clubInvitationNext("/wallet?for=trading")).toBe("/signup?next=%2Fwallet%3Ffor%3Dtrading");
+  expect(clubInvitationNext("/membership/form")).toBe("/signup?next=%2Fmembership%2Fform");
+  expect(clubInvitationNext("/plans")).toBe("/plans");
+  expect(clubInvitationNext("/signup?next=%2Fwallet")).toBe("/signup?next=%2Fwallet");
+  expect(clubInvitationNext("https://evil.invalid")).toBe("/");
+});
 it("unlocked deployments retain their normal login and public pages", async () => {
   vi.stubEnv("CLUB_GATE_ENABLED", "false"); expect((await middleware(request("/"))).status).toBe(200);
   expect(location(await middleware(request("/account"))).pathname).toBe("/login");

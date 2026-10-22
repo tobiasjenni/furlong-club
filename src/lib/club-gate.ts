@@ -1,4 +1,5 @@
 import { SignJWT, jwtVerify } from "jose";
+import { isMemberPath } from "./member-routes";
 
 export const CLUB_COOKIE = "fc_club_entry";
 // An invitation opens a short guest visit, never a permanent browser/IP bypass.
@@ -54,4 +55,12 @@ export function clubNext(value: unknown) {
     if (url.origin !== "https://club.invalid" || /^\/(?:entrance|api|_next)(?:\/|$)/.test(url.pathname)) return "/";
     return url.pathname + url.search + url.hash;
   } catch { return "/"; }
+}
+
+// New guests following a private link need their own account before that page.
+export function clubInvitationNext(value: unknown) {
+  const next = clubNext(value);
+  const path = new URL(next, "https://club.invalid").pathname;
+  return isMemberPath(path) || /^\/(?:admin(?:-unlock)?|checkout)(?:\/|$)/.test(path)
+    ? `/signup?next=${encodeURIComponent(next)}` : next;
 }
