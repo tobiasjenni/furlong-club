@@ -19,7 +19,7 @@ export function LoginForm({ next, notice }: { next?: string; notice?: string }) 
       </div>
       <PasswordInput id="password" name="password" label="Password" autoComplete="current-password" required />
       <p className="text-right"><Link href="/forgot-password" className="text-xs text-gold-300 hover:underline">Forgot password?</Link></p>
-      <FormMessage state={state} />
+      <FormMessage state={state} focusOnError />
       <SubmitButton pendingLabel="Signing in…">Sign in</SubmitButton>
       <p className="muted text-center text-sm">
         New here? <Link href={next ? `/signup?next=${encodeURIComponent(next)}` : "/signup"} className="text-gold-300 hover:underline">Create a free account</Link>

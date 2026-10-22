@@ -1,4 +1,5 @@
 "use server";
+import { memberEmailReady } from "@/lib/email-verification";
 
 import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
@@ -10,7 +11,7 @@ import type { FormState } from "./auth";
 
 export async function startCheckout(_: FormState, form: FormData): Promise<FormState> {
   const user = await requireUser();
-  if (!user.emailVerifiedAt) return { error: "Please confirm your email address first. You'll find the link on your dashboard." };
+  if (!memberEmailReady(user.emailVerifiedAt)) return { error: "Please confirm your email address first. You'll find the link on your dashboard." };
   if (!await rateLimit(`checkout:${user.id}`, 10, 60 * 60 * 1000)) return { error: "Too many payment attempts. Please try again later." };
   const plan = await db.plan.findUnique({ where: { slug: String(form.get("plan")) } });
   const option = checkoutOptions[Number(form.get("option"))];

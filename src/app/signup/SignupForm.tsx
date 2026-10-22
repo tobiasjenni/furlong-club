@@ -6,7 +6,7 @@ import { signup } from "@/app/actions/auth";
 import { FormMessage } from "@/components/FormMessage";
 import { SubmitButton } from "@/components/SubmitButton";
 
-export function SignupForm({ next }: { next?: string }) {
+export function SignupForm({ next, verificationRequired = true }: { next?: string; verificationRequired?: boolean }) {
   const [state, action, pending] = useActionState(signup, null);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -37,7 +37,7 @@ export function SignupForm({ next }: { next?: string }) {
       <label className="flex gap-3 text-sm">
         <input type="checkbox" name="terms" checked={terms} onChange={event => setTerms(event.target.checked)} className="mt-1 accent-gold-400" required />
         <span>
-          I accept the <Link href="/legal/terms" className="text-gold-300 underline">terms</Link> and understand the videos are
+          I accept the <Link href="/legal/terms" target="_blank" rel="noopener noreferrer" aria-label="terms (opens in a new tab)" className="text-gold-300 underline">terms</Link> and understand the videos are
           education and opinion, not a guarantee of results.
         </span>
       </label>
@@ -45,7 +45,8 @@ export function SignupForm({ next }: { next?: string }) {
         <input type="checkbox" name="marketing" checked={marketing} onChange={event => setMarketing(event.target.checked)} className="mt-1 accent-gold-400" />
         <span className="muted">Email me club updates and new video notices.</span>
       </label>
-      <FormMessage state={state} />
+      <p className="muted text-xs">Free to join. No payment needed. {verificationRequired ? "We will email you a link to confirm your address." : "You can use your account straight away."}</p>
+      <FormMessage state={state} focusOnError />
       <SubmitButton pendingLabel="Creating account…">Create account</SubmitButton>
       <p className="muted text-center text-sm">
         Already a member? <Link href={next ? `/login?next=${encodeURIComponent(next)}` : "/login"} className="text-gold-300 hover:underline">Sign in</Link>

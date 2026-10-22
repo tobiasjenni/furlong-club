@@ -11,8 +11,8 @@ export function ResetForm({ token }: { token: string }) {
     <form action={action} className="space-y-4" aria-busy={pending}>
       <input type="hidden" name="token" value={token} />
       <PasswordPair label="New password" confirmationLabel="Confirm new password" hint="At least 15 characters. Changing your password signs out all devices." />
-      <FormMessage state={state} />
-      <SubmitButton>Set new password</SubmitButton>
+      <FormMessage state={state} focusOnError />
+      <SubmitButton pendingLabel="Updating password…">Set new password</SubmitButton>
     </form>
   );
 }

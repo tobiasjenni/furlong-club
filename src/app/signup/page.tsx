@@ -4,6 +4,7 @@ import { AuthShell } from "@/components/AuthShell";
 import { safeNext } from "@/lib/request";
 import { currentUser } from "@/lib/auth";
 import { SignupForm } from "./SignupForm";
+import { emailVerificationRequired } from "@/lib/email-verification";
 
 export const metadata = { ...privateMetadata, title: "Join free" };
 
@@ -13,7 +14,7 @@ export default async function SignupPage({ searchParams }: { searchParams: Promi
   if (await currentUser()) redirect(next ?? "/dashboard");
   return (
     <AuthShell title="Join the club for free" subtitle="Explore the catalogue, manage your wallet and choose paid access when it suits you.">
-      <SignupForm next={next} />
+      <SignupForm next={next} verificationRequired={emailVerificationRequired()} />
     </AuthShell>
   );
 }

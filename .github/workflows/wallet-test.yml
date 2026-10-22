@@ -37,6 +37,10 @@ jobs:
         run: npx prisma migrate deploy
       - name: Seed test plans
         run: npm run db:seed
+      - name: Apply test member email policy
+        run: node scripts/configure-email-policy.mjs
+        env:
+          EMAIL_VERIFICATION_REQUIRED: 'false'
       - name: Seed verified test accounts
         run: npx tsx scripts/seed-wallet-test.ts
         env:

@@ -40,7 +40,7 @@ async function invoice(userId: string, option: CheckoutOption, amountCents: numb
     (id,"userId","planId","planName","planDays",purpose,"amountCents",currency,network,provider,"poolAddress","settlementStatus","updatedAt")
     SELECT ${crypto.randomUUID()},u.id,${plan?.id ?? null},${plan?.name ?? null},${plan?.intervalDays ?? null}::integer,
       ${plan ? "SUBSCRIPTION" : "WALLET_TOPUP"},${amountCents}::integer,${option.currency},${option.network},${provider.name},${pool},'PENDING',(CURRENT_TIMESTAMP AT TIME ZONE 'UTC')
-    FROM "User" u WHERE u.id=${userId} AND u.status='ACTIVE' AND u."emailVerifiedAt" IS NOT NULL
+    FROM "User" u WHERE u.id=${userId} AND u.status='ACTIVE' AND (u."emailVerifiedAt" IS NOT NULL OR NOT auth_email_verification_required())
       AND NOT u."walletFrozen" FOR UPDATE OF u RETURNING *`;
   const payment = rows[0];
   if (!payment) throw new Error("This account cannot create a payment");

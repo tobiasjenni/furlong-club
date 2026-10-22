@@ -46,6 +46,21 @@ beforeEach(async () => {
 });
 
 describe("allocation approval, lock and accounting", () => {
+  it("honors the temporary email pause while preserving owner approval, membership and the full principal lock", async () => {
+    await pg.query('UPDATE "User" SET "emailVerifiedAt"=NULL WHERE id=$1', [member]);
+    expect(await request()).toBe('unverified');
+    await pg.exec('UPDATE "AuthPolicy" SET "emailVerificationRequired"=false');
+    try {
+      expect(await scalar(`SELECT wallet_buy_plan($1,'trading-test-plan',2900,$2) AS result`, [member,crypto.randomUUID()])).toBe('purchased');
+      await pg.query('UPDATE "User" SET "lastLoginAt"=now() WHERE id=$1', [member]);
+      expect(await scalar(`SELECT admin_manage_user($1,$2,'role',$3::jsonb,$4) AS result`, [admin,member,JSON.stringify({role:'ADMIN',reason:'Verify ownership before granting staff access',passwordHash:'x'}),crypto.randomUUID()])).toBe('not_ready');
+      expect(await request()).toBe('requested');
+      expect(await review(true, allocation, member)).toBe('forbidden');
+      expect(await review()).toBe('approved');
+      expect(await locked()).toBe(50000);
+      expect((await pg.query<{emailVerifiedAt:Date|null}>('SELECT "emailVerifiedAt" FROM "User" WHERE id=$1', [member])).rows[0].emailVerifiedAt).toBeNull();
+    } finally { await pg.exec('UPDATE "AuthPolicy" SET "emailVerificationRequired"=true'); }
+  });
   it("requires current paid membership when requesting and again when approving", async () => {
     await pg.query(`UPDATE "Subscription" SET status='CANCELLED' WHERE "userId"=$1`, [member]);
     expect(await request()).toBe("membership_required");

@@ -16,7 +16,9 @@ try {
   if (!settings.success) throw new Error('Worker configuration inventory was unsuccessful');
   const bindings = settings.result.bindings ?? [];
   const secretNames = bindings.filter(b => b.type === 'secret_text').map(b => b.name).sort();
-  const flags = Object.fromEntries(bindings.filter(b => b.type === 'plain_text' && ['APP_ENV','PAYMENT_PROVIDER','WALLET_ENABLED','DATABASE_DRIVER','DEPOSIT_MODE','TRADING_REQUESTS_ENABLED','CLUB_GATE_ENABLED'].includes(b.name)).map(b => [b.name,b.text]));
+  const flags = Object.fromEntries(bindings.filter(b => b.type === 'plain_text' && ['APP_ENV','PAYMENT_PROVIDER','WALLET_ENABLED','DATABASE_DRIVER','DEPOSIT_MODE','TRADING_REQUESTS_ENABLED','CLUB_GATE_ENABLED','EMAIL_VERIFICATION_REQUIRED','EMAIL_PROVIDER'].includes(b.name)).map(b => [b.name,b.text]));
+  const emailPolicy = await db.$queryRaw`SELECT "emailVerificationRequired" AS required FROM "AuthPolicy" WHERE id='members'`;
+  if (emailPolicy[0]?.required !== (flags.EMAIL_VERIFICATION_REQUIRED !== 'false')) throw new Error('Member email policy configuration mismatch');
   const counts = await db.$queryRaw`SELECT
     (SELECT count(*)::int FROM "User") AS users,
     (SELECT count(*)::int FROM "User" WHERE role IN ('ADMIN','SUPER_ADMIN') AND status='ACTIVE') AS admins,

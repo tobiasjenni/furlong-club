@@ -1,3 +1,4 @@
+import { memberEmailReady } from "@/lib/email-verification";
 import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { checkoutOptions } from "@/lib/config";
@@ -36,10 +37,10 @@ export default async function CheckoutPage({ params }: { params: Promise<{ plan:
         {readyCount === 0 && <p className="mt-3 rounded-xl border border-gold-400/30 p-3 text-sm text-gold-300">This plan&apos;s video library is still in preparation. New access starts when payment is confirmed; it does not make unpublished videos available.</p>}
       </div>
       <div className="card space-y-5">
-        {!user.emailVerifiedAt && (
+        {!memberEmailReady(user.emailVerifiedAt) && (
           <p className="rounded-xl bg-gold-400/10 p-3 text-sm text-gold-300">Please confirm your email before paying. {emailDelivers() ? "Use the link in your inbox, or request a new one from your dashboard." : "Email delivery is currently unavailable. Contact support@furlong.club from your registered address for help confirming your account."}</p>
         )}
-        {walletEnabled && <WalletPurchase planId={plan.id} priceCents={plan.priceCents} balanceCents={user.balanceCents} requestKey={crypto.randomUUID()} disabled={!user.emailVerifiedAt || user.walletFrozen} />}
+        {walletEnabled && <WalletPurchase planId={plan.id} priceCents={plan.priceCents} balanceCents={user.balanceCents} requestKey={crypto.randomUUID()} disabled={!memberEmailReady(user.emailVerifiedAt) || user.walletFrozen} />}
         {!manualDepositsEnabled && <><h2 className="text-xl">Pay directly with crypto</h2>
           <CheckoutForm plan={plan.slug} options={checkoutOptions.map((o) => ({ label: o.label, enabled: paymentsReady(o) }))} /></>}
         {manualDepositsEnabled && <p className="muted text-sm">Add USDT or USDC to your wallet. Once an admin approves your deposit, return here to activate this plan using your club credit.</p>}

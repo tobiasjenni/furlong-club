@@ -8,22 +8,25 @@ import { ActivityTable, AllocationCard, EmptyState, PortalHeading } from "@/comp
 import { HostPortrait } from "@/components/HostPortrait";
 import { VerifyBanner } from "@/components/VerifyBanner";
 import { emailDelivers } from "@/lib/email";
+import { emailVerificationRequired } from "@/lib/email-verification";
 import { dateTimeUtc } from "@/lib/format";
 import { portalActivityQuery, type PortalActivityPage } from "@/lib/portal-activity";
 import { PortalIcon } from "@/components/v2/PortalIcon";
 
 export const metadata = { title: "Overview" };
-export default async function PortalOverview({ searchParams }: { searchParams: Promise<{ walletPurchase?: string }> }) {
-  const purchase = (await searchParams).walletPurchase === "1";
+export default async function PortalOverview({ searchParams }: { searchParams: Promise<{ walletPurchase?: string; welcome?: string; verification?: string }> }) {
+  const params = await searchParams;
+  const purchase = params.walletPurchase === "1";
+  const welcome = params.welcome === "1";
   const { user, snapshot, subscription } = await portalData();
   const [allocations, activity] = await Promise.all([
     db.tradingAllocation.findMany({ where: { userId: user.id, status: { in: ["PENDING", "ACTIVE", "PAYOUT_READY"] } }, orderBy: { requestedAt: "desc" }, take: 3 }),
     db.$queryRaw<{ activity: PortalActivityPage }[]>(portalActivityQuery(user.id, "all", "", 1, 5)),
   ]);
   return <><AutoRefresh seconds={60} />
-    <PortalHeading title={`Welcome back${user.name ? `, ${user.name.split(" ")[0]}` : ""}.`} description="Your balances, Trading with Harry allocations and actual recorded results, together in one place." eyebrow="MEMBER OVERVIEW"><Link href="/wallet#add-funds" className="btn-gold"><PortalIcon name="plus" />Add funds</Link></PortalHeading>
+    <PortalHeading title={`Welcome${welcome ? " to the club" : " back"}${user.name ? `, ${user.name.split(" ")[0]}` : ""}.`} description={welcome ? `Your free account is ready and you are signed in. ${emailVerificationRequired() ? "Start by confirming your email, then explore" : "Explore"} your membership and wallet at your own pace.` : "Your balances, Trading with Harry allocations and actual recorded results, together in one place."} eyebrow="MEMBER OVERVIEW"><Link href="/wallet#add-funds" className="btn-gold"><PortalIcon name="plus" />Add funds</Link></PortalHeading>
     {purchase && <div role="status" className="portal-banner">Your membership purchase is complete. Your plan and available credit have been updated.</div>}
-    {!user.emailVerifiedAt && <div className="mb-5"><VerifyBanner email={user.email} deliveryAvailable={emailDelivers()} /></div>}
+    {emailVerificationRequired() && !user.emailVerifiedAt && <div className="mb-5"><VerifyBanner email={user.email} deliveryAvailable={emailDelivers()} deliveryFailed={params.verification === "unavailable"} /></div>}
     {user.walletFrozen && <p role="alert" className="portal-notice-error mb-5">Your wallet is under review. Financial actions are paused. <Link href="/support" className="underline">Contact support</Link>.</p>}
     {(snapshot.pendingDepositCount > 0 || snapshot.pendingCount > 0) && <div className="portal-banner"><span><strong className="text-gold-300">Manual review in progress.</strong> {snapshot.pendingDepositCount} deposit{snapshot.pendingDepositCount === 1 ? "" : "s"} and {snapshot.pendingCount} allocation request{snapshot.pendingCount === 1 ? "" : "s"} awaiting review. Pending deposits are not included in your available balance.</span><Link href="/wallet">View deposit status →</Link></div>}
     <div className="portal-overview-grid"><div><PortfolioOverview snapshot={snapshot} /></div><div className="portal-stack">
