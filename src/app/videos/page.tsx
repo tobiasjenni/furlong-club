@@ -16,7 +16,7 @@ export default async function VideosPage() {
   const categories = [...new Set(videos.map((v) => v.category))];
 
   return (
-    <div className="container-page space-y-10 py-10">
+    <div className="space-y-10">
       <div>
         <h1 className="text-3xl md:text-4xl">Video library</h1>
         <p className="muted mt-1">{videos.filter(v => v.minTier <= tier && hasPlayableSource(v)).length} videos ready to watch on your plan · {videos.filter(v => !hasPlayableSource(v)).length} titles in preparation.</p>

@@ -17,11 +17,11 @@ export default async function VideoPage({ params }: { params: Promise<{ slug: st
   const user = await requireUser();
   const video = await db.video.findUnique({ where: { slug: (await params).slug } });
   if (!video || (!video.published && !isAdmin(user.role))) notFound();
-  if (video.minTier > (await userTier(user.id)) && !isAdmin(user.role)) redirect("/plans");
+  if (video.minTier > (await userTier(user.id)) && !isAdmin(user.role)) redirect("/membership");
 
   const source = playback(video);
   return (
-    <div className="container-page max-w-4xl space-y-6 py-10">
+    <div className="mx-auto max-w-4xl space-y-6">
       <Link href="/videos" className="text-sm text-gold-300 hover:underline">← All videos</Link>
       <div className="aspect-video overflow-hidden rounded-2xl border border-white/10 bg-black">
         {!source ? (
