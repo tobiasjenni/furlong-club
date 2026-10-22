@@ -3,6 +3,7 @@
 import crypto from "node:crypto";
 import bcrypt from "bcryptjs";
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { audit } from "@/lib/audit";
 import { endSession, requireUser, revokeSessions, startSession } from "@/lib/auth";
@@ -144,6 +145,7 @@ export async function updateProfile(_: FormState, form: FormData): Promise<FormS
     where: { id: user.id },
     data: { name: parsed.data.name, country: parsed.data.country || null, marketingOptIn: parsed.data.marketing === "on" },
   });
+  revalidatePath("/(member)", "layout");
   return { ok: "Profile saved." };
 }
 

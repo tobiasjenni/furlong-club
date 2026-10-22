@@ -1,0 +1,15 @@
+import Link from "next/link";
+import { requireUser } from "@/lib/auth";
+import { dateTimeUtc } from "@/lib/format";
+import { ProfileForm, PasswordForm, EmailForm } from "@/app/account/AccountForms";
+import { DangerZone } from "@/app/account/DangerZone";
+import { VerifyBanner } from "@/components/VerifyBanner";
+import { emailDelivers } from "@/lib/email";
+import { PortalHeading } from "@/components/v2/PortalCommon";
+
+export const metadata = { title: "Account & security" };
+export default async function PortalAccount() {
+  const user = await requireUser();
+  return <><PortalHeading title="Account & security" description="Manage your profile, email ownership, password and active sessions." />{!user.emailVerifiedAt && <div className="mb-5"><VerifyBanner email={user.email} deliveryAvailable={emailDelivers()} /></div>}<section className="portal-panel"><div className="portal-panel-heading"><h2>Account identity</h2><span className="portal-pill green">Active account</span></div><div className="portal-key-value"><span>Registered email</span><span>{user.email}</span></div><div className="portal-key-value"><span>Email confirmation</span><span className={user.emailVerifiedAt ? "portal-positive" : "text-gold-300"}>{user.emailVerifiedAt ? "Confirmed" : "Awaiting confirmation"}</span></div><div className="portal-key-value"><span>Member since</span><span>{dateTimeUtc(user.createdAt)} UTC</span></div><div className="portal-key-value"><span>Last sign-in</span><span>{dateTimeUtc(user.lastLoginAt)} UTC</span></div><div className="portal-key-value"><span>Account role</span><span>{user.role === "SUPER_ADMIN" ? "Super Admin · protected owner" : user.role === "ADMIN" ? "Admin" : "Member"}</span></div></section>
+    <div className="portal-three-col portal-section"><section className="portal-panel"><h2 className="mb-5">Your profile</h2><ProfileForm name={user.name ?? ""} country={user.country ?? ""} marketing={user.marketingOptIn} /></section><section className="portal-panel"><h2 className="mb-5">Email ownership</h2>{user.role === "USER" ? <EmailForm email={user.email} /> : <p className="portal-small">Admin email changes require a verified ownership review. Contact the owner before changing this address.</p>}<p className="portal-section-note">{emailDelivers() ? "Email changes require confirmation using the link sent to the new address." : "Automatic email delivery is not configured. Contact support from your registered address for verification and recovery assistance."}</p></section><section className="portal-panel"><h2 className="mb-5">Change password</h2><PasswordForm /></section></div><section className="portal-section"><DangerZone protectedAccount={user.role !== "USER"} /></section><p className="portal-section-note">Financial records and audit history are retained when an account is closed. <Link href="/legal/privacy" className="text-gold-300 underline">Read the privacy policy</Link>.</p></>;
+}

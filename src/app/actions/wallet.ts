@@ -31,11 +31,11 @@ export async function startTopup(_: FormState, form: FormData): Promise<FormStat
     } else id = (await createTopup(user.id, amount.toNumber(), option)).id;
   }
   catch { return { error: manualDepositsEnabled ? "Unable to create this deposit. Please try again shortly." : "Unable to create this payment. The provider may require a higher minimum; please try another amount or network." }; }
-  redirect(form.get("experience") === "v2" ? `/v2/deposits/${id}` : `/checkout/pay/${id}`);
+  redirect(["member", "v2"].includes(String(form.get("experience"))) ? `/deposits/${id}` : `/checkout/pay/${id}`);
 }
 
 function refreshDepositPages(id: string, userId: string) {
-  revalidatePath("/v2", "layout");
+  revalidatePath("/(member)", "layout");
   for (const path of ["/wallet", "/dashboard", "/account", "/admin", "/admin/deposits", "/admin/wallet", "/admin/payments", `/checkout/pay/${id}`, `/admin/payments/${id}`, `/admin/users/${userId}`]) revalidatePath(path);
 }
 
@@ -57,7 +57,7 @@ export async function cancelManualDeposit(_: FormState, form: FormData): Promise
   const rows = await db.$queryRaw<{ result: string }[]>`SELECT wallet_cancel_manual_deposit(${id},${user.id}) AS result`;
   if (rows[0].result !== "cancelled") return { error: "This deposit can no longer be cancelled. Reload the page." };
   refreshDepositPages(id, user.id);
-  redirect(form.get("experience") === "v2" ? "/v2/wallet" : "/wallet");
+  redirect("/wallet");
 }
 
 export async function reviewManualDeposit(_: FormState, form: FormData): Promise<FormState> {
@@ -102,8 +102,8 @@ export async function buyWithWallet(_: FormState, form: FormData): Promise<FormS
   };
   if (result !== "purchased" && result !== "duplicate") return { error: errors[result] ?? "Please try again." };
   revalidatePath("/wallet"); revalidatePath("/dashboard"); revalidatePath("/account");
-  revalidatePath("/v2", "layout");
-  redirect(form.get("experience") === "v2" ? "/v2?walletPurchase=1" : "/dashboard?walletPurchase=1");
+  revalidatePath("/(member)", "layout");
+  redirect("/dashboard?walletPurchase=1");
 }
 
 export async function refreshMyPayment(form: FormData) {

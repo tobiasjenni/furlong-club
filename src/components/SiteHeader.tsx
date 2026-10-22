@@ -10,12 +10,12 @@ export async function SiteHeader() {
   const user = await currentUser();
   const links = user
     ? [
-        { href: "/v2", label: "Dashboard" },
+        { href: "/dashboard", label: "Dashboard" },
         { href: "/trading", label: "Trade with Harry" },
         { href: "/videos", label: "Videos" },
         { href: "/plans", label: "Plans" },
-        { href: "/v2/wallet", label: "Wallet" },
-        { href: "/v2/account", label: "Account" },
+        { href: "/wallet", label: "Wallet" },
+        { href: "/account", label: "Account" },
         ...(isAdmin(user.role) ? [{ href: "/admin", label: "Admin" }] : []),
       ]
     : [
@@ -38,7 +38,7 @@ export async function SiteHeader() {
         <div className="hidden items-center gap-2 xl:flex">
           {user ? (
             <>
-              <Link href="/v2/account" aria-label="Account settings" className="flex h-11 w-11 items-center justify-center rounded-full bg-gold-400 text-sm font-bold text-turf-950" title={user.email}>
+              <Link href="/account" aria-label="Account settings" className="flex h-11 w-11 items-center justify-center rounded-full bg-gold-400 text-sm font-bold text-turf-950" title={user.email}>
                 {initials}
               </Link>
               <form action={logout}>

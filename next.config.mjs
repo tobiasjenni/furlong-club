@@ -26,6 +26,10 @@ const nextConfig = {
       { source: "/:path*", has: [{ type: "host", value: "www.furlong.club" }], destination: "https://furlong.club/:path*", permanent: true },
       { source: "/:path*", has: [{ type: "host", value: "furlong.club" }, { type: "header", key: "x-forwarded-proto", value: "http" }], destination: "https://furlong.club/:path*", permanent: true },
       { source: "/about-rob", destination: "/meet-harry", permanent: true },
+      { source: "/v2", destination: "/dashboard", permanent: true },
+      { source: "/v2/plans", destination: "/membership", permanent: true },
+      { source: "/v2/trading/:path*", destination: "/allocations/:path*", permanent: true },
+      { source: "/v2/:path*", destination: "/:path*", permanent: true },
     ];
   },
   // Lets the Cloudflare build resolve Prisma to its WebAssembly (workerd) build.
@@ -33,7 +37,7 @@ const nextConfig = {
   async headers() {
     return [
       {
-        source: "/:section(admin|admin-unlock|account|dashboard|wallet|checkout|videos|api|login|signup|forgot-password|reset-password|verify-email|v2)/:path*",
+        source: "/:section(admin|admin-unlock|account|dashboard|wallet|allocations|performance|activity|planner|membership|deposits|support|checkout|videos|api|login|signup|forgot-password|reset-password|verify-email|v2)/:path*",
         headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow, noarchive" }, { key: "Cache-Control", value: "private, no-store" }, { key: "Referrer-Policy", value: "same-origin" }],
       },
       {
