@@ -7,10 +7,13 @@ import { LoginForm } from "./LoginForm";
 
 export const metadata = { ...privateMetadata, title: "Sign in" };
 
-export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string; reset?: string }> }) {
-  const { next: requested, reset } = await searchParams;
+export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string; reset?: string; reauth?: string }> }) {
+  const { next: requested, reset, reauth } = await searchParams;
   const next = requested ? safeNext(requested) : undefined;
-  if (await currentUser()) redirect(next ?? "/dashboard");
+  const user = await currentUser();
+  // A forced sign-in after an unverified entrance lookup must render the form,
+  // otherwise an existing session could bounce between login and its destination.
+  if (user && reauth !== "1") redirect(next ?? "/dashboard");
   return (
     <AuthShell title="Welcome back" subtitle="Your membership, wallet and trading records, in one place.">
       <LoginForm next={next} notice={reset ? "Password updated. Please sign in with your new password." : undefined} />

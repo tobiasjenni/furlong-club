@@ -32,7 +32,18 @@ export async function middleware(req: NextRequest) {
       }
       if (admitted) renewed = await signClubAdmission();
     } catch {
-      return privateResponse(NextResponse.json({ error: "The club entrance is temporarily unavailable. Please try again later." }, { status: 503 }));
+      // Unverified remembered state never grants entry. Keep the public entrance
+      // and personal sign-in usable during a transient admission-store outage.
+      if (path.startsWith("/api/") || !["GET", "HEAD"].includes(req.method)) {
+        return privateResponse(NextResponse.json({ error: "Please sign in to continue." }, { status: 403 }));
+      }
+      if (session) {
+        const url = new URL("/login", req.url);
+        url.searchParams.set("next", clubNext(path + req.nextUrl.search));
+        url.searchParams.set("reauth", "1");
+        return privateResponse(NextResponse.redirect(url));
+      }
+      admitted = false;
     }
   }
   const finish = (response: NextResponse) => {
