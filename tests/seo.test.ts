@@ -1,11 +1,17 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 import { pageMetadata, privateMetadata, publicPages, serializeJsonLd, siteUrl, website } from "../src/lib/seo";
 import sitemap from "../src/app/sitemap";
 import robots from "../src/app/robots";
 
 afterEach(() => vi.unstubAllEnvs());
+beforeEach(() => vi.stubEnv("CLUB_GATE_ENABLED", "false"));
 
 describe("public search metadata", () => {
+  it("removes the public sitemap and indexing while the private entrance is enabled", () => {
+    vi.stubEnv("APP_ENV", "production"); vi.stubEnv("CLUB_GATE_ENABLED", "true");
+    expect(pageMetadata("/").robots).toMatchObject({ index: false, follow: false });
+    expect(sitemap()).toEqual([]); expect(robots().rules).toMatchObject({ disallow: "/" });
+  });
   it("uses distinct titles, descriptions and the same canonical host for every public page", () => {
     vi.stubEnv("APP_ENV", "production");
     const entries = Object.entries(publicPages);

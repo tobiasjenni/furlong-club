@@ -4,11 +4,12 @@ import { db } from "@/lib/db";
 import { date } from "@/lib/format";
 
 export default async function AdminVideos() {
-  await requireAdmin();
+  const admin = await requireAdmin();
+  const canEdit = admin.role === "SUPER_ADMIN";
   const videos = await db.video.findMany({ orderBy: { publishedAt: "desc" } });
   return (
     <div className="space-y-4">
-      <Link href="/admin/videos/new" className="btn-gold">Add video</Link>
+      {canEdit && <Link href="/admin/videos/new" className="btn-gold">Add video</Link>}
       <div className="card overflow-x-auto p-0 sm:p-0">
         <table className="table">
           <thead><tr><th>Title</th><th>Category</th><th>Min tier</th><th>Published</th><th>Date</th></tr></thead>

@@ -4,9 +4,11 @@ import { deleteVideo, saveVideo } from "@/app/actions/admin";
 import { db } from "@/lib/db";
 
 export default async function EditVideo({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ error?: string }> }) {
-  await requireAdmin();
+  const admin = await requireAdmin();
+  const canEdit = admin.role === "SUPER_ADMIN";
   const { id } = await params;
   const { error } = await searchParams;
+  if (id === "new" && !canEdit) notFound();
   const video = id === "new" ? null : await db.video.findUnique({ where: { id } });
   if (id !== "new" && !video) notFound();
   const plans = await db.plan.findMany({ orderBy: { tier: "asc" } });
@@ -14,7 +16,8 @@ export default async function EditVideo({ params, searchParams }: { params: Prom
   return (
     <div className="max-w-2xl space-y-4">
       <form action={saveVideo} className="card space-y-4">
-        <h2 className="text-xl">{video ? "Edit video" : "New video"}</h2>
+        <h2 className="text-xl">{video ? canEdit ? "Edit video" : "Video details" : "New video"}</h2>
+        <fieldset disabled={!canEdit} className="space-y-4">
         {error && <p className="rounded-xl bg-red-500/10 px-3 py-2 text-sm text-red-300">{error}</p>}
         <input type="hidden" name="id" value={video?.id ?? ""} />
         <div><label className="label">Title</label><input name="title" defaultValue={video?.title} className="input" required /></div>
@@ -40,9 +43,10 @@ export default async function EditVideo({ params, searchParams }: { params: Prom
           </div>
         </div>
         <label className="flex gap-2 text-sm"><input type="checkbox" name="published" defaultChecked={video?.published ?? true} className="accent-gold-400" />Published</label>
-        <button className="btn-gold">Save video</button>
+        {canEdit && <button className="btn-gold">Save video</button>}
+        </fieldset>
       </form>
-      {video && (
+      {canEdit && video && (
         <form action={deleteVideo}><input type="hidden" name="id" value={video.id} /><button className="btn-danger">Delete video</button></form>
       )}
     </div>

@@ -7,6 +7,7 @@ import "./globals.css";
 import { walletTestMode } from "@/lib/environment";
 import { pageMetadata, siteOrigin } from "@/lib/seo";
 import { SiteChrome } from "@/components/SiteChrome";
+import { headers } from "next/headers";
 
 const display = Fraunces({ subsets: ["latin"], variable: "--font-display", display: "swap" });
 const sans = Inter({ subsets: ["latin"], variable: "--font-sans", display: "swap" });
@@ -32,7 +33,8 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = { themeColor: "#06140f", width: "device-width", initialScale: 1 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const entrance = (await headers()).get("x-furlong-entrance") === "1";
   return (
     <html lang="en" className={`${display.variable} ${sans.variable}`}>
       <body className="flex min-h-screen flex-col">
@@ -42,7 +44,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </div>
         )}
         <a href="#main-content" className="fixed left-4 top-3 z-50 -translate-y-24 rounded-xl bg-gold-400 px-5 py-3 font-semibold text-turf-950 transition-transform focus:translate-y-0">Skip to content</a>
-        <SiteChrome header={<SiteHeader />} footer={<SiteFooter />}>{children}</SiteChrome>
+        <SiteChrome header={entrance ? null : <SiteHeader />} footer={entrance ? null : <SiteFooter />}>{children}</SiteChrome>
       </body>
     </html>
   );

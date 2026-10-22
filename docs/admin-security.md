@@ -1,5 +1,7 @@
 # Admin passkeys and recovery
 
+Staff authority: the existing Super Admin owns all back-office changes and deposit approvals. Admin accounts are read-only except for their own authentication security. See [Private club access](private-club-access.md) for the invitation gate and role boundaries.
+
 Admin access requires the account password followed by a passkey or a single-use recovery code. Ordinary member sign-in is unchanged. Password confirmation expires after five minutes; verified admin access lasts 15 minutes and is bound to this browser's exact login session and the current account revocation version.
 
 ## Owner setup

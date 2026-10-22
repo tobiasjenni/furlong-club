@@ -1,4 +1,5 @@
 // Read-only checks of the HTML and headers a crawler receives after deployment.
+// Public-mode checks. The private deployment uses check-club-gate.mjs instead.
 const origin = process.env.APP_URL || "https://furlong.club";
 const staging = process.argv.includes("--staging");
 const canonicalOrigin = "https://furlong.club";

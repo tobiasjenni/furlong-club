@@ -6,7 +6,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { audit } from "@/lib/audit";
-import { requireAdmin, requireSuperAdmin } from "@/lib/auth";
+import { requireSuperAdmin } from "@/lib/auth";
 import { appUrl } from "@/lib/config";
 import { db } from "@/lib/db";
 import { type Email, emailDelivers, resetPasswordMessage, sendEmail } from "@/lib/email";
@@ -26,12 +26,12 @@ async function saveOrExplain(actor: string, uid: string, op: string, data: objec
 }
 
 export async function addNote(form: FormData) {
-  const admin = await requireAdmin();
+  const admin = await requireSuperAdmin();
   await saveOrExplain(admin.id, String(form.get('userId')), 'note', { body: String(form.get('body') ?? '').trim().slice(0,4000) });
 }
 
 export async function updateUser(form: FormData) {
-  const admin = await requireAdmin();
+  const admin = await requireSuperAdmin();
   const tags = String(form.get('tags') ?? '').split(',').map(t => t.trim().slice(0,60)).filter(Boolean).slice(0,20);
   // Role fields are deliberately not accepted by the general account action.
   await saveOrExplain(admin.id, String(form.get('userId')), 'account', { status: String(form.get('status')), tags });
@@ -49,14 +49,14 @@ export async function changeUserRole(_: AdminFormState, form: FormData): Promise
 }
 
 export async function grantPlan(form: FormData) {
-  const admin = await requireAdmin();
+  const admin = await requireSuperAdmin();
   const days = Number(form.get('days'));
   if (!Number.isInteger(days) || days<1 || days>366) return;
   await saveOrExplain(admin.id,String(form.get('userId')),'grant',{planId:String(form.get('planId')),days});
 }
 
 export async function cancelSubscription(form: FormData) {
-  const admin = await requireAdmin();
+  const admin = await requireSuperAdmin();
   const sub = await db.subscription.findUniqueOrThrow({where:{id:String(form.get('id'))}});
   await saveOrExplain(admin.id,sub.userId,'cancel',{subscriptionId:sub.id});
 }
@@ -77,7 +77,7 @@ const videoSchema = z.object({
 }).refine((v) => v.bunnyVideoId || v.embedUrl, "Add a Bunny video ID or a video URL");
 
 export async function saveVideo(form: FormData) {
-  const admin = await requireAdmin();
+  const admin = await requireSuperAdmin();
   const id = String(form.get("id") ?? "");
   const parsed = videoSchema.safeParse(Object.fromEntries(form));
   if (!parsed.success) redirect(`/admin/videos/${id || "new"}?error=${encodeURIComponent(parsed.error.issues[0].message)}`);
@@ -90,7 +90,7 @@ export async function saveVideo(form: FormData) {
 }
 
 export async function deleteVideo(form: FormData) {
-  const admin = await requireAdmin();
+  const admin = await requireSuperAdmin();
   const id = String(form.get("id"));
   await db.video.delete({ where: { id } });
   await audit(admin.id, "admin.video_deleted", id);
@@ -99,7 +99,7 @@ export async function deleteVideo(form: FormData) {
 }
 
 export async function savePlan(form: FormData) {
-  const admin = await requireAdmin();
+  const admin = await requireSuperAdmin();
   const id = String(form.get("id"));
   const schema = z.object({
     name: z.string().trim().min(1).max(60),
@@ -153,6 +153,6 @@ export async function sendResetLink(_: AdminFormState, form: FormData): Promise<
 }
 
 export async function signOutUser(form: FormData) {
-  const admin = await requireAdmin();
+  const admin = await requireSuperAdmin();
   await saveOrExplain(admin.id,String(form.get('userId')),'signout',{});
 }

@@ -13,6 +13,9 @@ vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 vi.mock("@/lib/db", () => ({ db: { user: { findUnique: async () => account }, $queryRaw: async () => { notificationQueries++; return [{ deposits: 2, pending: 3, due: 4 }]; } } }));
 import { requireAdmin, requireSuperAdmin } from "@/lib/auth";
 import { reviewManualDeposit } from "@/app/actions/wallet";
+import { refreshAdminPayment } from "@/app/actions/wallet";
+import { addNote, updateUser, grantPlan, cancelSubscription, saveVideo, deleteVideo, savePlan, signOutUser, changeUserRole, confirmEmail, sendResetLink } from "@/app/actions/admin";
+import { manageTrading } from "@/app/actions/trading";
 import { GET as notifications } from "@/app/api/admin/notifications/route";
 
 beforeEach(async () => {
@@ -42,4 +45,13 @@ it("allows a current confirmed admin and rejects a revoked session or changed ro
   await expect(requireAdmin()).rejects.toThrow("REDIRECT:/login");
   account.sessionVersion = 1; account.role = "USER";
   await expect(requireAdmin()).rejects.toThrow("REDIRECT:/dashboard");
+});
+it("lets a confirmed Admin read but blocks every back-office write before accessing data", async () => {
+  account.role = "ADMIN";
+  store.set(SESSION_COOKIE, await signSession({ uid: account.id, role: "ADMIN", sv: 1 }));
+  store.set(ADMIN_COOKIE, await signAdminConfirmation(account, store.get(SESSION_COOKIE)!, "passkey"));
+  expect(await requireAdmin()).toBe(account); expect((await notifications()).status).toBe(200);
+  for (const action of [addNote, updateUser, grantPlan, cancelSubscription, saveVideo, deleteVideo, savePlan, signOutUser, confirmEmail, refreshAdminPayment]) await expect(action(new FormData())).rejects.toThrow("REDIRECT:/admin");
+  for (const action of [reviewManualDeposit, manageTrading, changeUserRole, sendResetLink]) await expect(action(null, new FormData())).rejects.toThrow("REDIRECT:/admin");
+  expect(notificationQueries).toBe(1);
 });

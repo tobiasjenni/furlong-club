@@ -2,7 +2,7 @@ import fs from "node:fs";
 import crypto from "node:crypto";
 
 // Run only in the isolated test job. Production's database and receiving wallets are never read.
-for (const key of ["WALLET_TEST_DATABASE_URL", "CLOUDFLARE_API_TOKEN", "CLOUDFLARE_ACCOUNT_ID"]) {
+for (const key of ["WALLET_TEST_DATABASE_URL", "CLOUDFLARE_API_TOKEN", "CLOUDFLARE_ACCOUNT_ID", "WALLET_TEST_CLUB_PASSWORD_HASH"]) {
   if (!process.env[key]) throw new Error(`Missing ${key} for the test deployment`);
 }
 const res = await fetch(`https://api.cloudflare.com/client/v4/accounts/${process.env.CLOUDFLARE_ACCOUNT_ID}/workers/subdomain`, {
@@ -18,6 +18,7 @@ const secretsPath = `${process.env.RUNNER_TEMP}/wallet-test-secrets.json`;
 fs.writeFileSync(secretsPath, JSON.stringify({
   DATABASE_URL: databaseUrl, AUTH_SECRET: crypto.randomBytes(48).toString("base64url"),
   CRON_SECRET: crypto.randomBytes(48).toString("base64url"),
+  CLUB_PASSWORD_HASH: process.env.WALLET_TEST_CLUB_PASSWORD_HASH,
 }), { mode: 0o600 });
 const config = JSON.parse(fs.readFileSync("wrangler.test.jsonc", "utf8"));
 config.vars.APP_URL = appUrl;

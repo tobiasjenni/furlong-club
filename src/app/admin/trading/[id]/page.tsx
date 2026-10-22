@@ -9,7 +9,8 @@ import { transactionUrl } from "@/lib/manual-deposits";
 import { AutoRefresh } from "@/app/checkout/pay/[id]/AutoRefresh";
 
 export default async function AdminTradingRecord({ params }: { params: Promise<{ id: string }> }) {
-  await requireAdmin();
+  const admin = await requireAdmin();
+  const canEdit = admin.role === "SUPER_ADMIN";
   const [a, program] = await Promise.all([
     db.tradingAllocation.findUnique({ where: { id: (await params).id }, include: { user: { select: { email: true, name: true, balanceCents: true, walletFrozen: true, status: true } }, events: { orderBy: { createdAt: "asc" } }, journal: { orderBy: { createdAt: "asc" } } } }),
     db.tradingProgram.findUnique({ where: { id: "harry" } }),
@@ -34,7 +35,7 @@ export default async function AdminTradingRecord({ params }: { params: Promise<{
       </dl>
       {a.reviewNote && <p className="text-sm">Approval / decline note: {a.reviewNote}</p>}{a.resultNote && <p className="text-sm">Result note: {a.resultNote}</p>}{a.payoutNote && <p className="text-sm">Payout note: {a.payoutNote}</p>}
       {explorer && <a href={explorer} target="_blank" rel="noreferrer" className="block break-all text-xs text-gold-300 underline">Inspect outgoing transaction: {a.payoutTxHash}</a>}
-      <ManageTradingForm key={`${a.id}:${a.status}`} id={a.id} status={a.status} mature={Boolean(a.unlocksAt && a.unlocksAt <= now)} enrollmentOpen={tradingRequestsEnabled && Boolean(program?.enrollmentEnabled)} principal={(a.principalCents / 100).toFixed(2)} payout={a.payoutCents === null ? null : (a.payoutCents / 100).toFixed(2)} token={a.currency} network={a.network} address={a.payoutAddress} />
+      {canEdit && <ManageTradingForm key={`${a.id}:${a.status}`} id={a.id} status={a.status} mature={Boolean(a.unlocksAt && a.unlocksAt <= now)} enrollmentOpen={tradingRequestsEnabled && Boolean(program?.enrollmentEnabled)} principal={(a.principalCents / 100).toFixed(2)} payout={a.payoutCents === null ? null : (a.payoutCents / 100).toFixed(2)} token={a.currency} network={a.network} address={a.payoutAddress} />}
     </section>
     <section className="card space-y-3"><h3 className="text-xl">Immutable event history</h3>{a.events.map(e => <div className="border-t border-white/10 pt-3" key={e.id}><p className="text-sm">{dateTime(e.createdAt)} UTC · {e.action} · {actor.get(e.actorId) ?? e.actorId}</p><pre className="muted mt-2 whitespace-pre-wrap break-all text-xs">{JSON.stringify(e.payload, null, 2)}</pre></div>)}</section>
     <section className="card overflow-x-auto"><h3 className="mb-3 text-xl">Balanced postings · USD cents</h3><table className="table"><thead><tr><th>Operation</th><th>Available</th><th>Locked</th><th>Clearing</th><th>Member result offset</th><th>Sales</th></tr></thead><tbody>{a.journal.map(j => <tr key={j.id}><td>{j.kind}</td><td>{j.userDeltaCents}</td><td>{j.lockedDeltaCents}</td><td>{j.clearingDeltaCents}</td><td>{j.tradingResultDeltaCents}</td><td>{j.revenueDeltaCents}</td></tr>)}</tbody></table><p className="muted mt-3 text-xs">Every row sums to zero. Positive member profit has a negative result offset. Trading results never enter membership sales.</p></section>

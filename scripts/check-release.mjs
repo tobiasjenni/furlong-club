@@ -1,3 +1,4 @@
+// Public-mode checks. The private deployment uses check-club-gate.mjs instead.
 const origin = process.env.APP_URL || 'https://furlong.club';
 let failed = false;
 for (const path of ['/', '/trading', '/meet-harry', '/plans', '/login', '/signup', '/legal/terms', '/legal/privacy', '/legal/responsible-gambling', '/forgot-password', '/reset-password', '/verify-email', '/icon.svg', '/robots.txt', '/sitemap.xml']) {

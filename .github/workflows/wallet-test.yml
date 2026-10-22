@@ -14,6 +14,8 @@ jobs:
     timeout-minutes: 15
     env:
       APP_ENV: staging
+      CLUB_GATE_ENABLED: 'true'
+      WALLET_TEST_CLUB_PASSWORD_HASH: ${{ secrets.WALLET_TEST_CLUB_PASSWORD_HASH }}
       ENABLE_TEST_PAYMENTS: 'true'
       PAYMENT_PROVIDER: mock
       WALLET_ENABLED: 'true'
@@ -48,7 +50,7 @@ jobs:
       - name: Verify test site is responding
         run: |
           curl --fail --retry-all-errors --retry 6 --retry-delay 5 --max-time 20 "$APP_URL/login" --output /dev/null
-          node scripts/check-seo.mjs --staging
+          node scripts/check-club-gate.mjs
       - name: Remove temporary secrets file
         if: always()
         run: rm -f "$RUNNER_TEMP/wallet-test-secrets.json"

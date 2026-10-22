@@ -53,11 +53,11 @@ describe("owner authority and audit integrity",()=>{
     expect(await manage(owner,member,"role",roleData())).toBe("not_ready");
   });
   it("does not allow ordinary admins to modify admins, the owner or themselves",async()=>{
-    for(const uid of [admin,owner,await create("ADMIN")]) for(const op of ["account","signout","email","reset","grant","cancel","note"]) expect(await manage(admin,uid,op,{status:"SUSPENDED",tags:[]})).toBe("forbidden");
+    for(const uid of [member,admin,owner,await create("ADMIN")]) for(const op of ["account","signout","email","reset","grant","cancel","note"]) expect(await manage(admin,uid,op,{status:"SUSPENDED",tags:[]})).toBe("forbidden");
     expect(await manage(owner,owner,"role",roleData("USER"))).toBe("forbidden");
   });
   it("ignores forged role fields in account updates and rechecks revoked authority",async()=>{
-    expect(await manage(admin,member,"account",{status:"ACTIVE",tags:["reviewed"],role:"SUPER_ADMIN"})).toBe("saved");
+    expect(await manage(owner,member,"account",{status:"ACTIVE",tags:["reviewed"],role:"SUPER_ADMIN"})).toBe("saved");
     expect(await scalar(`SELECT role AS result FROM "User" WHERE id=$1`,[member])).toBe("USER");
     await manage(owner,admin,"role",roleData("USER"));
     expect(await manage(admin,member,"signout")).toBe("forbidden");
@@ -124,7 +124,7 @@ describe("recovery, suspension and stored obligations",()=>{
     await pg.query(`INSERT INTO "WalletJournal" (id,"operationKey","userId",kind,description,"userDeltaCents","clearingDeltaCents","revenueDeltaCents") VALUES($1,$1,$2,'OPENING','Test funding',50000,-50000,0)`,[id,member]);
     expect(await manage(owner,member,"account",{status:"CLOSED",tags:[]})).toBe("wallet_unresolved");
     expect(await scalar(`SELECT "balanceCents" AS result FROM "User" WHERE id=$1`,[member])).toBe(50000);
-    expect(await manage(admin,member,"account",{status:"SUSPENDED",tags:[]})).toBe("saved");
+    expect(await manage(owner,member,"account",{status:"SUSPENDED",tags:[]})).toBe("saved");
     expect(await scalar(`SELECT "balanceCents" AS result FROM "User" WHERE id=$1`,[member])).toBe(50000);
   });
   it("keeps Super Admin deposit and trading review permissions",async()=>{
