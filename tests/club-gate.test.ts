@@ -152,10 +152,21 @@ it("does not admit revoked, suspended or forged sessions without invitation", as
   networks.members.clear();
   expect((await middleware(request("/", { headers: { cookie: `${SESSION_COOKIE}=${await signSession({ uid: "member", role: "USER", sv: 4 })}` } }))).status).toBe(307);
 });
-it("fails closed on network storage failure without issuing an admission cookie", async () => {
+it("fails closed to the entrance or personal sign-in during storage failure", async () => {
   vi.stubEnv("DATABASE_DRIVER", "neon-http"); networks.fail = true;
   const r = await middleware(request("/", { headers: networkHeaders() }));
-  expect(r.status).toBe(503); expect(r.headers.get("set-cookie")).toBeNull();
+  expect(r.status).toBe(307); expect(new URL(r.headers.get("location")!).pathname).toBe("/entrance");
+  expect(r.headers.get("set-cookie")).toBeNull();
+  expect((await middleware(request("/api/admin/notifications", { headers: networkHeaders() }))).status).toBe(403);
+  expect((await middleware(request("/entrance", { headers: networkHeaders() }))).status).toBe(200);
+  const member = await middleware(request("/account", { headers: { "cf-connecting-ip": "8.8.8.8", cookie: `${SESSION_COOKIE}=${await signSession({ uid: "member", role: "USER", sv: 3 })}` } }));
+  expect(member.status).toBe(307); expect(new URL(member.headers.get("location")!).pathname).toBe("/login");
+  expect(new URL(member.headers.get("location")!).searchParams.get("reauth")).toBe("1");
+  expect(new URL(member.headers.get("location")!).searchParams.get("next")).toBe("/account");
+  expect(member.headers.get("set-cookie")).toBeNull();
+  const session = `${SESSION_COOKIE}=${await signSession({ uid: "member", role: "USER", sv: 3 })}`;
+  expect((await middleware(request("/wallet", { method: "POST", headers: { "cf-connecting-ip": "8.8.8.8", cookie: session, "Next-Action": "probe" } }))).status).toBe(403);
+  expect((await middleware(request("/api/admin/notifications", { headers: { "cf-connecting-ip": "8.8.8.8", cookie: session } }))).status).toBe(403);
   const entry = await networkEntry(); expect(entry.status).toBe(503); expect(entry.headers.get("set-cookie")).toBeNull();
   expect((await middleware(request("/api/cron/payments", { headers: networkHeaders() }))).status).toBe(200);
 });

@@ -12,7 +12,7 @@ Missing or malformed configuration fails closed. Set the replacement GitHub secr
 
 With the lock enabled, robots disallows the entire site, the sitemap is empty and HTML responses are noindex/no-store. Existing search listings may take time to disappear. Public artwork, icons and application code remain downloadable. Cron and payment webhook endpoints retain their own independent secret/signature authentication; they do not accept the shared entrance password as authorization.
 
-Admission lookups and idempotent inserts retry one transient HTTP failure, with a fresh five-second timeout for each of at most two attempts. A second failure still refuses admission. This also safely handles a stored admission whose response was lost; the unique fingerprint prevents duplicate rows. Valid browser cookies continue to avoid database lookups.
+Admission lookups and idempotent inserts retry one transient HTTP failure, with a fresh five-second timeout for each of at most two attempts. A second lookup failure still refuses admission: guests see the public entrance and an existing signed session goes to personal sign-in, without issuing an admission cookie. The public login/recovery forms remain reachable. Failed admission writes return a temporary-unavailable response without a cookie. A lost write response can be retried safely because the unique fingerprint prevents duplicate rows. Valid browser cookies continue to avoid database lookups.
 
 ## Staff authority
 
