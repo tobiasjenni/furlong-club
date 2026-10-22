@@ -1,36 +1,18 @@
 import { requireAdmin } from "@/lib/auth";
 import Link from "next/link";
-import type { Prisma } from "@prisma/client";
+import { adminUsersQuery, type AdminUserPage } from "@/lib/admin-query";
 import { db } from "@/lib/db";
 import { date } from "@/lib/format";
 import { isAdmin, roleLabel } from "@/lib/roles";
 
 export default async function AdminUsers({ searchParams }: { searchParams: Promise<{ q?: string; filter?: string; page?: string }> }) {
   const admin = await requireAdmin();
-  const { q = "", filter = "all", page = "1" } = await searchParams;
+  const params = await searchParams;
+  const q = (params.q ?? "").slice(0, 200), filter = params.filter ?? "all";
+  const page = Math.min(100000, Math.max(1, Math.floor(Number(params.page) || 1)));
   const take = 25;
-  const skip = (Math.max(Number(page) || 1, 1) - 1) * take;
-  const now = new Date();
-  const where: Prisma.UserWhereInput = {
-    ...(q ? { OR: [{ email: { contains: q, mode: "insensitive" } }, { name: { contains: q, mode: "insensitive" } }, { tags: { has: q } }] } : {}),
-    ...(filter === "admins" ? { role: { in: ["ADMIN", "SUPER_ADMIN"] } } : {}),
-    ...(filter === "subscribers" ? { subscriptions: { some: { status: "ACTIVE", endsAt: { gt: now } } } } : {}),
-    ...(filter === "free" ? { subscriptions: { none: { status: "ACTIVE", endsAt: { gt: now } } } } : {}),
-    ...(filter === "suspended" ? { status: "SUSPENDED" } : {}),
-    ...(filter === "closed" ? { status: "CLOSED" } : {}),
-    ...(filter === "unverified" ? { emailVerifiedAt: null } : {}),
-    ...(filter === "marketing" ? { marketingOptIn: true } : {}),
-  };
-  const [users, total] = await Promise.all([
-    db.user.findMany({
-      where,
-      orderBy: { createdAt: "desc" },
-      take,
-      skip,
-      include: { subscriptions: { where: { status: "ACTIVE", endsAt: { gt: now } }, include: { plan: true }, take: 1 } },
-    }),
-    db.user.count({ where }),
-  ]);
+  const skip = (page - 1) * take;
+  const { users, total } = (await db.$queryRaw<{ data: AdminUserPage }[]>(adminUsersQuery(q, filter, page)))[0].data;
   const filters = ["all", "admins", "subscribers", "free", "marketing", "unverified", "suspended", "closed"];
   const pageNum = skip / take + 1;
 
@@ -54,7 +36,7 @@ export default async function AdminUsers({ searchParams }: { searchParams: Promi
                 <span className={`badge shrink-0 ${u.status === "ACTIVE" ? "bg-emerald-500/15 text-emerald-300" : "bg-red-500/15 text-red-300"}`}>{u.status.toLowerCase()}</span>
               </div>
               <p className="muted mt-1 text-sm">
-                {u.name ?? "No name"} · {u.subscriptions[0]?.plan.name ?? "Free"}{isAdmin(u.role) ? ` · ${roleLabel(u.role)}` : ""} · joined {date(u.createdAt)}
+                {u.name ?? "No name"} · {u.planName ?? "Free"}{isAdmin(u.role) ? ` · ${roleLabel(u.role)}` : ""} · joined {date(u.createdAt)}
               </p>
             </Link>
           </li>
@@ -68,7 +50,7 @@ export default async function AdminUsers({ searchParams }: { searchParams: Promi
               <tr key={u.id}>
                 <td><Link href={`/admin/users/${u.id}`} className="text-gold-300 hover:underline">{u.email}</Link>{isAdmin(u.role) && <span className="badge ml-2 bg-gold-400/20 text-gold-300">{roleLabel(u.role)}</span>}</td>
                 <td>{u.name}</td>
-                <td>{u.subscriptions[0]?.plan.name ?? <span className="muted">Free</span>}</td>
+                <td>{u.planName ?? <span className="muted">Free</span>}</td>
                 <td className="text-xs">{u.tags.join(", ")}</td>
                 <td>{u.status === "ACTIVE" ? "Active" : <span className="text-red-300">{u.status === "CLOSED" ? "Closed" : "Suspended"}</span>}</td>
                 <td>{date(u.createdAt)}</td>

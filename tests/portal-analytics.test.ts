@@ -5,7 +5,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { portalSnapshotQuery } from "../src/lib/portal-query";
 import { safeSnapshot, snapshotIsReconciled, type PortalSnapshot } from "../src/lib/portal-metrics";
 import { portalActivityQuery, type PortalActivityPage } from "../src/lib/portal-activity";
-import { adminCountsQuery, adminOverviewQuery } from "../src/lib/admin-query";
+import { adminCountsQuery, adminOverviewQuery, adminUsersQuery, type AdminUserPage } from "../src/lib/admin-query";
 
 let pg: PGlite, member: string, admin: string;
 const uuid = () => crypto.randomUUID();
@@ -26,6 +26,23 @@ afterAll(async () => { await pg?.close(); });
 beforeEach(async () => { member = await person(); admin = await person("ADMIN"); });
 
 describe("V2 financial overview from the existing records", () => {
+  it("joins the highest active membership, keeps filters and bounds CRM pagination without returning password hashes", async () => {
+    const label = uuid() + "%_", planId = uuid();
+    await pg.query('UPDATE "User" SET name=$2,tags=ARRAY[$2] WHERE id=$1', [member, label]);
+    await pg.query(`INSERT INTO "Plan"(id,slug,name,tagline,"priceCents",tier,features) VALUES($1,$1,'Form Room','Test plan',2900,1,'{}')`, [planId]);
+    await pg.query(`INSERT INTO "Subscription"(id,"userId","planId","endsAt") VALUES($1,$2,$3,(CURRENT_TIMESTAMP AT TIME ZONE 'UTC')+interval '33 days')`, [uuid(), member, planId]);
+    const higher = uuid(), expired = uuid();
+    await pg.query(`INSERT INTO "Plan"(id,slug,name,tagline,"priceCents",tier,features) VALUES($1,$1,'Inner Circle','Test plan',7900,2,'{}'),($2,$2,'Expired plan','Test plan',9900,9,'{}')`, [higher, expired]);
+    await pg.query(`INSERT INTO "Subscription"(id,"userId","planId","endsAt") VALUES($1,$3,$4,(CURRENT_TIMESTAMP AT TIME ZONE 'UTC')+interval '33 days'),($2,$3,$5,(CURRENT_TIMESTAMP AT TIME ZONE 'UTC')-interval '1 day')`, [uuid(), uuid(), member, higher, expired]);
+    const query = async (search: string, filter: string, page = 1) => { const q = adminUsersQuery(search, filter, page); return (await pg.query<{ data: AdminUserPage }>(q.text, q.values)).rows[0].data; };
+    const data = await query(label, 'subscribers');
+    expect(data.total).toBe(1); expect(data.users[0].id).toBe(member); expect(data.users[0].planName).toBe('Inner Circle');
+    expect(data.users[0]).not.toHaveProperty('passwordHash');
+    expect((await query(label, 'free')).total).toBe(0);
+    expect((await query(label, 'admins')).total).toBe(0);
+    expect((await query(label, 'subscribers', 2)).users).toEqual([]);
+    expect((await query("' OR 1=1--", 'all')).total).toBe(0);
+  });
   it("returns identical financial totals without generating chart history for summary pages", async () => {
     await fund(member, 400); const id = await mature(); await result(id, -2500);
     const full = await snapshot();
