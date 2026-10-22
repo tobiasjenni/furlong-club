@@ -9,7 +9,8 @@ import { userTier } from "@/lib/subscriptions";
 import { playback } from "@/lib/video";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
-  const video = await db.video.findUnique({ where: { slug: (await params).slug }, select: { title: true } });
+  const user = await requireUser();
+  const video = await db.video.findFirst({ where: { slug: (await params).slug, ...(!isAdmin(user.role) ? { published: true } : {}) }, select: { title: true } });
   return { title: video?.title ?? "Video" };
 }
 
