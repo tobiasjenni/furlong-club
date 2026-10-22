@@ -14,7 +14,7 @@ try {
   ), recorded AS (
     INSERT INTO "AuditLog" (id,action,target,meta)
     SELECT ${crypto.randomUUID()},'deployment.member_email_policy','members',
-      jsonb_build_object('emailVerificationRequired',${required},'source','owner-requested deployment configuration') FROM changed RETURNING id
+      jsonb_build_object('emailVerificationRequired',${required}::boolean,'source','owner-requested deployment configuration') FROM changed RETURNING id
   ) SELECT "emailVerificationRequired" AS required FROM "AuthPolicy" WHERE id='members'`;
   // A data-modifying CTE's final SELECT reads the statement's initial snapshot.
   // Verify the committed value with a fresh read before publishing the Worker.
