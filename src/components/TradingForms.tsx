@@ -3,6 +3,7 @@ import { useActionState, useState } from "react";
 import { cancelTrading, manageTrading, requestTrading } from "@/app/actions/trading";
 import { FormMessage } from "./FormMessage";
 import { SubmitButton } from "./SubmitButton";
+import Link from "next/link";
 
 export function RequestTradingForm({ requestKey, termsVersion, options, disabled }: { requestKey: string; termsVersion: string; options: readonly { label: string }[]; disabled: boolean }) {
   const [state, action] = useActionState(requestTrading, null);
@@ -14,8 +15,8 @@ export function RequestTradingForm({ requestKey, termsVersion, options, disabled
     <div><label htmlFor="trading-address-confirm" className="label">Enter your receiving address again</label><input id="trading-address-confirm" name="confirmAddress" className="input font-mono text-xs" autoComplete="off" maxLength={100} required disabled={disabled} /></div>
     <p className="muted text-xs">Use a wallet you control that supports the selected token and network. The destination cannot be edited after requesting. Cancel a pending request and create a new one to correct it.</p>
     <label className="flex items-start gap-3 text-sm"><input name="destinationConfirmed" type="checkbox" required disabled={disabled} className="mt-1 accent-gold-400" /><span>I checked this receiving address and network and can receive the selected stablecoin there.</span></label>
-    <label className="flex items-start gap-3 text-sm"><input name="risk" type="checkbox" required disabled={disabled} className="mt-1 accent-gold-400" /><span>I accept draft terms {termsVersion}: approval locks the allocation for 33 days with no early withdrawal. The proposed daily targets are unverified and not guaranteed. I can lose some or all of my money. No daily earnings accrue in this app. Payout uses actual recorded results and is sent manually after review; it is not automatic on day 33. Outgoing network fees are paid by the operator.</span></label>
-    <FormMessage state={state} /><SubmitButton disabled={disabled}>Request admin approval</SubmitButton>
+    <label className="flex items-start gap-3 text-sm"><input name="risk" type="checkbox" required disabled={disabled} className="mt-1 accent-gold-400" /><span>I accept <Link className="text-gold-300 underline" href="/legal/terms#trading-terms" target="_blank" rel="noreferrer">allocation terms {termsVersion}</Link>: approval locks the allocation for 33 days with no early withdrawal. The proposed daily targets are unverified and not guaranteed. I can lose some or all of my money. No daily earnings accrue in this app. Payout uses actual recorded results and is sent manually after review; it is not automatic on day 33. Outgoing network fees are paid by the operator.</span></label>
+    <FormMessage state={state} /><SubmitButton disabled={disabled}>Request Super Admin approval</SubmitButton>
     <p className="muted text-xs">This request does not reserve funds. Keep enough available balance until approval. Maximum $10,000 across open allocations.</p>
   </form>;
 }

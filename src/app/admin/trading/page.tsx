@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { walletTestMode } from "@/lib/environment";
 import type { Prisma } from "@prisma/client";
 import { requireAdmin } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -36,7 +37,7 @@ export default async function AdminTrading({ searchParams }: { searchParams: Pro
   const paid = groups.find(g => g.status === "PAID");
   function pageUrl(next: number) { const p = new URLSearchParams(); for (const k of ["q", "status", "userId"] as const) if (search[k]) p.set(k, search[k]!); p.set("page", String(next)); return `?${p}`; }
   return <div className="space-y-6"><AutoRefresh seconds={30} />
-    <div><h2 className="text-3xl">Trading allocations</h2><p className="muted mt-2 text-sm">{open ? "Simulated enrollment is open on this test site." : "Real enrollment is closed. Final trading terms are not approved."} Existing obligations remain visible and can be processed after maturity. No trading execution or automatic crypto transfer is connected.</p></div>
+    <div><h2 className="text-3xl">Trading allocations</h2><p className="muted mt-2 text-sm">{open ? walletTestMode() ? "Simulated enrollment is open on this test site." : "Manual allocation requests are open. Only the Super Admin can approve deposits and allocations." : "New allocation requests are paused."} Existing obligations remain visible and can be processed after maturity. No trading execution or automatic crypto transfer is connected.</p></div>
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
       <div className="card"><p className="muted text-xs">Pending admin approval</p><p className="mt-2 text-2xl">{pending?._count ?? 0}</p><p className="muted text-sm">{usd(pending?._sum.principalCents ?? 0)} · not reserved</p></div>
       <div className="card"><p className="muted text-xs">Locked / unpaid principal</p><p className="mt-2 text-2xl">{usd(Number(reconciliation[0].allocationLocked))}</p><p className="muted text-sm">{due} matured, awaiting result</p></div>

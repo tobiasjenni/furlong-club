@@ -13,13 +13,14 @@ const scalar = async (sql: string, args: unknown[] = []) => (await pg.query<{ re
 const user = async (role = "USER") => {
   const id = crypto.randomUUID();
   await pg.query(`INSERT INTO "User" (id,email,"passwordHash","ageConfirmedAt","emailVerifiedAt","updatedAt",role) VALUES ($1,$2,'x',now(),now(),now(),$3::"Role")`, [id, `${id}@example.com`, role]);
+  await pg.query(`INSERT INTO "Subscription"(id,"userId","planId","endsAt") VALUES($1,$2,'trading-test-plan',(CURRENT_TIMESTAMP AT TIME ZONE 'UTC')+interval '33 days')`, [crypto.randomUUID(), id]);
   return id;
 };
 const fund = async (uid = member, cents = 2000000) => {
   const op = crypto.randomUUID();
   await pg.query(`INSERT INTO "WalletJournal" (id,"operationKey","userId",kind,description,"userDeltaCents","clearingDeltaCents","revenueDeltaCents") VALUES ($1,$1,$2,'OPENING','Test funding',$3::integer,-$3::integer,0)`, [op, uid, cents]);
 };
-const request = (cents = 50000, aid = allocation, uid = member, key = requestKey, coin = "USDT", chain = "ERC20", destination = address) => scalar(`SELECT trading_request($1,$2,$3,$4,$5,$6,$7,'draft-v1') AS result`, [uid, aid, key, cents, coin, chain, destination]);
+const request = (cents = 50000, aid = allocation, uid = member, key = requestKey, coin = "USDT", chain = "ERC20", destination = address) => scalar(`SELECT trading_request($1,$2,$3,$4,$5,$6,$7,'manual-v1-2026-10-22') AS result`, [uid, aid, key, cents, coin, chain, destination]);
 const review = (approve = true, aid = allocation, actor = admin, note = "Verified member, terms and payout destination") => scalar(`SELECT trading_review($1,$2,$3,$4) AS result`, [aid, actor, approve, note]);
 const result = (profit = 2500, aid = allocation, actor = admin, note = "Verified actual result from trading records") => scalar(`SELECT trading_record_result($1,$2,$3,$4) AS result`, [aid, actor, profit, note]);
 const payout = (tx = hash(), amount = 52500, aid = allocation, actor = admin) => scalar(`SELECT trading_record_payout($1,$2,$3,$4,'Verified completed external transfer') AS result`, [aid, actor, amount, tx]);
@@ -35,6 +36,7 @@ const mature = async (principal = 50000, aid = allocation) => {
 beforeAll(async () => {
   pg = new PGlite();
   for (const dir of fs.readdirSync("prisma/migrations").filter(n => /^\d/.test(n)).sort()) await pg.exec(fs.readFileSync(`prisma/migrations/${dir}/migration.sql`, "utf8"));
+  await pg.exec(`INSERT INTO "Plan"(id,slug,name,tagline,"priceCents",tier,features) VALUES('trading-test-plan','form','Form Room','Test membership',2900,1,'{}')`);
 }, 30000);
 afterAll(async () => { await pg?.close(); });
 beforeEach(async () => {
@@ -44,6 +46,53 @@ beforeEach(async () => {
 });
 
 describe("allocation approval, lock and accounting", () => {
+  it("requires current paid membership when requesting and again when approving", async () => {
+    await pg.query(`UPDATE "Subscription" SET status='CANCELLED' WHERE "userId"=$1`, [member]);
+    expect(await request()).toBe("membership_required");
+    await pg.query(`UPDATE "Subscription" SET status='ACTIVE' WHERE "userId"=$1`, [member]);
+    expect(await request()).toBe("requested");
+    await pg.query(`UPDATE "Subscription" SET "endsAt"=(CURRENT_TIMESTAMP AT TIME ZONE 'UTC')-interval '1 second' WHERE "userId"=$1`, [member]);
+    expect(await review()).toBe("membership_required"); expect(await locked()).toBe(0);
+    expect(await review(false)).toBe("rejected");
+  });
+  it("saves the new membership and non-contractual target terms", async () => {
+    await request();
+    const a=(await pg.query<{termsVersion:string;termsSnapshot:Record<string,unknown>}>(`SELECT "termsVersion","termsSnapshot" FROM "TradingAllocation" WHERE id=$1`,[allocation])).rows[0];
+    expect(a.termsVersion).toBe("manual-v1-2026-10-22");
+    expect(a.termsSnapshot).toMatchObject({membershipSlug:"form",targetsNonContractual:true,guaranteed:false,lockDays:33});
+    expect(a.termsSnapshot).not.toHaveProperty("targetDailyMinPercent");
+  });
+  it("rejects stale draft terms and requires fresh acceptance for legacy pending requests", async () => {
+    expect(await scalar(`SELECT trading_request($1,$2,$3,50000,'USDT','ERC20',$4,'draft-v1') AS result`,[member,allocation,requestKey,address])).toBe("invalid");
+    await pg.query(`INSERT INTO "TradingAllocation"(id,"userId","requestKey","principalCents",currency,network,"payoutAddress","termsVersion","termsSnapshot") VALUES($1,$2,$1,50000,'USDT','ERC20',$3,'draft-v1','{}')`,[allocation,member,address]);
+    expect(await review()).toBe("terms_changed"); expect(await locked()).toBe(0);
+    expect(await review(false)).toBe("rejected");
+  });
+  it("opens or pauses enrollment only for the owner and records changes without moving funds", async () => {
+    const observer=await user("ADMIN");
+    const set=(actor:string,enabled:boolean)=>scalar(`SELECT trading_set_enrollment($1,$2,'Owner requested program state',$3) AS result`,[actor,enabled,crypto.randomUUID()]);
+    expect(await set(observer,false)).toBe("forbidden");
+    expect(await set(member,false)).toBe("forbidden");
+    expect(await set(admin,false)).toBe("saved"); expect(await request()).toBe("closed");
+    expect(await set(admin,false)).toBe("unchanged");
+    expect(await set(admin,true)).toBe("saved"); expect(await request()).toBe("requested");
+    expect(await scalar(`SELECT count(*)::int AS result FROM "AuditLog" WHERE action='trading.enrollment_changed' AND "actorId"=$1`,[admin])).toBe(2);
+    expect(await locked()).toBe(0);
+  });
+  it("links a manual deposit to approved credit and then a separately approved 33-day allocation", async () => {
+    const uid=await user(), pid=crypto.randomUUID(), tx=hash(), aid=crypto.randomUUID(), observer=await user("ADMIN");
+    expect(await scalar(`SELECT wallet_create_manual_deposit($1,$2,50000,'USDT','ERC20','0x1111111111111111111111111111111111111111') AS result`,[uid,pid])).toBe("created");
+    expect(await scalar(`SELECT wallet_report_manual_deposit($1,$2,$3) AS result`,[pid,uid,tx])).toBe("submitted");
+    expect(await request(50000,aid,uid,crypto.randomUUID())).toBe("insufficient");
+    expect(await scalar(`SELECT wallet_review_manual_deposit($1,$2,true,$3,'Verified exact incoming transfer') AS result`,[pid,observer,tx])).toBe("forbidden");
+    expect(await scalar(`SELECT wallet_review_manual_deposit($1,$2,true,$3,'Verified exact incoming transfer') AS result`,[pid,admin,tx])).toBe("approved");
+    const key=crypto.randomUUID(); expect(await request(50000,aid,uid,key)).toBe("requested");
+    expect(await request(50000,aid,uid,key)).toBe("duplicate");
+    expect(await review(true,aid,observer)).toBe("forbidden"); expect(await review(true,aid)).toBe("approved");
+    expect(await scalar(`SELECT "balanceCents" AS result FROM "User" WHERE id=$1`,[uid])).toBe(0);
+    expect(await scalar(`SELECT sum("lockedDeltaCents")::int AS result FROM "WalletJournal" WHERE "userId"=$1`,[uid])).toBe(50000);
+    expect(await scalar(`SELECT count(*)::int AS result FROM "WalletJournal" WHERE "userId"=$1 AND "userDeltaCents"+"clearingDeltaCents"+"revenueDeltaCents"+"lockedDeltaCents"+"tradingResultDeltaCents"<>0`,[uid])).toBe(0);
+  });
   it("closes enrollment at the database boundary and rechecks it on approval", async () => {
     await pg.exec(`UPDATE "TradingProgram" SET "enrollmentEnabled"=false`);
     expect(await request()).toBe("closed");

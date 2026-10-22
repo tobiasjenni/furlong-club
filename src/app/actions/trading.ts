@@ -19,6 +19,7 @@ function refresh(userId: string, id: string) {
   for (const path of ["/trading", "/account", "/wallet", "/dashboard", "/admin", "/admin/trading", "/admin/wallet", `/admin/trading/${id}`, `/admin/users/${userId}`]) revalidatePath(path);
 }
 const errors: Record<string, string> = {
+  membership_required: "Activate Form Room or Inner Circle before requesting a trading allocation.", terms_changed: "These allocation terms have changed. Cancel the pending request and submit a new one using the current terms.",
   closed: "Trading allocations are not open. No funds were locked.", insufficient: "Available balance is too low. Add funds or choose a smaller allocation.",
   limit: "The maximum total open allocation is $10,000 per member.", pending_exists: "You already have a request awaiting approval. Cancel it before changing the amount or destination.",
   unverified: "Confirm your email before requesting an allocation.", frozen: "The wallet is under review. Contact support.", locked: "The 33-day lock has not ended.",
@@ -39,7 +40,7 @@ export async function requestTrading(_: FormState, form: FormData): Promise<Form
   if (!address || address !== repeat) return { error: "Enter the same valid external wallet address twice. Check the network and address checksum." };
   const clubAddress = process.env[`POOL_WALLET_${option.currency}_${option.network}`]?.trim();
   if (clubAddress && (option.network === "TRC20" ? clubAddress === address : clubAddress.toLowerCase() === address.toLowerCase())) return { error: "Use your own receiving wallet, not the club's deposit address." };
-  if (form.get("termsVersion") !== tradingTermsVersion || form.get("risk") !== "on" || form.get("destinationConfirmed") !== "on") return { error: "Read and accept the current draft terms and confirm your payout destination." };
+  if (form.get("termsVersion") !== tradingTermsVersion || form.get("risk") !== "on" || form.get("destinationConfirmed") !== "on") return { error: "Read and accept the current allocation terms and confirm your payout destination." };
   let result: string;
   try { result = (await db.$queryRaw<{ result: string }[]>`SELECT trading_request(${user.id},${crypto.randomUUID()},${user.id + ":" + requestKey},${amount}::integer,${option.currency},${option.network},${address},${tradingTermsVersion}) AS result`)[0].result; }
   catch { return { error: "Your request could not be saved. No funds were locked. Reload before retrying." }; }

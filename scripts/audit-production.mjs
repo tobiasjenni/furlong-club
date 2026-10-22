@@ -58,7 +58,7 @@ try {
     routes.push({path,status:result.status,expected});
   }
   console.log('RELEASE_AUDIT ' + JSON.stringify({flags,secretNames,database:counts[0],migrations:tables[0],ledger:ledger?.[0],security:security[0],trading,routes}));
-  if (counts[0].superAdmins!==1 || counts[0].outdatedPaidPlans || !counts[0].admins || counts[0].negativeBalances || ledger?.[0].balanceMismatches || ledger?.[0].unbalancedPostings || ledger?.[0].lockedPrincipalMismatches || trading?.enrollmentEnabled || flags.TRADING_REQUESTS_ENABLED!=='false' || routes.some(r=>r.status!==r.expected) || (flags.CLUB_GATE_ENABLED==='true' && (!secretNames.includes('CLUB_PASSWORD_HASH') || !security[0].readOnlyAdminApplied))) process.exitCode=1;
+  if (counts[0].superAdmins!==1 || counts[0].outdatedPaidPlans || !counts[0].admins || counts[0].negativeBalances || ledger?.[0].balanceMismatches || ledger?.[0].unbalancedPostings || ledger?.[0].lockedPrincipalMismatches || trading?.enrollmentEnabled !== (flags.TRADING_REQUESTS_ENABLED==='true') || routes.some(r=>r.status!==r.expected) || (flags.CLUB_GATE_ENABLED==='true' && (!secretNames.includes('CLUB_PASSWORD_HASH') || !security[0].readOnlyAdminApplied))) process.exitCode=1;
 } catch (error) {
   // Database/driver error objects may embed a connection string. Keep logs redacted.
   console.error('Production audit failed. Inspect database connectivity and Worker access securely.');
