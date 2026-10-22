@@ -9,6 +9,8 @@ let current: Record<string, unknown>;
 let sessionVersion: number | undefined;
 let messages: {to:string;token?:string}[];
 let beforeSignIn: (() => Promise<void>) | undefined;
+const invitation = vi.hoisted(() => ({ allowed: true }));
+vi.mock("@/lib/club-invitation", () => ({ hasClubInvitation: async () => invitation.allowed }));
 const sql=(parts: TemplateStringsArray)=>parts.reduce((s,p,i)=>s+(i?`$${i}`:"")+p,"");
 vi.mock("@/lib/db",()=>({db:{
   $queryRaw:async(parts:TemplateStringsArray,...args:unknown[])=>{
@@ -38,12 +40,20 @@ beforeAll(async()=>{
 },30000);
 afterAll(async()=>{await pg?.close();});
 beforeEach(async()=>{
+  invitation.allowed = true;
   await pg.exec('DELETE FROM "RateLimit"');beforeSignIn=undefined;
   const id=crypto.randomUUID();await pg.query(`INSERT INTO "User"(id,email,"passwordHash","ageConfirmedAt","updatedAt") VALUES($1,$2,$3,now(),now())`,[id,`${id}@example.com`,await bcrypt.hash('existing-password',4)]);
   current=(await pg.query<Record<string,unknown>>(`SELECT * FROM "User" WHERE id=$1`,[id])).rows[0];messages=[];sessionVersion=undefined;
 });
 
 const registration=(extra:Record<string,string>={})=>form({name:'Test Member',email:`signup-${crypto.randomUUID()}@example.com`,password:'registration-password',passwordConfirm:'registration-password',age:'on',terms:'on',...extra});
+it("rejects signup posted through a public login URL without club admission", async () => {
+  invitation.allowed = false;
+  const data = registration();
+  expect((await signup(null, data))?.error).toContain("club entrance");
+  expect((await pg.query('SELECT id FROM "User" WHERE email=$1', [data.get('email')])).rows).toHaveLength(0);
+  expect(sessionVersion).toBeUndefined();
+});
 it.each([undefined,'different-password'])("rejects missing or mismatched signup confirmation before creating an account: %s",async confirmation=>{
   const data=registration();if(confirmation===undefined)data.delete('passwordConfirm');else data.set('passwordConfirm',confirmation);
   const email=String(data.get('email'));const result=await signup(null,data);

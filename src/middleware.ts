@@ -1,10 +1,10 @@
 import { isAdmin } from "@/lib/roles";
 import { NextResponse, type NextRequest } from "next/server";
 import { SESSION_COOKIE, verifySession } from "./lib/session";
-import { CLUB_COOKIE, clubCookieOptions, clubGateEnabled, clubNext, gateExempt, gateMachineEndpoint, signClubAdmission, verifyClubAdmission } from "./lib/club-gate";
+import { CLUB_COOKIE, clubCookieOptions, clubGateEnabled, clubNext, gateExempt, gateLoginEndpoint, gateMachineEndpoint, signClubAdmission, verifyClubAdmission } from "./lib/club-gate";
 import { isMemberPath } from "./lib/member-routes";
 import { clubNetworkKey } from "./lib/club-network";
-import { clubNetworkAdmitted } from "./lib/club-network-store";
+import { clubMemberAdmitted, clubNetworkAdmitted } from "./lib/club-network-store";
 
 function privateResponse(response: NextResponse) {
   response.headers.set("X-Robots-Tag", "noindex, nofollow, noarchive");
@@ -15,16 +15,22 @@ function privateResponse(response: NextResponse) {
 export async function middleware(req: NextRequest) {
   const path = req.nextUrl.pathname;
   const locked = clubGateEnabled();
-  const publicRequest = gateExempt(path) && (["GET", "HEAD"].includes(req.method) || path === "/api/club-entry" || gateMachineEndpoint(path));
+  const publicRequest = gateExempt(path) && (["GET", "HEAD"].includes(req.method) || path === "/api/club-entry" || gateMachineEndpoint(path) || gateLoginEndpoint(path));
   // Always validate the cookie before routing, including public entrance requests.
-  const network = await clubNetworkKey(req.headers);
-  let admitted = await verifyClubAdmission(req.cookies.get(CLUB_COOKIE)?.value, network);
+  let admitted = await verifyClubAdmission(req.cookies.get(CLUB_COOKIE)?.value);
+  const session = await verifySession(req.cookies.get(SESSION_COOKIE)?.value);
   let renewed: string | undefined;
   const entrance = path === "/entrance" && ["GET", "HEAD"].includes(req.method);
-  if (locked && !admitted && network && (!publicRequest || entrance)) {
+  if (locked && !admitted && (!publicRequest || entrance)) {
     try {
-      admitted = await clubNetworkAdmitted(network);
-      if (admitted) renewed = await signClubAdmission(network);
+      // A signed session alone is insufficient: recheck active status and
+      // revocation before using an existing membership to open the entrance.
+      if (session) admitted = await clubMemberAdmitted(session.uid, session.sv);
+      if (!admitted) {
+        const network = await clubNetworkKey(req.headers);
+        if (network) admitted = await clubNetworkAdmitted(network);
+      }
+      if (admitted) renewed = await signClubAdmission();
     } catch {
       return privateResponse(NextResponse.json({ error: "The club entrance is temporarily unavailable. Please try again later." }, { status: 503 }));
     }
@@ -33,9 +39,10 @@ export async function middleware(req: NextRequest) {
     if (renewed) response.cookies.set(CLUB_COOKIE, renewed, clubCookieOptions);
     return privateResponse(response);
   };
-  // A public artwork preview never grants admission to any other route.
-  if (locked && entrance && admitted && req.nextUrl.searchParams.get("preview") !== "1") {
-    return finish(NextResponse.redirect(new URL(clubNext(req.nextUrl.searchParams.get("next")), req.url)));
+  // Returning visitors never see the invitation again, including old preview links.
+  if (locked && entrance && admitted) {
+    const next = req.nextUrl.searchParams.get("next");
+    return finish(NextResponse.redirect(new URL(next ? clubNext(next) : session ? "/dashboard" : "/login", req.url)));
   }
   if (locked && !publicRequest && !admitted) {
     if (path.startsWith("/api/") || !["GET", "HEAD"].includes(req.method)) return privateResponse(NextResponse.json({ error: "Club admission required." }, { status: 403 }));
@@ -45,7 +52,6 @@ export async function middleware(req: NextRequest) {
   }
   const protectedPage = isMemberPath(path) || /^\/(?:admin|videos|checkout)(?:\/|$)/.test(path);
   if (protectedPage) {
-    const session = await verifySession(req.cookies.get(SESSION_COOKIE)?.value);
     if (!session) {
       const url = new URL("/login", req.url);
       url.searchParams.set("next", path + req.nextUrl.search);

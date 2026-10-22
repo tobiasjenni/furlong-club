@@ -7,8 +7,9 @@ import { middleware } from "@/middleware";
 import { signSession, SESSION_COOKIE } from "@/lib/session";
 import { clubNetworkKey, trustedClubIp } from "@/lib/club-network";
 const counters = vi.hoisted(() => ({ allow: true, calls: 0 }));
-const networks = vi.hoisted(() => ({ admitted: new Set<string>(), reads: 0, fail: false }));
+const networks = vi.hoisted(() => ({ admitted: new Set<string>(), members: new Set<string>(), reads: 0, memberReads: 0, fail: false }));
 vi.mock("@/lib/club-network-store", () => ({
+  clubMemberAdmitted: async (uid: string, sv: number) => { networks.memberReads++; if (networks.fail) throw new Error("Storage unavailable"); return networks.members.has(`${uid}:${sv}`); },
   clubNetworkAdmitted: async (key: string) => { networks.reads++; if (networks.fail) throw new Error("Storage unavailable"); return networks.admitted.has(key); },
   rememberClubNetwork: async (key: string) => { if (networks.fail) throw new Error("Storage unavailable"); networks.admitted.add(key); },
 }));
@@ -21,7 +22,7 @@ beforeEach(() => {
   vi.stubEnv("AUTH_SECRET", "t".repeat(40)); vi.stubEnv("APP_URL", "https://furlong.club");
   vi.stubEnv("CLUB_GATE_ENABLED", "true"); vi.stubEnv("CLUB_PASSWORD_HASH", hash);
   counters.allow = true; counters.calls = 0;
-  networks.admitted.clear(); networks.reads = 0; networks.fail = false;
+  networks.admitted.clear(); networks.members.clear(); networks.reads = 0; networks.memberReads = 0; networks.fail = false;
 });
 afterEach(() => vi.unstubAllEnvs());
 const request = (path: string, options: NonNullable<ConstructorParameters<typeof NextRequest>[1]> = {}) => new NextRequest("https://furlong.club" + path, options);
@@ -42,7 +43,7 @@ it("rejects expired admission and fails closed when configuration is missing", a
   expect((await entry({ password: "any" })).status).toBe(503);
   expect((await middleware(request("/"))).status).toBe(307);
 });
-it.each(["/", "/plans", "/login", "/signup", "/admin", "/wallet", "/legal/terms", "/_next/data/build/index.json"])("requires admission for %s including direct links", async path => {
+it.each(["/", "/plans", "/signup", "/admin", "/wallet", "/legal/terms", "/_next/data/build/index.json"])("requires admission for %s including direct links", async path => {
   const r = await middleware(request(path)); expect(r.status).toBe(307);
   expect(new URL(r.headers.get("location")!).pathname).toBe("/entrance"); expect(r.headers.get("cache-control")).toContain("no-store");
 });
@@ -104,29 +105,52 @@ it("remembers a successful password once per trusted network across browsers, pr
   expect(account.cookies.get(CLUB_COOKIE)?.value).toBeTruthy();
   expect((await middleware(request("/", { headers: networkHeaders("1.1.1.1") }))).status).toBe(307);
 });
-it("binds the fast cookie to the network and skips database reads on normal visits", async () => {
+it("remembers the browser across network changes and skips database reads", async () => {
   vi.stubEnv("DATABASE_DRIVER", "neon-http");
-  const key = await clubNetworkKey(networkHeaders());
-  const cookie = `${CLUB_COOKIE}=${await signClubAdmission(key)}`;
+  const cookie = `${CLUB_COOKIE}=${await signClubAdmission()}`;
   expect((await middleware(request("/", { headers: { "cf-connecting-ip": "8.8.8.8", cookie } }))).status).toBe(200);
   expect(networks.reads).toBe(0);
-  expect((await middleware(request("/", { headers: { "cf-connecting-ip": "1.1.1.1", cookie } }))).status).toBe(307);
+  expect((await middleware(request("/", { headers: { "cf-connecting-ip": "1.1.1.1", cookie } }))).status).toBe(200);
+  expect(networks.reads).toBe(0);
 });
 it("password rotation revokes both the cookie and remembered network", async () => {
   vi.stubEnv("DATABASE_DRIVER", "neon-http");
   await networkEntry();
-  const cookie = `${CLUB_COOKIE}=${await signClubAdmission(await clubNetworkKey(networkHeaders()))}`;
+  const cookie = `${CLUB_COOKIE}=${await signClubAdmission()}`;
   vi.stubEnv("CLUB_PASSWORD_HASH", await bcrypt.hash("rotated-club-password", 12));
   expect((await middleware(request("/", { headers: { "cf-connecting-ip": "8.8.8.8", cookie } }))).status).toBe(307);
 });
-it("skips an admitted entrance, sanitizes the destination, and keeps artwork preview public", async () => {
+it("skips an admitted entrance and old preview links while sanitizing destinations", async () => {
   vi.stubEnv("DATABASE_DRIVER", "neon-http"); await networkEntry();
   const enter = await middleware(request("/entrance?next=%2Faccount", { headers: networkHeaders() }));
   expect(new URL(enter.headers.get("location")!).pathname).toBe("/account");
   const unsafe = await middleware(request("/entrance?next=https://evil.invalid", { headers: networkHeaders() }));
   expect(new URL(unsafe.headers.get("location")!).pathname).toBe("/");
-  expect((await middleware(request("/entrance?preview=1", { headers: networkHeaders() }))).status).toBe(200);
+  const preview = await middleware(request("/entrance?preview=1", { headers: networkHeaders() }));
+  expect(preview.status).toBe(307); expect(new URL(preview.headers.get("location")!).pathname).toBe("/login");
   expect((await middleware(request("/?preview=1", { headers: networkHeaders("1.1.1.1") }))).status).toBe(307);
+});
+it.each(["/login", "/forgot-password", "/reset-password", "/verify-email"])("keeps existing-account access directly available: %s", async path => {
+  vi.stubEnv("DATABASE_DRIVER", "neon-http"); networks.fail = true;
+  for (const method of ["GET", "POST"]) expect((await middleware(request(path, { method, headers: networkHeaders() }))).status).toBe(200);
+  expect(networks.reads).toBe(0); expect(networks.memberReads).toBe(0);
+  expect(gateExempt(path + "/private")).toBe(false);
+});
+it.each(["USER", "ADMIN", "SUPER_ADMIN"] as const)("admits a currently active %s session without another invitation", async role => {
+  networks.members.add("member:3");
+  const cookie = `${SESSION_COOKIE}=${await signSession({ uid: "member", role, sv: 3 })}`;
+  const member = await middleware(request("/account", { headers: { cookie } }));
+  expect(member.status).toBe(200); expect(member.cookies.get(CLUB_COOKIE)?.value).toBeTruthy();
+  const entrance = await middleware(request("/entrance?preview=1", { headers: { cookie } }));
+  expect(new URL(entrance.headers.get("location")!).pathname).toBe("/dashboard");
+  expect(networks.reads).toBe(0);
+});
+it("does not admit revoked, suspended or forged sessions without invitation", async () => {
+  networks.members.add("member:4");
+  const revoked = await signSession({ uid: "member", role: "SUPER_ADMIN", sv: 3 });
+  for (const token of [revoked, revoked + "forged"]) expect((await middleware(request("/", { headers: { cookie: `${SESSION_COOKIE}=${token}` } }))).status).toBe(307);
+  networks.members.clear();
+  expect((await middleware(request("/", { headers: { cookie: `${SESSION_COOKIE}=${await signSession({ uid: "member", role: "USER", sv: 4 })}` } }))).status).toBe(307);
 });
 it("fails closed on network storage failure without issuing an admission cookie", async () => {
   vi.stubEnv("DATABASE_DRIVER", "neon-http"); networks.fail = true;

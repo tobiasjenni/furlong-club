@@ -10,7 +10,7 @@ const rememberedNetwork = first.status === 200;
 const personal = new Set(['/account', '/wallet', '/admin', '/admin/users', '/performance', '/membership', '/allocations']);
 for (const path of paths) {
   const r = await request(path);
-  const expected = rememberedNetwork && !personal.has(path) ? 200 : 307;
+  const expected = path === '/login' || (rememberedNetwork && !personal.has(path)) ? 200 : 307;
   assert.equal(r.status, expected, 'Network entrance / personal login: ' + path);
   if (expected === 307) assert.equal(new URL(r.headers.get('location'), origin).pathname, rememberedNetwork ? '/login' : '/entrance');
   assert.match(r.headers.get('cache-control'), /no-store/);
@@ -38,9 +38,19 @@ assert.equal(prefetch.status, rememberedNetwork ? 200 : 307);
 if (rememberedNetwork) assert.match(prefetch.headers.get('content-type'), /text\/x-component/);
 else assert.equal(new URL(prefetch.headers.get('location'), origin).pathname, '/entrance');
 const page = await request('/entrance?preview=1');
-assert.equal(page.status, 200); const html = await page.text();
-assert.match(html, /Some doors open/); assert.match(html, /Club password/);
-assert.match(html, /noindex/); assert.match(page.headers.get('content-security-policy'), /default-src/);
+if (rememberedNetwork) {
+  assert.equal(page.status, 307);
+  assert.equal(new URL(page.headers.get('location'), origin).pathname, '/login');
+} else {
+  assert.equal(page.status, 200); const html = await page.text();
+  assert.match(html, /Some doors open/); assert.match(html, /Club password/);
+  assert.match(html, /Already a member/); assert.match(html, /noindex/);
+}
+assert.match(page.headers.get('content-security-policy'), /default-src/);
+for (const path of ['/login', '/forgot-password', '/reset-password', '/verify-email']) {
+  const login = await request(path); assert.equal(login.status, 200, 'Direct member access: ' + path);
+  assert.doesNotMatch(await login.text(), /Some doors open/);
+}
 assert.equal((await request('/club-entrance.webp')).status, 200);
 assert.equal((await request('/favicon.ico')).status, 200);
 assert.match(await (await request('/robots.txt')).text(), /Disallow: \//);
