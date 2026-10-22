@@ -15,6 +15,7 @@ import { matchesPassword, newPasswordSchema, passwordSchema } from "@/lib/passwo
 import type { Role } from "@prisma/client";
 import { consumeToken, issueToken } from "@/lib/tokens";
 import { hasClubInvitation } from "@/lib/club-invitation";
+import { emailVerificationRequired } from "@/lib/email-verification";
 
 export type FormState = { error?: string; ok?: string } | null;
 
@@ -68,7 +69,7 @@ export async function signup(_: FormState, form: FormData): Promise<FormState> {
   }
   await audit(user.id, "user.signup", user.id);
   let verificationSent = true;
-  await sendVerification(user).catch(() => {
+  if (emailVerificationRequired()) await sendVerification(user).catch(() => {
     verificationSent = false;
     console.error("verification email failed");
   });
@@ -108,6 +109,7 @@ export async function logout() {
 
 export async function resendVerification(_: FormState): Promise<FormState> {
   const user = await requireUser();
+  if (!emailVerificationRequired()) return { ok: "Email confirmation is not required at the moment. Your account is ready to use." };
   if (user.emailVerifiedAt) return { ok: "Your email is already confirmed." };
   if (!emailDelivers()) return { error: "Please contact support@furlong.club to confirm your email while email delivery is unavailable." };
   if (!await rateLimit(`verify:${user.id}`, 3, 60 * 60 * 1000)) return { error: "We've sent a few already. Please check your inbox and spam folder." };
@@ -207,6 +209,7 @@ export async function changeEmail(_: FormState, form: FormData): Promise<FormSta
   const changed = await db.$queryRaw<{changed:boolean}[]>`SELECT auth_change_email(${user.id},${user.passwordHash},${user.sessionVersion}::integer,${email},${crypto.randomUUID()}) AS changed`;
   if (!changed[0]?.changed) return { error: "Your account changed. Sign in again and retry." };
   await startSession(await db.user.findUniqueOrThrow({ where: { id: user.id } }));
+  if (!emailVerificationRequired()) return { ok: "Email changed. Email confirmation is not required at the moment." };
   await sendVerification({ id: user.id, email }).catch(() => console.error("verification email failed"));
   return { ok: emailDelivers() ? `Email changed. We've sent a confirmation link to ${email}.` : "Email changed. Contact support@furlong.club to confirm your new address." };
 }

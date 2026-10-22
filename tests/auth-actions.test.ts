@@ -2,7 +2,7 @@ import fs from "node:fs";
 import crypto from "node:crypto";
 import bcrypt from "bcryptjs";
 import { PGlite } from "@electric-sql/pglite";
-import { afterAll, beforeAll, beforeEach, expect, it, vi } from "vitest";
+import { afterAll, afterEach, beforeAll, beforeEach, expect, it, vi } from "vitest";
 
 let pg: PGlite;
 let current: Record<string, unknown>;
@@ -40,7 +40,9 @@ beforeAll(async()=>{
   pg=new PGlite();for(const dir of fs.readdirSync('prisma/migrations').filter(n=>/^\d/.test(n)).sort())await pg.exec(fs.readFileSync(`prisma/migrations/${dir}/migration.sql`,'utf8'));
 },30000);
 afterAll(async()=>{await pg?.close();});
+afterEach(()=>{vi.unstubAllEnvs();});
 beforeEach(async()=>{
+  vi.stubEnv('EMAIL_VERIFICATION_REQUIRED','true');
   invitation.allowed = true;
   deliveryFails = false;
   await pg.exec('DELETE FROM "RateLimit"');beforeSignIn=undefined;
@@ -190,4 +192,17 @@ it("does not expose a provider exception or account existence when recovery deli
     expect(await requestPasswordReset(null, form({ email:String(current.email) }))).toEqual(await requestPasswordReset(null, form({ email:'unknown@example.com' })));
     expect(sessionVersion).toBeUndefined();
   } finally { log.mockRestore(); }
+});
+
+it("signs up immediately without calling verification delivery when the owner pauses confirmation", async () => {
+  vi.stubEnv('EMAIL_VERIFICATION_REQUIRED','false');
+  deliveryFails = true;
+  const data = registration();
+  await expect(signup(null, data)).rejects.toThrow('REDIRECT:/dashboard?welcome=1');
+  const user = (await pg.query<{id:string;emailVerifiedAt:Date|null;role:string}>(`SELECT id,"emailVerifiedAt",role FROM "User" WHERE email=$1`, [data.get('email')])).rows[0];
+  expect(user).toMatchObject({ emailVerifiedAt:null, role:'USER' });
+  expect(messages).toHaveLength(0);
+  expect((await pg.query('SELECT id FROM "AuthToken" WHERE "userId"=$1', [user.id])).rows).toHaveLength(0);
+  expect(sessionVersion).toBe(0);
+  expect((await resendVerification(null))?.ok).toContain('not required');
 });

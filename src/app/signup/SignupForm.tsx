@@ -6,7 +6,7 @@ import { signup } from "@/app/actions/auth";
 import { FormMessage } from "@/components/FormMessage";
 import { SubmitButton } from "@/components/SubmitButton";
 
-export function SignupForm({ next }: { next?: string }) {
+export function SignupForm({ next, verificationRequired = true }: { next?: string; verificationRequired?: boolean }) {
   const [state, action, pending] = useActionState(signup, null);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -45,7 +45,7 @@ export function SignupForm({ next }: { next?: string }) {
         <input type="checkbox" name="marketing" checked={marketing} onChange={event => setMarketing(event.target.checked)} className="mt-1 accent-gold-400" />
         <span className="muted">Email me club updates and new video notices.</span>
       </label>
-      <p className="muted text-xs">Free to join. No payment needed. We will email you a link to confirm your address.</p>
+      <p className="muted text-xs">Free to join. No payment needed. {verificationRequired ? "We will email you a link to confirm your address." : "You can use your account straight away."}</p>
       <FormMessage state={state} focusOnError />
       <SubmitButton pendingLabel="Creating account…">Create account</SubmitButton>
       <p className="muted text-center text-sm">

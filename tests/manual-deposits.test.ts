@@ -29,6 +29,20 @@ beforeEach(async () => {
 });
 
 describe("manual deposit lifecycle and financial controls", () => {
+  it("allows an unconfirmed member only during the owner-requested verification pause and still blocks frozen wallets", async () => {
+    const other = await user();
+    await pg.query('UPDATE "User" SET "emailVerifiedAt"=NULL WHERE id=$1', [other]);
+    expect(await create(crypto.randomUUID(), other)).toBe('unverified');
+    await pg.exec('UPDATE "AuthPolicy" SET "emailVerificationRequired"=false');
+    try {
+      expect(await create(crypto.randomUUID(), other)).toBe('created');
+      expect(await balance(other)).toBe(0);
+      await pg.query('UPDATE "User" SET "walletFrozen"=true WHERE id=$1', [other]);
+      expect(await create(crypto.randomUUID(), other)).toBe('frozen');
+    } finally { await pg.exec('UPDATE "AuthPolicy" SET "emailVerificationRequired"=true'); }
+    await pg.query('UPDATE "User" SET "walletFrozen"=false WHERE id=$1', [other]);
+    expect(await create(crypto.randomUUID(), other)).toBe('unverified');
+  });
   it("snapshots amount/network/address without adding spendable money", async () => {
     const p = (await rows<{ payAddress: string; poolAddress: string; amountCents: number; provider: string }>(`SELECT "payAddress","poolAddress","amountCents",provider FROM "Payment" WHERE id=$1`, [payment]))[0];
     expect(p).toEqual({ payAddress: address, poolAddress: address, amountCents: 50000, provider: "manual" });

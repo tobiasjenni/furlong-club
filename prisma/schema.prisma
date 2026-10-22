@@ -391,6 +391,12 @@ model ClubAdmission {
   admittedAt DateTime @default(now())
 }
 
+model AuthPolicy {
+  id                        String @id
+  emailVerificationRequired Boolean @default(true)
+  updatedAt                 DateTime @default(now())
+}
+
 model ChainTransferClaim {
   key          String @id
   paymentId    String?

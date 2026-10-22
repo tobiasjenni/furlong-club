@@ -73,6 +73,10 @@ jobs:
         env:
           SEED_ADMIN_EMAIL: ${{ secrets.SEED_ADMIN_EMAIL }}
           SEED_ADMIN_PASSWORD: ${{ secrets.SEED_ADMIN_PASSWORD }}
+      - name: Apply owner-requested member email policy
+        run: node scripts/configure-email-policy.mjs
+        env:
+          EMAIL_VERIFICATION_REQUIRED: 'false'
       - name: Build for Cloudflare Workers
         run: npx opennextjs-cloudflare build
       - name: Prepare Worker secrets

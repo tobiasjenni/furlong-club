@@ -1,4 +1,5 @@
 "use server";
+import { memberEmailReady } from "@/lib/email-verification";
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -15,7 +16,7 @@ import { createManualDeposit, depositsReady, manualDepositsEnabled } from "@/lib
 export async function startTopup(_: FormState, form: FormData): Promise<FormState> {
   const user = await requireUser();
   if (!walletEnabled || user.walletFrozen) return { error: "Wallet top-ups are currently unavailable." };
-  if (!user.emailVerifiedAt) return { error: "Please verify your email before adding funds." };
+  if (!memberEmailReady(user.emailVerifiedAt)) return { error: "Please verify your email before adding funds." };
   if (!await rateLimit(`topup:${user.id}`, 10, 3600000)) return { error: "Too many attempts. Please try again later." };
   const option = checkoutOptions[Number(form.get("option"))];
   const input = String(form.get("amount") ?? "");
