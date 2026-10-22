@@ -9,3 +9,13 @@
 @media(prefers-reduced-motion:reduce){.club-door-art{animation:none}.club-entry-submit{transition:none}}
 .club-door{justify-content:flex-start}.club-door-shade{background:linear-gradient(90deg,#030b09e8 0%,#030b09b0 30%,#030b091a 66%,#030b0920 100%)}
 @media(max-width:700px){.club-door{justify-content:center}.club-door-art{background-position:60% top;background-size:auto 440px}.club-door-shade{background:linear-gradient(180deg,#07120c44 0,#07120c00 150px,#07120c99 330px,#07120c 450px)}}
+/* Give the entrance its own space on desktop: the form cannot cover the door. */
+@media(min-width:701px){
+  .club-door{justify-content:flex-end;padding:130px 36px 90px;--entrance-panel:440px}
+  .club-door-art{right:var(--entrance-panel);background-position:60% center}
+  .club-door-shade{background:linear-gradient(90deg,#030b0910 0%,#030b0900 40%,#09131000 calc(100% - var(--entrance-panel) - 80px),#091310 calc(100% - var(--entrance-panel) + 12px))}
+  .club-door-card{width:400px;padding:30px;background:linear-gradient(145deg,#0b1c17,#091610);backdrop-filter:none}
+  .club-door-card h1{font-size:42px}
+  .club-door-caption{max-width:calc(100% - var(--entrance-panel) - 48px)}
+}
+@media(min-width:1600px){.club-door{--entrance-panel:520px;padding-right:50px}.club-door-card{width:460px;padding:38px}.club-door-card h1{font-size:49px}}

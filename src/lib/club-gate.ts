@@ -19,15 +19,15 @@ async function version() {
   return Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(hash))))
     .map(byte => byte.toString(16).padStart(2, "0")).join("");
 }
-export async function signClubAdmission() {
-  return new SignJWT({ version: await version() }).setProtectedHeader({ alg: "HS256" })
+export async function signClubAdmission(network: string | null = null) {
+  return new SignJWT({ version: await version(), network }).setProtectedHeader({ alg: "HS256" })
     .setIssuer(issuer).setAudience("club-entry").setIssuedAt().setExpirationTime(`${CLUB_ADMISSION_SECONDS}s`).sign(key());
 }
-export async function verifyClubAdmission(token: string | undefined) {
+export async function verifyClubAdmission(token: string | undefined, network: string | null = null) {
   if (!token) return false;
   try {
     const { payload } = await jwtVerify(token, key(), { algorithms: ["HS256"], issuer, audience: "club-entry", maxTokenAge: `${CLUB_ADMISSION_SECONDS}s` });
-    return payload.version === await version();
+    return payload.version === await version() && payload.network === network;
   } catch { return false; }
 }
 export const clubCookieOptions = { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax" as const, path: "/", maxAge: CLUB_ADMISSION_SECONDS };
