@@ -1,14 +1,16 @@
 import assert from 'node:assert/strict';
 const origin = process.env.APP_URL || 'https://furlong.club';
 const request = (path, options = {}) => fetch(new URL(path, origin), { redirect: 'manual', signal: AbortSignal.timeout(30000), ...options });
-const paths = ['/', '/trading', '/plans', '/meet-harry', '/login', '/signup', '/legal/terms', '/account', '/wallet', '/admin', '/admin/users', '/performance', '/membership', '/allocations', '/_next/data/probe/index.json'];
+const paths = ['/', '/trading', '/plans', '/meet-harry', '/login', '/signup', '/legal/terms', '/account', '/wallet', '/admin', '/admin/users', '/performance', '/membership', '/allocations'];
 for (const path of paths) {
   const r = await request(path);
   assert.equal(r.status, 307, 'Entrance redirect: ' + path);
-  assert.equal(new URL(r.headers.get('location')).pathname, '/entrance');
+  assert.equal(new URL(r.headers.get('location'), origin).pathname, '/entrance');
   assert.match(r.headers.get('cache-control'), /no-store/);
   assert.match(r.headers.get('x-robots-tag'), /noindex/);
 }
+const data = await request('/_next/data/probe/index.json');
+assert.ok([307,404].includes(data.status), 'Unknown framework data cannot return protected content');
 for (const path of ['/api/admin/notifications', '/api/admin/deposits/pending', '/api/admin/trading/pending']) assert.equal((await request(path)).status, 403);
 assert.equal((await request('/wallet', { method: 'POST', headers: { Origin: origin, 'Next-Action': 'probe' } })).status, 403);
 assert.equal((await request('/entrance', { method: 'POST', headers: { Origin: origin, 'Next-Action': 'probe' } })).status, 403);

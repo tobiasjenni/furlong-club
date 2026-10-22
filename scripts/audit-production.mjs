@@ -16,7 +16,7 @@ try {
   if (!settings.success) throw new Error('Worker configuration inventory was unsuccessful');
   const bindings = settings.result.bindings ?? [];
   const secretNames = bindings.filter(b => b.type === 'secret_text').map(b => b.name).sort();
-  const flags = Object.fromEntries(bindings.filter(b => b.type === 'plain_text' && ['APP_ENV','PAYMENT_PROVIDER','WALLET_ENABLED','DATABASE_DRIVER','DEPOSIT_MODE','TRADING_REQUESTS_ENABLED'].includes(b.name)).map(b => [b.name,b.text]));
+  const flags = Object.fromEntries(bindings.filter(b => b.type === 'plain_text' && ['APP_ENV','PAYMENT_PROVIDER','WALLET_ENABLED','DATABASE_DRIVER','DEPOSIT_MODE','TRADING_REQUESTS_ENABLED','CLUB_GATE_ENABLED'].includes(b.name)).map(b => [b.name,b.text]));
   const counts = await db.$queryRaw`SELECT
     (SELECT count(*)::int FROM "User") AS users,
     (SELECT count(*)::int FROM "User" WHERE role IN ('ADMIN','SUPER_ADMIN') AND status='ACTIVE') AS admins,
@@ -49,14 +49,16 @@ try {
     (SELECT count(*)::int FROM pg_tables WHERE schemaname='public' AND tableowner=current_user) AS "tablesOwnedByRuntimeRole",
     (SELECT rolsuper FROM pg_roles WHERE rolname=current_user) AS "databaseSuperuser",
     has_schema_privilege(current_user,'public','CREATE') AS "canCreateInPublicSchema",
-    to_regprocedure('public.auth_confirm_admin(text,text,integer,text)') IS NOT NULL AS "adminConfirmationApplied"`;
+    to_regprocedure('public.auth_confirm_admin(text,text,integer,text)') IS NOT NULL AS "adminConfirmationApplied",
+    EXISTS(SELECT 1 FROM "_prisma_migrations" WHERE migration_name='20261022090000_read_only_admin' AND finished_at IS NOT NULL AND rolled_back_at IS NULL) AS "readOnlyAdminApplied"`;
   const routes = [];
   for (const path of ['/','/trading','/plans','/login','/signup','/legal/terms','/icon.svg','/robots.txt']) {
-    const result = await fetch(`https://furlong.club${path}`, { signal: AbortSignal.timeout(20000) });
-    routes.push({path,status:result.status});
+    const result = await fetch(`https://furlong.club${path}`, { redirect: 'manual', signal: AbortSignal.timeout(20000) });
+    const expected = flags.CLUB_GATE_ENABLED === 'true' && !['/icon.svg','/robots.txt'].includes(path) ? 307 : 200;
+    routes.push({path,status:result.status,expected});
   }
   console.log('RELEASE_AUDIT ' + JSON.stringify({flags,secretNames,database:counts[0],migrations:tables[0],ledger:ledger?.[0],security:security[0],trading,routes}));
-  if (!counts[0].superAdmins || counts[0].outdatedPaidPlans || !counts[0].admins || counts[0].negativeBalances || ledger?.[0].balanceMismatches || ledger?.[0].unbalancedPostings || ledger?.[0].lockedPrincipalMismatches || trading?.enrollmentEnabled || flags.TRADING_REQUESTS_ENABLED!=='false' || routes.some(r=>r.status!==200)) process.exitCode=1;
+  if (counts[0].superAdmins!==1 || counts[0].outdatedPaidPlans || !counts[0].admins || counts[0].negativeBalances || ledger?.[0].balanceMismatches || ledger?.[0].unbalancedPostings || ledger?.[0].lockedPrincipalMismatches || trading?.enrollmentEnabled || flags.TRADING_REQUESTS_ENABLED!=='false' || routes.some(r=>r.status!==r.expected) || (flags.CLUB_GATE_ENABLED==='true' && (!secretNames.includes('CLUB_PASSWORD_HASH') || !security[0].readOnlyAdminApplied))) process.exitCode=1;
 } catch (error) {
   // Database/driver error objects may embed a connection string. Keep logs redacted.
   console.error('Production audit failed. Inspect database connectivity and Worker access securely.');

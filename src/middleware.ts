@@ -14,7 +14,9 @@ export async function middleware(req: NextRequest) {
   const path = req.nextUrl.pathname;
   const locked = clubGateEnabled();
   const publicRequest = gateExempt(path) && (["GET", "HEAD"].includes(req.method) || path === "/api/club-entry" || gateMachineEndpoint(path));
-  if (locked && !publicRequest && !await verifyClubAdmission(req.cookies.get(CLUB_COOKIE)?.value)) {
+  // Always validate the cookie before routing, including public entrance requests.
+  const admitted = await verifyClubAdmission(req.cookies.get(CLUB_COOKIE)?.value);
+  if (locked && !publicRequest && !admitted) {
     if (path.startsWith("/api/") || !["GET", "HEAD"].includes(req.method)) return privateResponse(NextResponse.json({ error: "Club admission required." }, { status: 403 }));
     const url = new URL("/entrance", req.url);
     url.searchParams.set("next", path + req.nextUrl.search);
@@ -38,5 +40,5 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image).*)"],
+  matcher: ["/((?!_next/static/|_next/image$).*)"],
 };

@@ -109,9 +109,7 @@ jobs:
       - name: Deploy
         run: npx opennextjs-cloudflare deploy -- --secrets-file "$RUNNER_TEMP/secrets.json"
       - name: Verify published site
-        run: |
-          node scripts/check-release.mjs
-          node scripts/check-seo.mjs
+        run: node scripts/check-club-gate.mjs
       - name: Remove secrets file
         if: always()
         run: rm -f "$RUNNER_TEMP/secrets.json"

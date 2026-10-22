@@ -3,7 +3,7 @@ import { clubNext } from "@/lib/club-gate";
 import { EntranceForm } from "./EntranceForm";
 import "./entrance.css";
 
-export const metadata = { ...privateMetadata, title: "The Private Entrance · Furlong Club", description: "Welcome to the private entrance of Furlong Club." };
+export const metadata = { ...privateMetadata, title: { absolute: "The Private Entrance · Furlong Club" }, description: "Welcome to the private entrance of Furlong Club." };
 export default async function Entrance({ searchParams }: { searchParams: Promise<{ next?: string }> }) {
   return <div className="club-door">
     <div className="club-door-art" role="img" aria-label="A traditional London club entrance with a green door, warm brass lanterns and a welcoming butler" />
