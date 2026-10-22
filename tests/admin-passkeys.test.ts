@@ -3,7 +3,7 @@ import crypto from "node:crypto";
 import bcrypt from "bcryptjs";
 import { decodeJwt, SignJWT } from "jose";
 import { PGlite } from "@electric-sql/pglite";
-import { afterAll, beforeAll, beforeEach, expect, it, vi } from "vitest";
+import { afterAll, afterEach, beforeAll, beforeEach, expect, it, vi } from "vitest";
 import { passkeyFixture } from "./helpers/passkey-fixture";
 
 let pg: PGlite, uid: string;
@@ -25,6 +25,7 @@ vi.mock("@/lib/db", () => ({ db: {
 import { POST } from "@/app/api/admin/security/route";
 import { requireAdmin } from "@/lib/auth";
 import { signSession, SESSION_COOKIE } from "@/lib/session";
+import { CLUB_COOKIE, verifyClubAdmission } from "@/lib/club-gate";
 import { ADMIN_COOKIE, ADMIN_PASSWORD_COOKIE, signAdminReauthenticationGrant, verifyAdminConfirmation } from "@/lib/admin-session";
 import { unlockAdmin } from "@/app/admin-unlock/actions";
 
@@ -47,7 +48,10 @@ beforeAll(async () => {
   for (const dir of fs.readdirSync("prisma/migrations").filter(n => /^\d/.test(n)).sort()) await pg.exec(fs.readFileSync(`prisma/migrations/${dir}/migration.sql`, "utf8"));
 }, 30000);
 afterAll(async () => { await pg?.close(); });
+afterEach(() => vi.unstubAllEnvs());
 beforeEach(async () => {
+  vi.stubEnv("CLUB_GATE_ENABLED", "true");
+  vi.stubEnv("CLUB_PASSWORD_HASH", "$2a$12$" + "a".repeat(53));
   process.env.AUTH_SECRET = "test-admin-security-key-".repeat(3); uid = crypto.randomUUID(); store.clear();
   await pg.query(`INSERT INTO "User"(id,email,"passwordHash",role,"ageConfirmedAt","emailVerifiedAt","updatedAt") VALUES($1,$2,$3,'ADMIN',now(),now(),now())`, [uid, uid + "@example.com", await bcrypt.hash("existing-admin-password", 4)]);
   store.set(SESSION_COOKIE, { value: await signSession({ uid, role: "ADMIN", sv: 0 }) });
@@ -67,6 +71,7 @@ it("registers a real verified public key, stores only recovery hashes and requir
   const { device, result } = await enroll();
   expect(result.recoveryCodes).toHaveLength(8); expect(result.needsVerification).toBe(true);
   expect(store.has(ADMIN_COOKIE)).toBe(false); expect(store.get(SESSION_COOKIE)!.value).not.toBe(oldSession);
+  expect(await verifyClubAdmission(store.get(CLUB_COOKIE)?.value)).toBe(true);
   const hashes = (await pg.query<{ hash: string }>('SELECT hash FROM "AdminRecoveryCode" WHERE "userId"=$1', [uid])).rows;
   expect(hashes).toHaveLength(8); expect(JSON.stringify(hashes)).not.toContain(result.recoveryCodes[0]);
   expect((await verify(device)).status).toBe(200);
