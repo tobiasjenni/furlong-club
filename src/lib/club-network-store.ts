@@ -9,12 +9,17 @@ function database() {
 function validate(key: string) {
   if (!/^[0-9a-f]{64}$/.test(key)) throw new Error("Invalid club network key");
 }
+async function admissionQuery<T>(query: () => PromiseLike<T>): Promise<T> {
+  // Both operations are idempotent. Retry a cold/transient HTTP failure once;
+  // a second failure propagates so callers still refuse unverified admission.
+  try { return await query(); } catch { return await query(); }
+}
 export async function clubNetworkAdmitted(key: string) {
   validate(key);
-  const rows = await database()`SELECT 1 FROM "ClubAdmission" WHERE key = ${key} LIMIT 1`;
+  const rows = await admissionQuery(() => database()`SELECT 1 FROM "ClubAdmission" WHERE key = ${key} LIMIT 1`);
   return rows.length === 1;
 }
 export async function rememberClubNetwork(key: string) {
   validate(key);
-  await database()`INSERT INTO "ClubAdmission" (key) VALUES (${key}) ON CONFLICT (key) DO NOTHING`;
+  await admissionQuery(() => database()`INSERT INTO "ClubAdmission" (key) VALUES (${key}) ON CONFLICT (key) DO NOTHING`);
 }
