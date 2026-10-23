@@ -4,6 +4,7 @@ import { SyndicateWatch } from "@/components/SyndicateWatch";
 import { upcomingSyndicates } from "@/lib/syndicate-data";
 import { proposedTradingTargets } from "@/lib/trading-marketing";
 import { HostPortrait } from "@/components/HostPortrait";
+import { RobDeskImage } from "@/components/RobDeskImage";
 import { PortalIcon } from "@/components/v2/PortalIcon";
 import { currentUser } from "@/lib/auth";
 import { organization, pageMetadata, siteUrl, website } from "@/lib/seo";
@@ -41,7 +42,7 @@ export default async function Home() {
       ["01", "Join and review", "Create your free account. Meet Rob, review the trading terms and check the published moon-entry dates before funding."],
       ["02", "Fund and choose your entry", "Report your USDT or USDC transfer for review. With approved credit, choose an entry and request a $500–$10,000 allocation. Approval reserves the funds."],
       ["03", "Follow the full cycle", "Trading runs for 28 days from your scheduled entry. Follow the saved maturity, actual result and manually verified external payout in your workspace."],
-    ].map(([number,title,body]) => <article key={number}><span>{number}</span><h3>{title}</h3><p>{body}</p></article>)}</div></section>
+    ].map(([number,title,body]) => <article key={number}><span>{number}</span><h3>{title}</h3><p>{body}</p></article>)}</div><RobDeskImage /></section>
     <section id="plans" className="landing-section container-page"><SubscriptionsComingSoon member={Boolean(user)} /></section>
     <section id="faq" className="landing-section container-page"><div className="landing-faq-layout"><div><p className="landing-eyebrow">BEFORE YOU JOIN</p><h2>Clear answers.<br />From the start.</h2><p className="landing-faq-intro">Understand the process, the timing and how your trading account works.</p><Link href="mailto:support@furlong.club" className="landing-inline-link">Talk to the club<PortalIcon name="arrow" /></Link></div><div className="landing-faqs">{faqs.map(f => <details key={f.q}><summary>{f.q}<span aria-hidden="true">+</span></summary><p>{f.a}</p></details>)}</div></div></section>
     <section className="container-page landing-final"><div><p className="landing-eyebrow">WELCOME TO FURLONG CLUB</p><h2>Experience the club.<br /><span>Keep your own clear record.</span></h2><Link className="btn-gold" href={user ? "/allocations" : "/signup?next=%2Fallocations"}>{user ? "Open Trading with Rob" : "Sign up for Trading with Rob"}<PortalIcon name="arrow" /></Link><p>Free to join · No paid subscription required · 18+ only</p></div></section>
