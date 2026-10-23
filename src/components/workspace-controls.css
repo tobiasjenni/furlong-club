@@ -142,7 +142,7 @@
   .portal-topbar-title>div>span:first-child { font-size:11px; }
   .portal-current-section { font-size:10px; }
   .v2-portal .portal-mobile-menu>summary { width:auto; gap:6px; padding:0 10px; font-size:11px; }
-  .portal-mobile-menu>nav { max-height:calc(100dvh - 180px - env(safe-area-inset-bottom)); }
+  .portal-mobile-menu>nav { max-height:calc(100dvh - 212px - env(safe-area-inset-bottom)); }
   .workspace-desktop-records { display:none; }
   .v2-portal .portal-next-step>.btn-gold { width:100%; }
   .v2-portal [id] { scroll-margin-bottom:calc(100px + env(safe-area-inset-bottom)); }
