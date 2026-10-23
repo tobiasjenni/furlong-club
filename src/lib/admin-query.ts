@@ -31,4 +31,7 @@ export const adminOverviewQuery = () => Prisma.sql`SELECT
   (SELECT count(*)::int FROM "User" WHERE "createdAt">=(CURRENT_TIMESTAMP AT TIME ZONE 'UTC')-interval '30 days') AS "newUsers",
   (SELECT count(*)::int FROM "Subscription" WHERE status='ACTIVE' AND "endsAt">(CURRENT_TIMESTAMP AT TIME ZONE 'UTC')) AS "activeSubs",
   (SELECT COALESCE(sum("revenueDeltaCents"),0)::float8 FROM "WalletJournal" WHERE "createdAt">=(CURRENT_TIMESTAMP AT TIME ZONE 'UTC')-interval '30 days') AS revenue,
-  (SELECT count(*)::int FROM "Payment" WHERE status IN ('PENDING','CONFIRMING','PARTIAL')) AS payments`;
+  (SELECT count(*)::int FROM "Payment" WHERE status IN ('PENDING','CONFIRMING','PARTIAL')) AS payments,
+  (SELECT count(*)::int FROM "TradingAllocation" WHERE status IN ('ACTIVE','PAYOUT_READY')) AS "activeAllocations",
+  (SELECT COALESCE(sum("principalCents"),0)::float8 FROM "TradingAllocation" WHERE status IN ('ACTIVE','PAYOUT_READY')) AS "committedCents",
+  (SELECT COALESCE(sum("payoutCents"),0)::float8 FROM "TradingAllocation" WHERE status='PAYOUT_READY') AS "payoutDueCents"`;

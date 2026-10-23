@@ -10,7 +10,7 @@ export function PortfolioOverview({ snapshot }: { snapshot: PortalSnapshot }) {
   const [hidden, setHidden] = useState(false);
   const money = (cents: number) => hidden ? "••••" : usd(cents);
   const metrics = [
-    { label: "Available credit", value: snapshot.availableCents, note: "Ready for eligible club payments", icon: "wallet" as const },
+    { label: "Available credit", value: snapshot.availableCents, note: "Available for an allocation request", icon: "wallet" as const },
     { label: "Committed principal", value: snapshot.committedCents, note: `${snapshot.activeCount} open allocation${snapshot.activeCount === 1 ? "" : "s"}`, icon: "trading" as const },
     { label: "Recorded profit / loss", value: snapshot.recordedProfitCents, note: `${snapshot.resultCount} recorded result${snapshot.resultCount === 1 ? "" : "s"}`, icon: "performance" as const },
     { label: "Payouts due", value: snapshot.payoutDueCents, note: "Awaiting external manual payment", icon: "activity" as const },

@@ -23,3 +23,11 @@ async function financialData(history: boolean) {
 // Request-scoped only: balances and permissions are never cached across users.
 export const portalData = cache(() => financialData(true));
 export const portalSummary = cache(() => financialData(false));
+
+export const pendingTradingDeposit = cache(async () => {
+  const user = await requireUser();
+  return db.payment.findFirst({
+    where: { userId: user.id, purpose: "WALLET_TOPUP", status: { in: ["PENDING", "CONFIRMING", "PARTIAL"] }, OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }] },
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }], select: { id: true, status: true },
+  });
+});

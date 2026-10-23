@@ -4,13 +4,13 @@ import Link from "next/link";
 import { countdownParts, entryDate, moonPhaseName, nextSyndicateEntry, type SyndicateEntry } from "@/lib/syndicate";
 import "./syndicate-watch.css";
 
-export function SyndicateWatch({ entries, asOf, member = false }: { entries: SyndicateEntry[]; asOf: string; member?: boolean }) {
+export function SyndicateWatch({ entries, asOf, member = false, compact = false }: { entries: SyndicateEntry[]; asOf: string; member?: boolean; compact?: boolean }) {
   const [now, setNow] = useState(() => Date.parse(asOf));
   useEffect(() => { const update = () => setNow(Date.now()); update(); const timer = setInterval(update, 1000); return () => clearInterval(timer); }, []);
   const upcoming = entries.filter(entry => Date.parse(entry.startsAt) > now);
   const next = nextSyndicateEntry(entries, now);
   const time = next ? countdownParts(next.startsAt, now) : null;
-  return <section className="syndicate-watch" aria-label="Syndicate horse watch">
+  return <section className={`syndicate-watch${compact ? " syndicate-watch-compact" : ""}`} aria-label="Syndicate horse watch">
     <div className="syndicate-watch-top"><span><i /> THE SYNDICATE HORSE WATCH</span><span className="syndicate-watch-zone">UTC</span></div>
     <div className="syndicate-watch-face">
       <svg viewBox="0 0 160 170" className="syndicate-watch-dial" aria-hidden="true">
