@@ -1,3 +1,4 @@
+import { ClubResultsCalendar } from "@/components/v2/ClubResultsCalendar";
 import { TradingSummary } from "@/components/TradingSummary";
 import { requireAdmin } from "@/lib/auth";
 import { notFound } from "next/navigation";
@@ -78,6 +79,7 @@ export default async function AdminUser({ params, searchParams }: { params: Prom
       </div>
       <div className="min-w-0 space-y-4">
         <TradingSummary userId={user.id} admin />
+        <ClubResultsCalendar />
         <div className="card">
           <h3 className="mb-3 text-lg">Crypto deposit approvals</h3>
           {pendingDeposits.length === 0 && <p className="muted text-sm">No reported deposits awaiting approval for this member.</p>}
