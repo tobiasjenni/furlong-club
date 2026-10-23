@@ -13,6 +13,7 @@ const nav = [
   { href: "/admin/users", label: "Users & CRM" },
   { href: "/admin/deposits", label: "Deposits" },
   { href: "/admin/trading", label: "Trading allocations" },
+  { href: "/admin/syndicates", label: "Moon calendar" },
   { href: "/admin/results", label: "Daily performance" },
   { href: "/admin/payments", label: "Payments" },
   { href: "/admin/wallet", label: "Wallet & reconciliation" },

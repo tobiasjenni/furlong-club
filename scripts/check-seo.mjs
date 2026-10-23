@@ -3,7 +3,7 @@
 const origin = process.env.APP_URL || "https://furlong.club";
 const staging = process.argv.includes("--staging");
 const canonicalOrigin = "https://furlong.club";
-const publicPaths = ["/", "/trading", "/plans", "/meet-harry", "/legal/terms", "/legal/privacy", "/legal/responsible-gambling"];
+const publicPaths = ["/", "/trading", "/plans", "/meet-rob", "/legal/terms", "/legal/privacy", "/legal/responsible-gambling"];
 const authPaths = ["/login", "/signup", "/forgot-password", "/reset-password", "/verify-email"];
 const failures = [];
 const titles = new Set();
@@ -54,7 +54,7 @@ for (const path of publicPaths) {
   }
   const types = nodes.map(node => node["@type"]);
   check(path === "/" ? types.includes("Organization") && types.includes("WebSite") : types.includes("BreadcrumbList"), `${path}: missing structured information`);
-  if (path === "/meet-harry") check(nodes.some(node => node["@type"] === "ProfilePage" && node.mainEntity?.["@type"] === "Person"), `${path}: missing Harry profile information`);
+  if (path === "/meet-rob") check(nodes.some(node => node["@type"] === "ProfilePage" && node.mainEntity?.["@type"] === "Person"), `${path}: missing Rob profile information`);
   check(!types.some(type => ["AggregateRating", "Review", "FinancialProduct"].includes(type)), `${path}: unsupported promotional schema`);
   console.log(`SEO public ${path}: ${response.status}, canonical and metadata checked`);
 }

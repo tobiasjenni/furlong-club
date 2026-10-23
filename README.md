@@ -1,19 +1,19 @@
 # Furlong Club (working name)
 
-Horse racing education and tip-video membership site. Next.js 15 + TypeScript + Tailwind, Postgres via Prisma.
+Trading with Rob syndicates and horse-racing club accounts. Next.js 16 + TypeScript + Tailwind, Postgres via Prisma.
 
 ## What's in v0.1
 - Email sign-up and login, email verification, password reset, sign out on all devices, self-service account closure
 - Member area: dashboard, video library gated by plan tier, account page with profile, password, subscription and payment history
-- Plans: Paddock (free), Form Room ($29 / 33 days), Inner Circle ($79 / 33 days), editable in admin
+- Subscriptions are coming soon. Free accounts can request Trading with Rob; historical memberships remain recorded.
 - Crypto checkout in USDT/USDC (Tron, Ethereum, Polygon) behind a `PaymentProvider` interface
   - `mock` provider for local testing (a "simulate payment" button appears on the pay page)
   - `nowpayments` provider with signed IPN webhook at `/api/payments/webhook/nowpayments`
 - Admin back office: stats, user search and filters, CRM notes and tags, role/suspend, grant or cancel access, payments list, video CRUD, plan editing, CSV export
 - Member wallet: USDT/USDC top-ups, USD credit balance, payment receipts and membership purchases from balance. Immutable balanced ledger and pooled settlement trail in admin. Manual funding uses configured receiving wallets and admin verification. General withdrawals and member-to-member transfers are not supported.
-- Harry Whitcombe is the real host, as confirmed by the site owner. The owner confirms over 40 years of experience reading horses and riders; the public profile and captions reflect that biography. Trading terms and daily targets are provisional; production enrollment remains closed.
+- Rob is the owner-confirmed trader, shown using the supplied real photograph. Published full/new moon entries start at 00:00 UTC and run for 28 days. The horse watch counts down to the next entry; existing approved allocations keep their original maturity dates.
 
-See [trading operations](docs/trading-operations.md) for the draft $500–$10,000 allocation flow, 33-day locks, actual-result review and manual external payout records. Real trading enrollment remains closed.
+See [trading operations](docs/trading-operations.md) and [moon calendar policy](docs/moon-syndicates.md) for the $500–$10,000 flow, reserved funding, scheduled 28-day periods, admin controls and manual external payouts.
 
 ## Run locally
 ```bash

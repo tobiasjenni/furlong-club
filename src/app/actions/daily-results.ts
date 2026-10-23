@@ -35,12 +35,14 @@ export async function saveCycleSummary(_: DailyResultState, form: FormData): Pro
   const fail = (error: string) => ({ day, error });
   if (!await rateLimit(`cycle-summary:${admin.id}`, 10, 60000)) return fail('Please wait a minute before trying again.');
   const parsed = utcDay(day), bps = parseReturnBps(form.get('profitPercent'));
+  const days = Number(form.get('lockDays'));
+  if (![28, 33].includes(days)) return fail('Choose the actual reported cycle duration.');
   const revision = Number(form.get('revision')), note = String(form.get('sourceNote') ?? '').trim();
   if (!parsed || parsed.day !== day || bps === null || !Number.isInteger(revision) || revision < 0) return fail('Enter a valid cycle end date and net profit percentage from −100% to +1,000%.');
   if (note.length < 10 || note.length > 1000 || form.get('verified') !== 'on') return fail('Add the source / correction reason and confirm the summary is an owner-reported figure.');
   let result: string;
   try {
-    result = (await db.$queryRaw<{ result: string }[]>`SELECT club_save_cycle_summary(${admin.id},${day},${bps}::integer,${note},${revision}::integer,${form.get('published') === 'on'},${crypto.randomUUID()}) AS result`)[0].result;
+    result = (await db.$queryRaw<{ result: string }[]>`SELECT club_save_cycle_summary(${admin.id},${day},${bps}::integer,${note},${revision}::integer,${form.get('published') === 'on'},${crypto.randomUUID()},${days}::integer) AS result`)[0].result;
   } catch { return fail('The cycle summary was not saved. Reload before retrying.'); }
   if (result !== 'saved') return fail(result === 'stale' ? 'The cycle summary changed. Reload before saving.' : 'Check your permissions, source and end date. The end date may be up to one year ahead.');
   revalidatePath('/admin/results');revalidatePath('/admin/users', 'layout');revalidatePath('/(member)', 'layout');

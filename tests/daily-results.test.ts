@@ -19,7 +19,7 @@ describe('daily percentage calculations',()=>{
     expect(signedPercent(-0.0001)).toBe('0.00%');
     expect(signedPercent(148)).toBe('+148.00%');
   });
-  it('counts a 33-day calendar window across month boundaries',()=>expect(cycleWindow('2026-10-25')).toEqual({start:'2026-09-23',end:'2026-10-25'}));
+  it('counts a 33-day calendar window across month boundaries',()=>expect(cycleWindow('2026-10-25',33)).toEqual({start:'2026-09-23',end:'2026-10-25'}));
 });
 
 let pg:PGlite,owner:string,admin:string,member:string;
@@ -109,9 +109,9 @@ it('upgrades existing owners with only the supplied aggregate claim, without fab
   const upgrade=new PGlite();
   try{
     const migrations=fs.readdirSync('prisma/migrations').filter(n=>/^\d/.test(n)).sort();
-    for(const dir of migrations.filter(n=>n!=='20261023040000_club_daily_results'))await upgrade.exec(fs.readFileSync(`prisma/migrations/${dir}/migration.sql`,'utf8'));
+    for(const dir of migrations.filter(n=>n<'20261023040000_club_daily_results'))await upgrade.exec(fs.readFileSync(`prisma/migrations/${dir}/migration.sql`,'utf8'));
     const id=crypto.randomUUID();await upgrade.query(`INSERT INTO "User"(id,email,role,"passwordHash","ageConfirmedAt","updatedAt") VALUES($1,'upgrade-owner@example.com','SUPER_ADMIN','fixture',now(),now())`,[id]);
-    await upgrade.exec(fs.readFileSync('prisma/migrations/20261023040000_club_daily_results/migration.sql','utf8'));
+    for(const dir of migrations.filter(n=>n>='20261023040000_club_daily_results')) await upgrade.exec(fs.readFileSync(`prisma/migrations/${dir}/migration.sql`,'utf8'));
     expect((await upgrade.query(`SELECT to_char("endDay",'YYYY-MM-DD') AS day,"profitBps" FROM "ClubCycleSummary"`)).rows[0]).toEqual({day:'2026-10-25',profitBps:14800});
     expect((await upgrade.query(`SELECT count(*)::int AS n FROM "ClubDailyResult"`)).rows[0]).toEqual({n:0});
     expect((await upgrade.query(`SELECT action FROM "AuditLog" WHERE target='harry'`)).rows[0]).toEqual({action:'club.cycle_summary_owner_reported'});

@@ -26,11 +26,12 @@ export function DailyResultForm({ day, today, record }: { day: string; today: st
   </section>;
 }
 
-export type CycleSummaryRecord = { endDay: string; profitBps: number; published: boolean; revision: number; sourceNote: string };
+export type CycleSummaryRecord = { endDay: string; profitBps: number; published: boolean; revision: number; sourceNote: string; lockDays: number };
 export function CycleSummaryForm({ record }: { record?: CycleSummaryRecord }) {
   const [state, action] = useActionState(saveCycleSummary, null);
-  return <section className="card space-y-4"><h2 className="text-xl">Owner-reported 33-day cycle summary</h2><p className="muted text-sm">This separate summary can show a cycle figure before its daily breakdown has been supplied. A future end date is marked in progress. It never creates a member balance or confirms a payout.</p>
+  return <section className="card space-y-4"><h2 className="text-xl">Owner-reported cycle summary</h2><p className="muted text-sm">This separate summary can show a cycle figure before its daily breakdown has been supplied. A future end date is marked in progress. It never creates a member balance or confirms a payout.</p>
     <form action={action} key={record?.revision ?? 0} className="space-y-4"><input type="hidden" name="revision" value={record?.revision ?? 0} />
+      <label className="label">Reported period<select name="lockDays" className="input" defaultValue={record?.lockDays ?? 28}><option value="28">28 days · current syndicate</option><option value="33">33 days · historical cycle</option></select></label>
       <label className="label">Cycle end date (UTC)<input name="endDay" type="date" required defaultValue={record?.endDay} className="input" /></label>
       <label className="label">Reported net cycle profit (%)<input name="profitPercent" type="number" step="0.01" min={-100} max={1000} required defaultValue={record ? record.profitBps / 100 : ''} className="input" /></label>
       <label className="label">Summary source / correction reason<textarea name="sourceNote" required minLength={10} maxLength={1000} rows={3} className="input" /></label>

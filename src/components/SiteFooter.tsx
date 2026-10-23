@@ -15,13 +15,13 @@ export function SiteFooter() {
             risk and you can lose the money you stake. Only bet what you can afford to lose.
           </p>
           <p className="muted max-w-md">
-            {brand.host.name} brings more than 40 years of experience reading horses and riders to {brand.name}.
+            {brand.host.name} leads the {brand.name} trading syndicate, with full-moon and new-moon entries and a 28-day trading period.
           </p>
         </div>
         <div className="space-y-2">
           <p className="font-semibold text-cream">The club</p>
           <Link href={brand.host.page} className="muted block hover:text-gold-300">Meet {brand.host.first}</Link>
-          <Link href="/trading" className="muted block hover:text-gold-300">Trading with Harry</Link>
+          <Link href="/trading" className="muted block hover:text-gold-300">Trading with Rob</Link>
           <Link href="/plans" className="muted block hover:text-gold-300">Subscriptions · Coming soon</Link>
           <a href={`mailto:${brand.supportEmail}`} className="muted block hover:text-gold-300">Support</a>
         </div>

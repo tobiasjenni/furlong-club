@@ -98,7 +98,7 @@ export default async function AdminUser({ params, searchParams }: { params: Prom
           <h3 className="mb-3 text-lg">CRM notes</h3>
           {manageable && <form action={addNote} className="space-y-2">
             <input type="hidden" name="userId" value={user.id} />
-            <textarea name="body" rows={3} className="input" placeholder="Called, interested in Trading with Harry…" />
+            <textarea name="body" rows={3} className="input" placeholder="Called, interested in Trading with Rob…" />
             <button className="btn-gold">Add note</button>
           </form>}
           <ul className="mt-4 space-y-3">

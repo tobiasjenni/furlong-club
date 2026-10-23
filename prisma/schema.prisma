@@ -328,10 +328,24 @@ model TradingProgram {
   enrollmentEnabled Boolean @default(false)
 }
 
+model SyndicateEntry {
+ id String @id
+ phase String
+ startsAt DateTime @unique
+ accepting Boolean @default(true)
+ revision Int @default(1)
+ updatedAt DateTime @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)"))
+ allocations TradingAllocation[]
+ @@unique([id, startsAt])
+}
+
 model TradingAllocation {
   id              String @id
   userId          String
   user            User @relation(fields: [userId], references: [id], onDelete: Restrict)
+  syndicateEntryId String?
+  startsAt DateTime?
+  syndicateEntry SyndicateEntry? @relation(fields: [syndicateEntryId, startsAt], references: [id, startsAt], onDelete: Restrict, onUpdate: Restrict)
   requestKey      String @unique
   principalCents  Int
   currency        String
@@ -409,6 +423,7 @@ model ClubDailyResult {
 
 model ClubCycleSummary {
   id String @id
+  lockDays Int @default(28)
   endDay DateTime @db.Date
   profitBps Int
   published Boolean @default(true)

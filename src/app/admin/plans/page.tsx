@@ -7,7 +7,7 @@ export default async function AdminPlans() {
   const canEdit = admin.role === "SUPER_ADMIN";
   const plans = await db.plan.findMany({ orderBy: { sortOrder: "asc" } });
   return (
-    <div className="grid gap-4 md:grid-cols-3"><p className="card text-sm text-gold-300 md:col-span-3">Subscriptions are coming soon. These settings are retained for future use; editing or activating a plan does not reopen purchases. Trading with Harry does not require paid membership.</p>
+    <div className="grid gap-4 md:grid-cols-3"><p className="card text-sm text-gold-300 md:col-span-3">Subscriptions are coming soon. These settings are retained for future use; editing or activating a plan does not reopen purchases. Trading with Rob does not require paid membership.</p>
       {plans.map((p) => (
         <form key={p.id} action={savePlan} className="card space-y-3">
           <fieldset disabled={!canEdit} className="space-y-3">
