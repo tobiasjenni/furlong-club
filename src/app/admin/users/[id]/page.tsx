@@ -54,7 +54,7 @@ export default async function AdminUser({ params, searchParams }: { params: Prom
         </div>
         {management && <p role="status" className="card text-sm">{management === 'saved' ? 'Account updated and recorded in the audit history.' : management === 'wallet_unresolved' ? 'Resolve the balance, pending deposits and open trading allocations before closing this account.' : 'This action is unavailable. Check your permissions and the account status.'}</p>}
         {!manageable && <div className="card"><h3 className="text-lg">Protected account</h3><p className="muted mt-2 text-sm">{user.role === 'SUPER_ADMIN' ? 'The Super Admin owner account cannot be demoted, suspended or closed here.' : 'Your role does not allow changes to this account.'} Use your own profile for personal password and session settings.</p></div>}
-        {manageable && <ProfileForm key={user.updatedAt.toISOString()} user={{ id: user.id, name: user.name, country: user.country, tags: user.tags, status: user.status, updatedAt: user.updatedAt.toISOString() }} />}
+        {manageable && <ProfileForm key={user.id} user={{ id: user.id, name: user.name, country: user.country, tags: user.tags, status: user.status, updatedAt: user.updatedAt.toISOString() }} />}
         {manageable && <DeleteAccountForm key={user.status} userId={user.id} email={user.email} closed={user.status === 'CLOSED'} />}
         {manageable && superAdmin && <RoleForm userId={user.id} role={user.role} />}
         {manageable && <div className="card space-y-3">
