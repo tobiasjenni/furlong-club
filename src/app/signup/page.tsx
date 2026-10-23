@@ -13,7 +13,7 @@ export default async function SignupPage({ searchParams }: { searchParams: Promi
   const next = requested ? safeNext(requested) : undefined;
   if (await currentUser()) redirect(next ?? "/dashboard");
   return (
-    <AuthShell title="Join the club for free" subtitle="Explore the catalogue, manage your wallet and choose paid access when it suits you.">
+    <AuthShell title="Join the club for free" subtitle="Create your free account for Trading with Harry. Fund your wallet and request an allocation for Super Admin approval. No paid subscription needed.">
       <SignupForm next={next} verificationRequired={emailVerificationRequired()} />
     </AuthShell>
   );

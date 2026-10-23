@@ -19,7 +19,7 @@ export function EntranceOptions({ initialMode, loginNext, invitationNext, notice
         <LoginForm next={loginNext} notice={notice} showSignupLink={false} />
       </> : <>
         <h2 className="club-door-panel-title">Your invitation, please.</h2>
-        <p className="club-door-panel-intro">Enter your invitation password to explore the club and create your membership account.</p>
+        <p className="club-door-panel-intro">Enter your invitation password to explore the club and create your free trading account.</p>
         <EntranceForm next={invitationNext} />
       </>}
     </div>

@@ -18,7 +18,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   if (user && reauth !== "1") redirect(next ?? "/dashboard");
   if (clubGateEnabled()) return <ClubEntrance next={next} notice={reset ? "Password updated. Please sign in with your new password." : undefined} />;
   return (
-    <AuthShell title="Welcome back" subtitle="Your membership, wallet and trading records, in one place.">
+    <AuthShell title="Welcome back" subtitle="Your Trading with Harry account, wallet and results, in one place.">
       <LoginForm next={next} notice={reset ? "Password updated. Please sign in with your new password." : undefined} />
     </AuthShell>
   );

@@ -1,7 +1,8 @@
 import { memberEmailReady } from "@/lib/email-verification";
 import crypto from "node:crypto";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
+import { subscriptionSalesEnabled } from "@/lib/subscription-sales";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { usd } from "@/lib/format";
@@ -12,7 +13,9 @@ import { PortalHeading } from "@/components/v2/PortalCommon";
 
 export const metadata = { title: "Activate membership" };
 export default async function PortalMembership({ params }: { params: Promise<{ plan: string }> }) {
-  const user = await requireUser(); const plan = await db.plan.findUnique({ where: { slug: (await params).plan } });
+  const user = await requireUser();
+  if (!subscriptionSalesEnabled) redirect("/membership");
+  const plan = await db.plan.findUnique({ where: { slug: (await params).plan } });
   if (!plan || !plan.active || plan.priceCents === 0) notFound();
   const videos = await db.video.findMany({ where: { published: true, minTier: { lte: plan.tier } }, select: { bunnyVideoId: true, embedUrl: true } });
   const ready = videos.filter(hasPlayableSource).length;

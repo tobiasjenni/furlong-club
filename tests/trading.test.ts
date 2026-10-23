@@ -13,14 +13,13 @@ const scalar = async (sql: string, args: unknown[] = []) => (await pg.query<{ re
 const user = async (role = "USER") => {
   const id = crypto.randomUUID();
   await pg.query(`INSERT INTO "User" (id,email,"passwordHash","ageConfirmedAt","emailVerifiedAt","updatedAt",role) VALUES ($1,$2,'x',now(),now(),now(),$3::"Role")`, [id, `${id}@example.com`, role]);
-  await pg.query(`INSERT INTO "Subscription"(id,"userId","planId","endsAt") VALUES($1,$2,'trading-test-plan',(CURRENT_TIMESTAMP AT TIME ZONE 'UTC')+interval '33 days')`, [crypto.randomUUID(), id]);
   return id;
 };
 const fund = async (uid = member, cents = 2000000) => {
   const op = crypto.randomUUID();
   await pg.query(`INSERT INTO "WalletJournal" (id,"operationKey","userId",kind,description,"userDeltaCents","clearingDeltaCents","revenueDeltaCents") VALUES ($1,$1,$2,'OPENING','Test funding',$3::integer,-$3::integer,0)`, [op, uid, cents]);
 };
-const request = (cents = 50000, aid = allocation, uid = member, key = requestKey, coin = "USDT", chain = "ERC20", destination = address) => scalar(`SELECT trading_request($1,$2,$3,$4,$5,$6,$7,'manual-v1-2026-10-22') AS result`, [uid, aid, key, cents, coin, chain, destination]);
+const request = (cents = 50000, aid = allocation, uid = member, key = requestKey, coin = "USDT", chain = "ERC20", destination = address) => scalar(`SELECT trading_request($1,$2,$3,$4,$5,$6,$7,'manual-v2-2026-10-23') AS result`, [uid, aid, key, cents, coin, chain, destination]);
 const review = (approve = true, aid = allocation, actor = admin, note = "Verified member, terms and payout destination") => scalar(`SELECT trading_review($1,$2,$3,$4) AS result`, [aid, actor, approve, note]);
 const result = (profit = 2500, aid = allocation, actor = admin, note = "Verified actual result from trading records") => scalar(`SELECT trading_record_result($1,$2,$3,$4) AS result`, [aid, actor, profit, note]);
 const payout = (tx = hash(), amount = 52500, aid = allocation, actor = admin) => scalar(`SELECT trading_record_payout($1,$2,$3,$4,'Verified completed external transfer') AS result`, [aid, actor, amount, tx]);
@@ -46,12 +45,12 @@ beforeEach(async () => {
 });
 
 describe("allocation approval, lock and accounting", () => {
-  it("honors the temporary email pause while preserving owner approval, membership and the full principal lock", async () => {
+  it("honors the temporary email pause while preserving owner approval and the full principal lock", async () => {
     await pg.query('UPDATE "User" SET "emailVerifiedAt"=NULL WHERE id=$1', [member]);
     expect(await request()).toBe('unverified');
     await pg.exec('UPDATE "AuthPolicy" SET "emailVerificationRequired"=false');
     try {
-      expect(await scalar(`SELECT wallet_buy_plan($1,'trading-test-plan',2900,$2) AS result`, [member,crypto.randomUUID()])).toBe('purchased');
+      expect(await scalar(`SELECT wallet_buy_plan($1,'trading-test-plan',2900,$2) AS result`, [member,crypto.randomUUID()])).toBe('sales_paused');
       await pg.query('UPDATE "User" SET "lastLoginAt"=now() WHERE id=$1', [member]);
       expect(await scalar(`SELECT admin_manage_user($1,$2,'role',$3::jsonb,$4) AS result`, [admin,member,JSON.stringify({role:'ADMIN',reason:'Verify ownership before granting staff access',passwordHash:'x'}),crypto.randomUUID()])).toBe('not_ready');
       expect(await request()).toBe('requested');
@@ -61,21 +60,27 @@ describe("allocation approval, lock and accounting", () => {
       expect((await pg.query<{emailVerifiedAt:Date|null}>('SELECT "emailVerifiedAt" FROM "User" WHERE id=$1', [member])).rows[0].emailVerifiedAt).toBeNull();
     } finally { await pg.exec('UPDATE "AuthPolicy" SET "emailVerificationRequired"=true'); }
   });
-  it("requires current paid membership when requesting and again when approving", async () => {
-    await pg.query(`UPDATE "Subscription" SET status='CANCELLED' WHERE "userId"=$1`, [member]);
-    expect(await request()).toBe("membership_required");
-    await pg.query(`UPDATE "Subscription" SET status='ACTIVE' WHERE "userId"=$1`, [member]);
+  it("allows a free account with no subscription to request and be approved without charging a fee", async () => {
+    expect(await scalar('SELECT count(*)::int AS result FROM "Subscription" WHERE "userId"=$1',[member])).toBe(0);
     expect(await request()).toBe("requested");
-    await pg.query(`UPDATE "Subscription" SET "endsAt"=(CURRENT_TIMESTAMP AT TIME ZONE 'UTC')-interval '1 second' WHERE "userId"=$1`, [member]);
-    expect(await review()).toBe("membership_required"); expect(await locked()).toBe(0);
-    expect(await review(false)).toBe("rejected");
+    expect(await balance()).toBe(2000000); expect(await locked()).toBe(0);
+    expect(await review()).toBe("approved");
+    expect(await balance()).toBe(1950000); expect(await locked()).toBe(50000);
+    expect(await scalar('SELECT count(*)::int AS result FROM "WalletJournal" WHERE "userId"=$1 AND kind=\'PURCHASE\'',[member])).toBe(0);
   });
-  it("saves the new membership and non-contractual target terms", async () => {
+  it("saves free-account access and non-contractual target terms", async () => {
     await request();
     const a=(await pg.query<{termsVersion:string;termsSnapshot:Record<string,unknown>}>(`SELECT "termsVersion","termsSnapshot" FROM "TradingAllocation" WHERE id=$1`,[allocation])).rows[0];
-    expect(a.termsVersion).toBe("manual-v1-2026-10-22");
-    expect(a.termsSnapshot).toMatchObject({membershipSlug:"form",targetsNonContractual:true,guaranteed:false,lockDays:33});
+    expect(a.termsVersion).toBe("manual-v2-2026-10-23");
+    expect(a.termsSnapshot).toMatchObject({membershipRequired:false,subscriptionSales:"coming soon",targetsNonContractual:true,guaranteed:false,lockDays:33});
     expect(a.termsSnapshot).not.toHaveProperty("targetDailyMinPercent");
+  });
+  it("preserves and approves an existing v1 request without requiring renewal", async () => {
+    const snapshot = { version: "manual-v1-2026-10-22", membershipSlug: "form", lockDays: 33 };
+    await pg.query(`INSERT INTO "TradingAllocation"(id,"userId","requestKey","principalCents",currency,network,"payoutAddress","termsVersion","termsSnapshot") VALUES($1,$2,$1,50000,'USDT','ERC20',$3,'manual-v1-2026-10-22',$4::jsonb)`, [allocation, member, address, JSON.stringify(snapshot)]);
+    expect(await review()).toBe("approved");
+    expect(await locked()).toBe(50000);
+    expect(await scalar(`SELECT "termsSnapshot" AS result FROM "TradingAllocation" WHERE id=$1`, [allocation])).toEqual(snapshot);
   });
   it("rejects stale draft terms and requires fresh acceptance for legacy pending requests", async () => {
     expect(await scalar(`SELECT trading_request($1,$2,$3,50000,'USDT','ERC20',$4,'draft-v1') AS result`,[member,allocation,requestKey,address])).toBe("invalid");
@@ -179,7 +184,7 @@ describe("allocation approval, lock and accounting", () => {
     await expect(pg.query(`UPDATE "User" SET status='CLOSED' WHERE id=$1`, [uid])).rejects.toThrow("Resolve trading obligations");
     const plan = crypto.randomUUID();
     await pg.query(`INSERT INTO "Plan" (id,slug,name,tagline,"priceCents",tier,features) VALUES ($1,$1,'Test plan','Test',1000,1,'{}')`, [plan]);
-    expect(await scalar(`SELECT wallet_buy_plan($1,$2,1000,$3) AS result`, [uid, plan, crypto.randomUUID()])).toBe("insufficient");
+    expect(await scalar(`SELECT wallet_buy_plan($1,$2,1000,$3) AS result`, [uid, plan, crypto.randomUUID()])).toBe("sales_paused");
   });
   it("rolls back approval if the journal or audit cannot be written", async () => {
     await request();

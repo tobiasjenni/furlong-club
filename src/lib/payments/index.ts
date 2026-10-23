@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import { subscriptionSalesEnabled } from "../subscription-sales";
 import type { Payment } from "@prisma/client";
 import { appUrl, type CheckoutOption } from "../config";
 import { db } from "../db";
@@ -59,6 +60,7 @@ async function invoice(userId: string, option: CheckoutOption, amountCents: numb
 }
 
 export async function createCheckout(userId: string, planId: string, option: CheckoutOption) {
+  if (!subscriptionSalesEnabled) throw new Error("Subscription sales are paused");
   const plan = await db.plan.findUniqueOrThrow({ where: { id: planId } });
   if (!plan.active || plan.priceCents <= 0) throw new Error("Plan is not purchasable");
   return invoice(userId, option, plan.priceCents, plan);

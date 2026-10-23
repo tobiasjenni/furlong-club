@@ -29,7 +29,7 @@ export function VideoCard({ video, locked }: { video: Video; locked: boolean }) 
         </div>
         <h3 className="mt-1.5 font-sans text-base font-semibold">{video.title}</h3>
         <p className="muted mt-1 line-clamp-2 text-sm">{video.summary}</p>
-        {!ready ? <p className="muted mt-3 text-xs">Not available to watch yet</p> : locked && <p className="mt-3 text-xs font-semibold text-gold-300">View plans to unlock →</p>}
+        {!ready ? <p className="muted mt-3 text-xs">Not available to watch yet</p> : locked && <p className="mt-3 text-xs font-semibold text-gold-300">Subscription access · Coming soon</p>}
       </div>
     </>;
   const className = "group card flex flex-col overflow-hidden p-0 sm:p-0";

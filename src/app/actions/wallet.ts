@@ -1,4 +1,5 @@
 "use server";
+import { subscriptionSalesEnabled, subscriptionsComingSoon } from "@/lib/subscription-sales";
 import { memberEmailReady } from "@/lib/email-verification";
 
 import { revalidatePath } from "next/cache";
@@ -33,7 +34,7 @@ export async function startTopup(_: FormState, form: FormData): Promise<FormStat
     } else id = (await createTopup(user.id, amount.toNumber(), option)).id;
   }
   catch { return { error: manualDepositsEnabled ? "Unable to create this deposit. Please try again shortly." : "Unable to create this payment. The provider may require a higher minimum; please try another amount or network." }; }
-  const returnTo = membershipReturnPath(form.get("returnTo"));
+  const returnTo = subscriptionSalesEnabled ? membershipReturnPath(form.get("returnTo")) : undefined;
   const receipt = ["member", "v2"].includes(String(form.get("experience"))) ? `/deposits/${id}` : `/checkout/pay/${id}`;
   redirect(receipt + (returnTo ? `?next=${encodeURIComponent(returnTo)}` : ""));
 }
@@ -88,6 +89,7 @@ export async function reviewManualDeposit(_: FormState, form: FormData): Promise
 
 export async function buyWithWallet(_: FormState, form: FormData): Promise<FormState> {
   const user = await requireUser();
+  if (!subscriptionSalesEnabled) return { error: subscriptionsComingSoon };
   if (!walletEnabled) return { error: "Wallet payments are not yet enabled." };
   if (!await rateLimit(`wallet-buy:${user.id}`, 20, 60000)) return { error: "Please wait a minute and try again." };
   const parsed = z.object({ planId: z.string().min(1).max(100), requestKey: z.string().uuid(), priceCents: z.coerce.number().int().positive().max(10000000) }).safeParse(Object.fromEntries(form));

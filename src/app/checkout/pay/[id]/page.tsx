@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { subscriptionSalesEnabled } from "@/lib/subscription-sales";
 import { notFound } from "next/navigation";
 import QRCode from "qrcode";
 import { simulatePayment } from "@/app/actions/checkout";
@@ -29,7 +30,7 @@ export default async function PayPage({ params, searchParams }: { params: Promis
   const settled = payment.status === "CONFIRMED";
   const reviewing = Boolean(payment.reviewReason);
   const open = ["PENDING", "CONFIRMING", "PARTIAL"].includes(payment.status) || reviewing;
-  const canSend = payment.status === "PENDING" && !reviewing && Boolean(payment.payAddress && payment.payAmount);
+  const canSend = (topup || subscriptionSalesEnabled) && payment.status === "PENDING" && !reviewing && Boolean(payment.payAddress && payment.payAmount);
   const mock = payment.provider === "mock";
   const qr = canSend && !mock ? await QRCode.toDataURL(payment.payAddress!, { margin: 1, width: 240, color: { dark: "#06140f", light: "#f6f1e7" } }) : null;
   const steps = ["Payment created", "Payment confirming", "Transfer to club wallet", topup ? "Wallet credited" : "Membership active"];
@@ -48,6 +49,7 @@ export default async function PayPage({ params, searchParams }: { params: Promis
       </ol>
       {reviewing && <p role="alert" className="rounded-xl bg-gold-400/10 p-3 text-sm text-gold-300">We&apos;ve saved your payment details for review. Don&apos;t send another payment to this address. Contact support with the reference below.</p>}
       {(await searchParams).refresh && <p role="status" className="text-sm text-gold-300">The payment provider is temporarily unavailable. Your payment record is safe; please check again shortly.</p>}
+      {!topup && !subscriptionSalesEnabled && !settled && <p role="status" className="rounded-xl bg-gold-400/10 p-3 text-sm text-gold-300">Subscription sales are paused. Do not send a new payment for this invoice. Any transfer already sent can still be reviewed; contact support with your reference.</p>}
       {canSend && <>
         <div className="rounded-xl border border-gold-400/30 p-4"><p className="muted text-xs">Send exactly</p><p className="mt-1 break-all font-display text-3xl">{payment.payAmount} {payment.currency}</p>
           <p className="mt-2 font-semibold text-gold-300">Network: {networks[payment.network] ?? payment.network}</p>
@@ -69,8 +71,8 @@ export default async function PayPage({ params, searchParams }: { params: Promis
       </dl>
       {settled && !reviewing && <Link href={topup ? "/wallet" : "/videos"} className="btn-gold w-full">{topup ? "View wallet balance" : "Go to the videos"}</Link>}
       {payment.provider === "nowpayments" && <form action={refreshMyPayment}><input type="hidden" name="id" value={payment.id} /><button className="btn-ghost w-full">Check payment status</button></form>}
-      {!open && !settled && <Link href={topup ? "/wallet" : `/checkout/${payment.plan!.slug}`} className="btn-gold w-full">Start a new payment</Link>}
-      {mock && !settled && mockPaymentsAllowed() && <form action={simulatePayment} className="rounded-xl border border-dashed border-gold-400/40 p-3">
+      {!open && !settled && (topup || subscriptionSalesEnabled) && <Link href={topup ? "/wallet" : `/checkout/${payment.plan!.slug}`} className="btn-gold w-full">Start a new payment</Link>}
+      {mock && !settled && (topup || subscriptionSalesEnabled) && mockPaymentsAllowed() && <form action={simulatePayment} className="rounded-xl border border-dashed border-gold-400/40 p-3">
         <input type="hidden" name="id" value={payment.id} /><button className="btn-ghost w-full">Simulate completed payment (test only)</button>
       </form>}
       <p className="muted text-xs">Need help? Email <a className="text-gold-300 underline" href="mailto:support@furlong.club">support@furlong.club</a> and include your payment reference.</p>

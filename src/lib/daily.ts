@@ -1,4 +1,5 @@
 import { db } from "./db";
+import { subscriptionSalesEnabled } from "./subscription-sales";
 import { emailDelivers, renewalReminderMessage, sendEmail } from "./email";
 import { expireStalePayments } from "./payments";
 
@@ -7,7 +8,7 @@ const REMIND_DAYS_BEFORE = 3;
 // Renewal reminders and clean-up. Runs from /api/cron/daily or `npm run daily`.
 export async function runDailyJobs(now = new Date()) {
   const soon = new Date(now.getTime() + REMIND_DAYS_BEFORE * 24 * 60 * 60 * 1000);
-  const remindersAvailable = emailDelivers();
+  const remindersAvailable = subscriptionSalesEnabled && emailDelivers();
   const ending = remindersAvailable ? await db.subscription.findMany({
     where: { status: "ACTIVE", reminderSentAt: null, endsAt: { gt: now, lte: soon }, user: { status: "ACTIVE" } },
     include: { user: true, plan: true },

@@ -5,11 +5,11 @@ import { clubGateEnabled } from "./club-gate";
 export const siteOrigin = `https://${brand.domain}`;
 export const siteUrl = (path = "/") => new URL(path, `${siteOrigin}/`).href;
 export const publicPages = {
-  "/": { title: "Trading with Harry & Horse Racing", description: "Explore Trading with Harry and 33-day Form Room membership. Discover Harry Whitcombe’s 40+ years of racing experience. Explore manual funding and allocation approvals." },
+  "/": { title: "Trading with Harry & Horse Racing", description: "Sign up free for Trading with Harry. Explore Harry Whitcombe’s 40+ years of racing experience, manual funding approval and 33-day allocations." },
   "/trading": { title: "Trading with Harry: Allocation & 33-Day Lock", description: "Explore Trading with Harry: separately funded $500–$10,000 allocations, manual deposit approval, a 33-day lock and recorded external payouts." },
-  "/plans": { title: "Form Room Membership & 33-Day Plans", description: "Compare Paddock, Form Room and Inner Circle membership. Explore Trading with Harry access and 33-day paid plans with no automatic renewal." },
+  "/plans": { title: "Subscriptions Coming Soon", description: "Paid subscriptions are coming soon. Sign up free for Trading with Harry, explore 33-day allocations and follow your recorded results." },
   "/meet-harry": { title: "Meet Harry Whitcombe · 40+ Years in Racing", description: "Meet Harry Whitcombe, the host of Furlong Club. Discover his 40+ years of experience reading horses, understanding riders and studying race conditions." },
-  "/legal/terms": { title: "Terms of Service", description: "Read Furlong Club’s membership, payment and account terms, including 33-day access, separate trading allocations and current trading availability." },
+  "/legal/terms": { title: "Terms of Service", description: "Read Furlong Club’s membership, payment and account terms, including free accounts, 33-day trading allocations and manual funding approval." },
   "/legal/privacy": { title: "Privacy Policy & Account Data", description: "Learn how Furlong Club uses and retains account details, payment records and trading information, and how to contact us about your personal data." },
   "/legal/responsible-gambling": { title: "Responsible Gambling & Member Support", description: "Read Furlong Club’s responsible gambling guidance: set limits, avoid chasing losses, find support and learn how to request account closure." },
 } as const;

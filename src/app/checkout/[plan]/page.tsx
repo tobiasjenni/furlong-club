@@ -1,5 +1,6 @@
 import { memberEmailReady } from "@/lib/email-verification";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
+import { subscriptionSalesEnabled } from "@/lib/subscription-sales";
 import { requireUser } from "@/lib/auth";
 import { checkoutOptions } from "@/lib/config";
 import { db } from "@/lib/db";
@@ -19,6 +20,7 @@ export const metadata = { title: "Checkout" };
 
 export default async function CheckoutPage({ params }: { params: Promise<{ plan: string }> }) {
   const user = await requireUser();
+  if (!subscriptionSalesEnabled) redirect("/membership");
   const plan = await db.plan.findUnique({ where: { slug: (await params).plan } });
   if (!plan || !plan.active || plan.priceCents === 0) notFound();
   const videos = await db.video.findMany({ where: { published: true, minTier: { lte: plan.tier } }, select: { bunnyVideoId: true, embedUrl: true } });
