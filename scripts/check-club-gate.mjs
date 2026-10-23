@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 const origin = process.env.APP_URL || 'https://furlong.club';
 const request = (path, options = {}) => fetch(new URL(path, origin), { redirect: 'manual', signal: AbortSignal.timeout(30000), ...options });
-const paths = ['/', '/trading', '/plans', '/meet-harry', '/signup', '/legal/terms', '/account', '/wallet', '/admin', '/admin/users', '/performance', '/membership', '/allocations'];
+const paths = ['/', '/trading', '/plans', '/meet-rob', '/signup', '/legal/terms', '/account', '/wallet', '/admin', '/admin/users', '/performance', '/membership', '/allocations'];
 for (const path of paths) {
   const r = await request(path); assert.equal(r.status, 307, 'Signed-out club door: ' + path);
   const destination = new URL(r.headers.get('location'), origin); assert.equal(destination.pathname, '/entrance'); assert.equal(destination.searchParams.get('next'), path);

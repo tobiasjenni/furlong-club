@@ -16,13 +16,14 @@ function cents(input: FormDataEntryValue | null, signed = false) {
 }
 function refresh(userId: string, id: string) {
   revalidatePath("/(member)", "layout");
-  for (const path of ["/trading", "/account", "/wallet", "/dashboard", "/admin", "/admin/trading", "/admin/wallet", `/admin/trading/${id}`, `/admin/users/${userId}`]) revalidatePath(path);
+  for (const path of ["/trading", "/admin/syndicates", "/account", "/wallet", "/dashboard", "/admin", "/admin/trading", "/admin/wallet", `/admin/trading/${id}`, `/admin/users/${userId}`]) revalidatePath(path);
 }
 const errors: Record<string, string> = {
   terms_changed: "These allocation terms have changed. Cancel the pending request and submit a new one using the current terms.",
+  entry_closed: "This entry is closed or has already started. Cancel a pending request and choose a future entry. No additional funds were reserved.",
   closed: "Trading allocations are not open. No funds were locked.", insufficient: "Available balance is too low. Add funds or choose a smaller allocation.",
   limit: "The maximum total open allocation is $10,000 per member.", pending_exists: "You already have a request awaiting approval. Cancel it before changing the amount or destination.",
-  unverified: "Confirm your email before requesting an allocation.", frozen: "The wallet is under review. Contact support.", locked: "The 33-day lock has not ended.",
+  unverified: "Confirm your email before requesting an allocation.", frozen: "The wallet is under review. Contact support.", locked: "The saved allocation lock has not ended.",
   not_pending: "This request is no longer awaiting approval. Reload to see its current status.", not_active: "This allocation is no longer awaiting a result.",
   not_ready: "This allocation is not ready for payout recording.", unavailable: "The member account is not eligible for approval.",
 };
@@ -34,6 +35,8 @@ export async function requestTrading(_: FormState, form: FormData): Promise<Form
   const amount = cents(form.get("amount"));
   const option = tradingOptions[Number(form.get("option"))];
   const requestKey = String(form.get("requestKey") ?? "");
+  const entryId = String(form.get("entryId") ?? "");
+  if (!/^[a-z0-9-]{10,100}$/.test(entryId)) return { error: "Choose a published syndicate entry." };
   if (amount === null || amount < 50000 || amount > 1000000 || !option || !/^[a-f0-9-]{36}$/i.test(requestKey)) return { error: "Choose $500–$10,000 and a supported payout network." };
   const address = normalizePayoutAddress(option.network, String(form.get("address") ?? ""));
   const repeat = normalizePayoutAddress(option.network, String(form.get("confirmAddress") ?? ""));
@@ -42,11 +45,11 @@ export async function requestTrading(_: FormState, form: FormData): Promise<Form
   if (clubAddress && (option.network === "TRC20" ? clubAddress === address : clubAddress.toLowerCase() === address.toLowerCase())) return { error: "Use your own receiving wallet, not the club's deposit address." };
   if (form.get("termsVersion") !== tradingTermsVersion || form.get("risk") !== "on" || form.get("destinationConfirmed") !== "on") return { error: "Read and accept the current allocation terms and confirm your payout destination." };
   let result: string;
-  try { result = (await db.$queryRaw<{ result: string }[]>`SELECT trading_request(${user.id},${crypto.randomUUID()},${user.id + ":" + requestKey},${amount}::integer,${option.currency},${option.network},${address},${tradingTermsVersion}) AS result`)[0].result; }
+  try { result = (await db.$queryRaw<{ result: string }[]>`SELECT trading_request(${user.id},${crypto.randomUUID()},${user.id + ":" + requestKey},${amount}::integer,${option.currency},${option.network},${address},${tradingTermsVersion},${entryId}) AS result`)[0].result; }
   catch { return { error: "Your request could not be saved. No funds were locked. Reload before retrying." }; }
   if (!["requested", "duplicate"].includes(result)) return { error: errors[result] ?? "Unable to create this request. Reload and try again." };
   refresh(user.id, "");
-  return { ok: "Request saved. Your money stays available until an admin approves. Approval starts the 33-day lock." };
+  return { ok: "Request saved for your selected entry. Funds stay available until approval, then are reserved until the scheduled start and 28-day maturity." };
 }
 
 export async function cancelTrading(_: FormState, form: FormData): Promise<FormState> {
@@ -85,6 +88,6 @@ export async function manageTrading(_: FormState, form: FormData): Promise<FormS
   } catch { return { error: "The action was rolled back. This transaction may already be recorded. Check the allocation history before retrying." }; }
   refresh(a.userId, id);
   return ["approved", "rejected", "recorded", "paid", "already_paid"].includes(result)
-    ? { ok: ({ approved: "Approved. Funds are locked and the 33-day period has started.", rejected: "Request declined. No money was locked.", recorded: "Actual result saved. Manual payout is now due.", paid: "Payout or total-loss closure recorded. The ledger has been reconciled.", already_paid: "Already completed. No duplicate posting was created." } as Record<string, string>)[result] }
+    ? { ok: ({ approved: "Approved. Capital is reserved. The 28-day trading period begins at the saved syndicate start, not at approval.", rejected: "Request declined. No money was locked.", recorded: "Actual result saved. Manual payout is now due.", paid: "Payout or total-loss closure recorded. The ledger has been reconciled.", already_paid: "Already completed. No duplicate posting was created." } as Record<string, string>)[result] }
     : { error: errors[result] ?? "The action cannot be completed. Check the amount, note and current allocation status." };
 }

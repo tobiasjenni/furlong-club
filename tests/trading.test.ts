@@ -19,7 +19,7 @@ const fund = async (uid = member, cents = 2000000) => {
   const op = crypto.randomUUID();
   await pg.query(`INSERT INTO "WalletJournal" (id,"operationKey","userId",kind,description,"userDeltaCents","clearingDeltaCents","revenueDeltaCents") VALUES ($1,$1,$2,'OPENING','Test funding',$3::integer,-$3::integer,0)`, [op, uid, cents]);
 };
-const request = (cents = 50000, aid = allocation, uid = member, key = requestKey, coin = "USDT", chain = "ERC20", destination = address) => scalar(`SELECT trading_request($1,$2,$3,$4,$5,$6,$7,'manual-v2-2026-10-23') AS result`, [uid, aid, key, cents, coin, chain, destination]);
+const request = (cents = 50000, aid = allocation, uid = member, key = requestKey, coin = "USDT", chain = "ERC20", destination = address) => scalar(`SELECT trading_request($1,$2,$3,$4,$5,$6,$7,'lunar-v1-2026-10-23',$8) AS result`, [uid, aid, key, cents, coin, chain, destination, 'future-test-entry']);
 const review = (approve = true, aid = allocation, actor = admin, note = "Verified member, terms and payout destination") => scalar(`SELECT trading_review($1,$2,$3,$4) AS result`, [aid, actor, approve, note]);
 const result = (profit = 2500, aid = allocation, actor = admin, note = "Verified actual result from trading records") => scalar(`SELECT trading_record_result($1,$2,$3,$4) AS result`, [aid, actor, profit, note]);
 const payout = (tx = hash(), amount = 52500, aid = allocation, actor = admin) => scalar(`SELECT trading_record_payout($1,$2,$3,$4,'Verified completed external transfer') AS result`, [aid, actor, amount, tx]);
@@ -35,6 +35,7 @@ const mature = async (principal = 50000, aid = allocation) => {
 beforeAll(async () => {
   pg = new PGlite();
   for (const dir of fs.readdirSync("prisma/migrations").filter(n => /^\d/.test(n)).sort()) await pg.exec(fs.readFileSync(`prisma/migrations/${dir}/migration.sql`, "utf8"));
+  await pg.exec(`INSERT INTO "SyndicateEntry"(id,phase,"startsAt") VALUES('future-test-entry','FULL',date_trunc('day',CURRENT_TIMESTAMP AT TIME ZONE 'UTC')+interval '10 years');`);
   await pg.exec(`INSERT INTO "Plan"(id,slug,name,tagline,"priceCents",tier,features) VALUES('trading-test-plan','form','Form Room','Test membership',2900,1,'{}')`);
 }, 30000);
 afterAll(async () => { await pg?.close(); });
@@ -71,19 +72,19 @@ describe("allocation approval, lock and accounting", () => {
   it("saves free-account access and non-contractual target terms", async () => {
     await request();
     const a=(await pg.query<{termsVersion:string;termsSnapshot:Record<string,unknown>}>(`SELECT "termsVersion","termsSnapshot" FROM "TradingAllocation" WHERE id=$1`,[allocation])).rows[0];
-    expect(a.termsVersion).toBe("manual-v2-2026-10-23");
-    expect(a.termsSnapshot).toMatchObject({membershipRequired:false,subscriptionSales:"coming soon",targetsNonContractual:true,guaranteed:false,lockDays:33});
+    expect(a.termsVersion).toBe("lunar-v1-2026-10-23");
+    expect(a.termsSnapshot).toMatchObject({membershipRequired:false,subscriptionSales:"coming soon",targetsNonContractual:true,guaranteed:false,lockDays:28});
     expect(a.termsSnapshot).not.toHaveProperty("targetDailyMinPercent");
   });
-  it("preserves and approves an existing v1 request without requiring renewal", async () => {
+  it("preserves an old pending request but requires new acceptance before approval", async () => {
     const snapshot = { version: "manual-v1-2026-10-22", membershipSlug: "form", lockDays: 33 };
     await pg.query(`INSERT INTO "TradingAllocation"(id,"userId","requestKey","principalCents",currency,network,"payoutAddress","termsVersion","termsSnapshot") VALUES($1,$2,$1,50000,'USDT','ERC20',$3,'manual-v1-2026-10-22',$4::jsonb)`, [allocation, member, address, JSON.stringify(snapshot)]);
-    expect(await review()).toBe("approved");
-    expect(await locked()).toBe(50000);
+    expect(await review()).toBe("terms_changed");
+    expect(await locked()).toBe(0);
     expect(await scalar(`SELECT "termsSnapshot" AS result FROM "TradingAllocation" WHERE id=$1`, [allocation])).toEqual(snapshot);
   });
   it("rejects stale draft terms and requires fresh acceptance for legacy pending requests", async () => {
-    expect(await scalar(`SELECT trading_request($1,$2,$3,50000,'USDT','ERC20',$4,'draft-v1') AS result`,[member,allocation,requestKey,address])).toBe("invalid");
+    expect(await scalar(`SELECT trading_request($1,$2,$3,50000,'USDT','ERC20',$4,'draft-v1') AS result`,[member,allocation,requestKey,address])).toBe("terms_changed");
     await pg.query(`INSERT INTO "TradingAllocation"(id,"userId","requestKey","principalCents",currency,network,"payoutAddress","termsVersion","termsSnapshot") VALUES($1,$2,$1,50000,'USDT','ERC20',$3,'draft-v1','{}')`,[allocation,member,address]);
     expect(await review()).toBe("terms_changed"); expect(await locked()).toBe(0);
     expect(await review(false)).toBe("rejected");
@@ -99,7 +100,7 @@ describe("allocation approval, lock and accounting", () => {
     expect(await scalar(`SELECT count(*)::int AS result FROM "AuditLog" WHERE action='trading.enrollment_changed' AND "actorId"=$1`,[admin])).toBe(2);
     expect(await locked()).toBe(0);
   });
-  it("links a manual deposit to approved credit and then a separately approved 33-day allocation", async () => {
+  it("links a manual deposit to approved credit and then a separately approved scheduled allocation", async () => {
     const uid=await user(), pid=crypto.randomUUID(), tx=hash(), aid=crypto.randomUUID(), observer=await user("ADMIN");
     expect(await scalar(`SELECT wallet_create_manual_deposit($1,$2,50000,'USDT','ERC20','0x1111111111111111111111111111111111111111') AS result`,[uid,pid])).toBe("created");
     expect(await scalar(`SELECT wallet_report_manual_deposit($1,$2,$3) AS result`,[pid,uid,tx])).toBe("submitted");
@@ -146,7 +147,7 @@ describe("allocation approval, lock and accounting", () => {
     await request(); expect(await review()).toBe("approved");
     expect(await balance()).toBe(1950000); expect(await locked()).toBe(50000);
     expect(await review()).toBe("not_pending"); expect(await balance()).toBe(1950000);
-    expect(await scalar(`SELECT EXTRACT(EPOCH FROM ("unlocksAt"-"approvedAt"))::int AS result FROM "TradingAllocation" WHERE id=$1`, [allocation])).toBe(33 * 86400);
+    expect(await scalar(`SELECT EXTRACT(EPOCH FROM ("unlocksAt"-"startsAt"))::int AS result FROM "TradingAllocation" WHERE id=$1`, [allocation])).toBe(28 * 86400);
     await expect(pg.query(`UPDATE "TradingAllocation" SET "approvedAt"="approvedAt"-interval '1 day',"unlocksAt"="unlocksAt"-interval '1 day' WHERE id=$1`, [allocation])).rejects.toThrow("immutable");
   });
   it("rechecks funds at approval and cannot approve a frozen account", async () => {
@@ -278,7 +279,7 @@ describe("payout address and member display", () => {
     const now = new Date("2026-10-21T00:00:00Z");
     expect(lockRemaining(new Date(now.getTime() + 33 * 86400000), now)).toBe("33 days 0 hours remaining");
     expect(tradingStatus({ status: "ACTIVE", unlocksAt: now }, now)).toContain("result review due");
-    expect(lockRemaining(null, now)).toContain("admin approval");
+    expect(lockRemaining(null, now)).toContain("Awaiting approval");
     expect(tradingStatus({ status: "PAID", unlocksAt: now, payoutCents: 0 }, now)).toContain("total loss");
   });
 });

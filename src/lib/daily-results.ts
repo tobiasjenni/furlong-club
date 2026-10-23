@@ -1,5 +1,5 @@
 export type DailyResultPoint = { day: string; returnBps: number };
-export type CycleSummary = { endDay: string; profitBps: number; updatedAt: string };
+export type CycleSummary = { endDay: string; profitBps: number; updatedAt: string; lockDays?: number };
 
 export function parseReturnBps(input: unknown): number | null {
   if (typeof input !== 'string' || !/^[+-]?\d{1,4}(\.\d{1,2})?$/.test(input.trim())) return null;
@@ -20,7 +20,7 @@ export function signedPercent(percent: number | null, digits = 2): string {
   return `${rounded > 0 ? '+' : ''}${rounded.toFixed(digits)}%`;
 }
 
-export function cycleWindow(end: string, days = 33) {
+export function cycleWindow(end: string, days = 28) {
   const date = new Date(end + 'T00:00:00Z');
   date.setUTCDate(date.getUTCDate() - days + 1);
   return { start: date.toISOString().slice(0, 10), end };

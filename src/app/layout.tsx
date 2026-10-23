@@ -14,10 +14,10 @@ const sans = Inter({ subsets: ["latin"], variable: "--font-sans", display: "swap
 
 export const metadata: Metadata = {
   ...pageMetadata("/"),
-  title: { default: `${brand.name} · Trading with Harry`, template: `%s · ${brand.name}` },
+  title: { default: `${brand.name} · Trading with Rob`, template: `%s · ${brand.name}` },
   metadataBase: new URL(siteOrigin),
   applicationName: brand.name,
-  category: "Horse racing and Trading with Harry",
+  category: "Horse racing and Trading with Rob",
   // Explicit links keep icons in the rendered metadata on the Worker adapter,
   // rather than relying on automatic discovery of app/icon.svg.
   icons: {

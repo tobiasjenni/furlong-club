@@ -11,7 +11,7 @@ export async function SiteHeader() {
   const links = user
     ? [
         { href: "/dashboard", label: "Dashboard" },
-        { href: "/trading", label: "Trade with Harry" },
+        { href: "/trading", label: "Trade with Rob" },
         { href: "/videos", label: "Videos" },
         { href: "/plans", label: "Coming soon" },
         { href: "/wallet", label: "Wallet" },
@@ -19,7 +19,7 @@ export async function SiteHeader() {
         ...(isAdmin(user.role) ? [{ href: "/admin", label: "Admin" }] : []),
       ]
     : [
-        { href: "/trading", label: "Trade with Harry" },
+        { href: "/trading", label: "Trade with Rob" },
         { href: "/plans", label: "Coming soon" },
         { href: "/#how", label: "How it works" },
         { href: brand.host.page, label: `Meet ${brand.host.first}` },

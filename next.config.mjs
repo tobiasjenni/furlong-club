@@ -25,7 +25,8 @@ const nextConfig = {
     return [
       { source: "/:path*", has: [{ type: "host", value: "www.furlong.club" }], destination: "https://furlong.club/:path*", permanent: true },
       { source: "/:path*", has: [{ type: "host", value: "furlong.club" }, { type: "header", key: "x-forwarded-proto", value: "http" }], destination: "https://furlong.club/:path*", permanent: true },
-      { source: "/about-rob", destination: "/meet-harry", permanent: true },
+      { source: "/about-rob", destination: "/meet-rob", permanent: true },
+      { source: "/meet-harry", destination: "/meet-rob", permanent: true },
       { source: "/v2", destination: "/dashboard", permanent: true },
       { source: "/v2/plans", destination: "/membership", permanent: true },
       { source: "/v2/trading/:path*", destination: "/allocations/:path*", permanent: true },

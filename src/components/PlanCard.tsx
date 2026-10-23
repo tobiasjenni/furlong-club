@@ -6,7 +6,7 @@ import { TradingMembership } from "./TradingMembership";
 export function PlanCard({ plan, highlight = false, cta, availableVideos }: { plan: Plan; highlight?: boolean; cta?: { href: string; label: string }; availableVideos?: number }) {
   return (
     <div id={`plan-${plan.slug}`} className={`card flex flex-col ${highlight ? "border-gold-400/60 ring-1 ring-gold-400/40" : ""}`}>
-      {highlight && <span className="badge mb-3 w-full justify-center bg-gold-400 py-1.5 text-center leading-relaxed text-turf-950">Trading with Harry membership</span>}
+      {highlight && <span className="badge mb-3 w-full justify-center bg-gold-400 py-1.5 text-center leading-relaxed text-turf-950">Trading with Rob membership</span>}
       <h3 className="text-2xl">{plan.name}</h3>
       <p className="muted mt-1 text-sm">{plan.tagline}</p>
       <p className="mt-5 flex flex-wrap items-baseline gap-x-2 gap-y-1">
