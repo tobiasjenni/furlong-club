@@ -5,30 +5,73 @@ import { FormMessage } from "./FormMessage";
 import { SubmitButton } from "./SubmitButton";
 import Link from "next/link";
 import { entryDate, moonPhaseName, type SyndicateEntry } from "@/lib/syndicate";
+import { allocationCapacity, defaultAllocationAmount, fundingCents } from "@/lib/member-funding";
+import { payoutDestinationError, type ClubReceivingAddress } from "@/lib/payout-address";
+import "./funding-flow.css";
 
-export function RequestTradingForm({ requestKey, termsVersion, options, disabled, entries }: { requestKey: string; termsVersion: string; options: readonly { label: string }[]; disabled: boolean; entries: SyndicateEntry[] }) {
+export function RequestTradingForm({ requestKey, termsVersion, options, disabled, entries, availableCents, committedCents, initialAmount, initialOption = 0, clubAddresses }: { requestKey: string; termsVersion: string; options: readonly { label: string; network: string }[]; disabled: boolean; entries: SyndicateEntry[]; availableCents: number; committedCents: number; initialAmount?: string; initialOption?: number; clubAddresses: ClubReceivingAddress[] }) {
   const [state, action, pending] = useActionState(requestTrading, null);
   const [intentKey] = useState(requestKey);
-  const [amount, setAmount] = useState("");
-  const [option, setOption] = useState("0");
+  const [amount, setAmount] = useState(() => defaultAllocationAmount(availableCents, committedCents, initialAmount));
+  const [option, setOption] = useState(String(options[initialOption] ? initialOption : 0));
   const [address, setAddress] = useState("");
   const [confirmation, setConfirmation] = useState("");
   const [destinationConfirmed, setDestinationConfirmed] = useState(false);
   const [risk, setRisk] = useState(false);
   const [entryId, setEntryId] = useState(entries[0]?.id ?? "");
   const selectedEntry = entries.find(entry => entry.id === entryId);
-  return <form action={action} onReset={event => event.preventDefault()} className="space-y-4" aria-busy={pending}>
+  const [step, setStep] = useState(0);
+  const [error, setError] = useState<string | null>(null);
+  const capacity = allocationCapacity(availableCents, committedCents);
+  const locked = disabled || pending || capacity < 50000;
+  const resetConsent = () => { setRisk(false); setDestinationConfirmed(false); setError(null); };
+  const validateAmount = () => {
+    const value = fundingCents(amount);
+    if (value === null || value < 50000 || value > capacity) return `Choose an amount from $500 to $${(capacity / 100).toFixed(2)} using your approved credit.`;
+    if (!selectedEntry || new Date(selectedEntry.startsAt).getTime() <= Date.now()) return "Choose a future entry. If this date has closed, refresh to see the next entries.";
+    return null;
+  };
+  const validateWallet = () => payoutDestinationError(options[Number(option)]?.network ?? "", address, confirmation, clubAddresses);
+  const showError = (message: string, field: string) => { setError(message); requestAnimationFrame(() => document.getElementById(field)?.focus()); };
+  const advance = () => {
+    const message = step === 0 ? validateAmount() : validateWallet();
+    if (message) { showError(message, step === 0 ? "trading-amount" : "trading-address"); return; }
+    setError(null); setStep(value => Math.min(2, value + 1));
+    requestAnimationFrame(() => document.getElementById("trading-step-title")?.focus());
+  };
+  if (state?.ok) return <div className="funding-credit-ready" role="status"><h3>Trading request received</h3><p className="mt-3">Your request is with the Super Admin. Funds remain available until approval, which reserves them for your selected moon entry.</p><Link prefetch={false} className="funding-link mt-4 inline-block" href="/allocations#allocations">View your request →</Link></div>;
+  return <form action={action} onReset={event => event.preventDefault()} onSubmit={event => {
+    if (step < 2) { event.preventDefault(); advance(); return; }
+    const amountError = validateAmount(); const walletError = validateWallet();
+    if (locked || amountError || walletError) { event.preventDefault(); setStep(amountError ? 0 : 1); showError(amountError ?? walletError ?? "Requests are currently unavailable.", amountError ? "trading-amount" : "trading-address"); }
+  }} className="funding-wizard space-y-4" aria-busy={pending}>
     <input type="hidden" name="requestKey" value={intentKey} /><input type="hidden" name="termsVersion" value={termsVersion} />
-    <div><label htmlFor="trading-entry" className="label">Syndicate entry · 00:00 UTC</label><select id="trading-entry" name="entryId" className="input" value={entryId} onChange={event => { setEntryId(event.target.value); setRisk(false); }} disabled={disabled} required>{entries.map(entry => <option key={entry.id} value={entry.id}>{entryDate(entry.startsAt)} · {moonPhaseName(entry.phase)}</option>)}</select>{selectedEntry && <p className="muted mt-2 text-xs">Trading period: {entryDate(selectedEntry.startsAt)} to {entryDate(selectedEntry.endsAt)} · 28 days. Super Admin approval must be complete before the start.</p>}</div>
-    <div><label htmlFor="trading-amount" className="label">Allocation · USD accounting value</label><input id="trading-amount" name="amount" type="number" inputMode="decimal" min="500" max="10000" step="0.01" value={amount} onChange={event => setAmount(event.target.value)} required className="input" placeholder="500" disabled={disabled} /></div>
-    <div><label htmlFor="trading-option" className="label">Receive your payout in</label><select id="trading-option" name="option" className="input" value={option} onChange={event => { setOption(event.target.value); setDestinationConfirmed(false); }} disabled={disabled}>{options.map((o, i) => <option key={o.label} value={i}>{o.label}</option>)}</select></div>
-    <div><label htmlFor="trading-address" className="label">Your external receiving wallet address</label><input id="trading-address" name="address" className="input font-mono text-xs" autoComplete="off" autoCapitalize="none" spellCheck={false} maxLength={100} value={address} onChange={event => { setAddress(event.target.value); setDestinationConfirmed(false); }} required disabled={disabled} /></div>
-    <div><label htmlFor="trading-address-confirm" className="label">Enter your receiving address again</label><input id="trading-address-confirm" name="confirmAddress" className="input font-mono text-xs" autoComplete="off" autoCapitalize="none" spellCheck={false} maxLength={100} value={confirmation} onChange={event => { setConfirmation(event.target.value); setDestinationConfirmed(false); }} required disabled={disabled} /></div>
-    <p className="muted text-xs">Use a wallet you control that supports the selected token and network. The destination cannot be edited after requesting. Cancel a pending request and create a new one to correct it.</p>
-    <label className="flex items-start gap-3 text-sm"><input name="destinationConfirmed" type="checkbox" checked={destinationConfirmed} onChange={event => setDestinationConfirmed(event.target.checked)} required disabled={disabled} className="mt-1 accent-gold-400" /><span>I checked this receiving address and network and can receive the selected stablecoin there.</span></label>
-    <label className="flex items-start gap-3 text-sm"><input name="risk" type="checkbox" checked={risk} onChange={event => setRisk(event.target.checked)} required disabled={disabled} className="mt-1 accent-gold-400" /><span>I accept <Link className="text-gold-300 underline" href="/legal/terms#trading-terms" target="_blank" rel="noreferrer">allocation terms {termsVersion}</Link>: approval reserves my capital until the selected start at 00:00 UTC and its 28-day maturity, with no early withdrawal. A request alone does not reserve funds. The proposed daily targets are unverified and not guaranteed. I can lose some or all of my money. No daily earnings accrue in this app. Payout uses actual recorded results and is sent manually after review; it is not automatic on day 28. Outgoing network fees are paid by the operator.</span></label>
-    <FormMessage state={state} focusOnError /><SubmitButton disabled={disabled} pendingLabel="Saving your request…">Request Super Admin approval</SubmitButton>
-    <p className="muted text-xs">This request does not reserve funds. Keep enough available balance until approval. Maximum $10,000 across open allocations.</p>
+    <input type="hidden" name="amount" value={amount} /><input type="hidden" name="entryId" value={entryId} /><input type="hidden" name="option" value={option} /><input type="hidden" name="address" value={address} /><input type="hidden" name="confirmAddress" value={confirmation} />
+    <nav className="funding-wizard-nav" aria-label="Trading request steps">{["Amount & entry", "Payout wallet", "Review"].map((label, index) => <span key={label} aria-current={step === index ? "step" : undefined}>{index + 1}. {label}</span>)}</nav>
+    <h3 id="trading-step-title" tabIndex={-1} className="text-xl">{["Choose your trading amount", "Where should we pay you?", "Check your trading request"][step]}</h3>
+    <fieldset hidden={step !== 0} disabled={locked || step !== 0} className="funding-wizard-fields"><legend className="sr-only">Amount and entry</legend>
+      <p className="funding-inline-balance">Approved credit: <strong>${(availableCents / 100).toFixed(2)}</strong></p>
+      <div><label htmlFor="trading-amount" className="label">Amount to trade · USD credit</label><input id="trading-amount" type="number" inputMode="decimal" min="500" max={capacity / 100} step="0.01" value={amount} onChange={event => { setAmount(event.target.value); resetConsent(); }} required className="input" aria-describedby={error ? "trading-input-error" : undefined} /></div>
+      <div className="funding-presets" aria-label="Quick trading amounts">{[500, 1000, 2500].filter(value => value * 100 <= capacity).map(value => <button key={value} type="button" className="funding-choice" aria-pressed={fundingCents(amount) === value * 100} onClick={() => { setAmount(String(value)); resetConsent(); }}>${value.toLocaleString("en-US")}</button>)}<button type="button" className="funding-choice" onClick={() => { setAmount((capacity / 100).toFixed(2)); resetConsent(); }}>Use maximum</button></div>
+      <div><label htmlFor="trading-entry" className="label">Choose your moon entry</label><select id="trading-entry" className="input" value={selectedEntry ? entryId : ""} onChange={event => { setEntryId(event.target.value); resetConsent(); }} required><option value="" disabled>Select a future entry</option>{entries.map(entry => <option key={entry.id} value={entry.id}>{entryDate(entry.startsAt)} · {moonPhaseName(entry.phase)}</option>)}</select></div>
+      {selectedEntry && <p className="funding-callout funding-callout-green">Starts {entryDate(selectedEntry.startsAt)} at 00:00 UTC. Matures {entryDate(selectedEntry.endsAt)} after 28 days. Approval is required before the start.</p>}
+    </fieldset>
+    <fieldset hidden={step !== 1} disabled={locked || step !== 1} className="funding-wizard-fields"><legend className="sr-only">Personal payout wallet</legend>
+      <p className="funding-callout">Open your <strong>own wallet or exchange → Receive</strong>. Choose the token and network below, then copy your receiving address. The club’s deposit address belongs to the club; it cannot receive your payout for you.</p>
+      <div><label htmlFor="trading-option" className="label">Receive your payout in</label><select id="trading-option" className="input" value={option} onChange={event => { setOption(event.target.value); resetConsent(); }}>{options.map((o, i) => <option key={o.label} value={i}>{o.label}</option>)}</select></div>
+      <div><label htmlFor="trading-address" className="label">Your personal receiving address</label><input id="trading-address" className="input font-mono text-xs" autoComplete="off" autoCapitalize="none" spellCheck={false} maxLength={100} value={address} onChange={event => { setAddress(event.target.value); resetConsent(); }} required aria-describedby={error ? "trading-input-error" : undefined} /></div>
+      <div><label htmlFor="trading-address-confirm" className="label">Confirm your receiving address</label><input id="trading-address-confirm" className="input font-mono text-xs" autoComplete="off" autoCapitalize="none" spellCheck={false} maxLength={100} value={confirmation} onChange={event => { setConfirmation(event.target.value); resetConsent(); }} required /></div>
+      <p className="funding-form-note">Check that your wallet supports this exact token and network. To change the destination after submission, cancel the pending request and create a new one.</p>
+    </fieldset>
+    <fieldset hidden={step !== 2} disabled={locked || step !== 2} className="funding-wizard-fields"><legend className="sr-only">Review and consent</legend>
+      <dl className="funding-review"><div><dt>Trading amount</dt><dd>${Number(amount).toFixed(2)} USD credit</dd></div><div><dt>Entry · 00:00 UTC</dt><dd>{selectedEntry && entryDate(selectedEntry.startsAt)}</dd></div><div><dt>28-day maturity</dt><dd>{selectedEntry && entryDate(selectedEntry.endsAt)}</dd></div><div><dt>Payout route</dt><dd>{options[Number(option)]?.label}</dd></div><div><dt>Your payout wallet</dt><dd className="break-all font-mono text-xs">{address}</dd></div></dl>
+      <ul className="funding-key-terms"><li>Approval reserves your capital until the selected start and 28-day maturity. No early withdrawal.</li><li>You can lose some or all capital. Daily targets are unverified and not guaranteed; no daily earnings accrue in the app.</li><li>Payout uses actual recorded results and is sent manually after review. It is not automatic on day 28. The operator pays outgoing network fees.</li></ul>
+      <label className="funding-acknowledgement"><input name="destinationConfirmed" type="checkbox" checked={destinationConfirmed} onChange={event => setDestinationConfirmed(event.target.checked)} required /><span>I checked my receiving address and can receive this token on the selected network.</span></label>
+      <label className="funding-acknowledgement"><input name="risk" type="checkbox" checked={risk} onChange={event => setRisk(event.target.checked)} required /><span>I understand the risks, lock and manual payout above and accept the <Link className="funding-link" href="/legal/terms#trading-terms" target="_blank" rel="noreferrer">allocation terms</Link>.</span></label>
+    </fieldset>
+    {error && <p id="trading-input-error" role="alert" className="funding-form-error">{error}</p>}<FormMessage state={state} focusOnError />
+    <div className="funding-wizard-controls">{step > 0 && <button type="button" className="btn-ghost" disabled={pending} onClick={() => { setStep(value => value - 1); setError(null); requestAnimationFrame(() => document.getElementById("trading-step-title")?.focus()); }}>Back</button>}{step < 2 ? <button type="button" className="funding-action funding-action-green" disabled={locked} onClick={advance}>{step === 0 ? "Continue to payout wallet →" : "Review request →"}</button> : <SubmitButton className="funding-action funding-action-green" disabled={locked} pendingLabel="Saving your request…">Submit trading request</SubmitButton>}</div>
+    <p className="funding-form-note">No fee to request. Your funds stay available until Super Admin approval. Maximum $10,000 across open allocations.</p>
   </form>;
 }
 

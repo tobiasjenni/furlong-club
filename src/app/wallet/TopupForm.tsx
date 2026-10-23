@@ -3,8 +3,9 @@ import { useActionState, useState } from "react";
 import { startTopup } from "@/app/actions/wallet";
 import { FormMessage } from "@/components/FormMessage";
 import { SubmitButton } from "@/components/SubmitButton";
+import "@/components/funding-flow.css";
 
-export function TopupForm({ options, disabled, manual, portal = false, defaultAmount = 50, returnTo }: { options: { value: number; label: string; currency: string; enabled: boolean }[]; disabled: boolean; manual: boolean; portal?: boolean; defaultAmount?: number; returnTo?: string }) {
+export function TopupForm({ options, disabled, manual, portal = false, defaultAmount = 50, returnTo }: { options: { value: number; label: string; currency: string; network: string; enabled: boolean }[]; disabled: boolean; manual: boolean; portal?: boolean; defaultAmount?: number; returnTo?: string }) {
   const [state, action, pending] = useActionState(startTopup, null);
   const [amount, setAmount] = useState(String(defaultAmount));
   const [selected, setSelected] = useState(options.find(o => o.enabled)?.value ?? options[0]?.value ?? 0);
@@ -14,12 +15,12 @@ export function TopupForm({ options, disabled, manual, portal = false, defaultAm
     {returnTo && <input type="hidden" name="returnTo" value={returnTo} />}
     <label className="label" htmlFor="topup-amount">{manual ? `Amount to send (${currency})` : "Amount to add (USD)"}</label>
     <input id="topup-amount" className="input" name="amount" type="number" inputMode="decimal" min="20" max="10000" step="0.01" value={amount} onChange={event => setAmount(event.target.value)} required disabled={disabled} />
-    <label className="label" htmlFor="topup-network">Pay with</label>
-    <select id="topup-network" name="option" className="input" disabled={disabled} value={selected} onChange={event => setSelected(Number(event.target.value))}>
-      {options.map(o => <option key={o.value} value={o.value} disabled={!o.enabled}>{o.label}{!o.enabled ? " · unavailable" : ""}</option>)}
-    </select>
-    <p className="muted text-xs">{manual ? "Choose an amount from 20 to 10,000 tokens. Each USDT or USDC adds $1 of USD club credit after admin approval. Network fees are paid separately." : "You receive the USD credit shown above once payment and transfer are complete. Send the exact token amount on the next page. Network fees are paid separately; provider minimums can vary."}</p>
+    <div className="funding-presets" aria-label="Quick deposit amounts">{[500, 1000, 2500, 5000].map(value => <button type="button" key={value} className="funding-choice" disabled={disabled || pending} aria-pressed={Number(amount) === value} onClick={() => setAmount(String(value))}>${value.toLocaleString("en-US")}</button>)}</div>
+    <input type="hidden" name="option" value={selected} />
+    <fieldset disabled={disabled || pending}><legend className="label">Pay with · choose your network</legend><div className="funding-routes">{options.filter(o => o.enabled).map(o => <button type="button" key={o.value} className="funding-choice funding-route" aria-pressed={selected === o.value} aria-label={o.label} onClick={() => setSelected(o.value)}><strong>{o.currency}</strong><small>{o.network === "TRC20" ? "Tron · TRC-20" : o.network === "ERC20" ? "Ethereum · ERC-20" : o.network}</small></button>)}</div></fieldset>
     <FormMessage state={state} focusOnError />
-    <SubmitButton disabled={disabled} pendingLabel="Preparing your deposit…">{manual ? "Show deposit address" : "Continue to deposit"}</SubmitButton>
+    <SubmitButton className="funding-action funding-action-blue" disabled={disabled} pendingLabel="Preparing your deposit…">{manual ? "Get deposit address →" : "Continue to deposit →"}</SubmitButton>
+    <p className="funding-form-note">The next page shows where to send {amount || "your chosen amount"} {currency}. Nothing is charged by this button.</p>
+    <details className="funding-details"><summary>Deposit limits, credit and fees</summary><p>{manual ? "Choose an amount from 20 to 10,000 tokens. Each USDT or USDC adds $1 of USD club credit after Super Admin approval. Send only on the selected network. Network fees are paid separately." : "You receive the USD credit shown above once payment and transfer are complete. Send the exact token amount on the next page. Network fees are paid separately; provider minimums can vary."}</p></details>
   </form>;
 }

@@ -5,6 +5,7 @@ import { requireSuperAdmin, requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { rateLimit } from "@/lib/rate-limit";
 import { normalizePayoutAddress, tradingOptions, tradingRequestsEnabled, tradingTermsVersion } from "@/lib/trading";
+import { isClubReceivingAddress } from "@/lib/payout-address";
 import type { FormState } from "./auth";
 
 function cents(input: FormDataEntryValue | null, signed = false) {
@@ -16,7 +17,7 @@ function cents(input: FormDataEntryValue | null, signed = false) {
 }
 function refresh(userId: string, id: string) {
   revalidatePath("/(member)", "layout");
-  for (const path of ["/trading", "/admin/syndicates", "/account", "/wallet", "/dashboard", "/admin", "/admin/trading", "/admin/wallet", `/admin/trading/${id}`, `/admin/users/${userId}`]) revalidatePath(path);
+  for (const path of ["/allocations", "/trading", "/admin/syndicates", "/account", "/wallet", "/dashboard", "/admin", "/admin/trading", "/admin/wallet", `/admin/trading/${id}`, `/admin/users/${userId}`]) revalidatePath(path);
 }
 const errors: Record<string, string> = {
   terms_changed: "These allocation terms have changed. Cancel the pending request and submit a new one using the current terms.",
@@ -41,8 +42,8 @@ export async function requestTrading(_: FormState, form: FormData): Promise<Form
   const address = normalizePayoutAddress(option.network, String(form.get("address") ?? ""));
   const repeat = normalizePayoutAddress(option.network, String(form.get("confirmAddress") ?? ""));
   if (!address || address !== repeat) return { error: "Enter the same valid external wallet address twice. Check the network and address checksum." };
-  const clubAddress = process.env[`POOL_WALLET_${option.currency}_${option.network}`]?.trim();
-  if (clubAddress && (option.network === "TRC20" ? clubAddress === address : clubAddress.toLowerCase() === address.toLowerCase())) return { error: "Use your own receiving wallet, not the club's deposit address." };
+  const clubAddresses = tradingOptions.map(route => ({ network: route.network, address: process.env[`POOL_WALLET_${route.currency}_${route.network}`]?.trim() ?? "" }));
+  if (isClubReceivingAddress(option.network, address, clubAddresses)) return { error: "This is the club’s deposit address. Open your personal wallet or exchange, choose Receive, and use your own address for payouts." };
   if (form.get("termsVersion") !== tradingTermsVersion || form.get("risk") !== "on" || form.get("destinationConfirmed") !== "on") return { error: "Read and accept the current allocation terms and confirm your payout destination." };
   let result: string;
   try { result = (await db.$queryRaw<{ result: string }[]>`SELECT trading_request(${user.id},${crypto.randomUUID()},${user.id + ":" + requestKey},${amount}::integer,${option.currency},${option.network},${address},${tradingTermsVersion},${entryId}) AS result`)[0].result; }

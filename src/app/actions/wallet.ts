@@ -41,7 +41,7 @@ export async function startTopup(_: FormState, form: FormData): Promise<FormStat
 
 function refreshDepositPages(id: string, userId: string) {
   revalidatePath("/(member)", "layout");
-  for (const path of ["/wallet", "/dashboard", "/account", "/admin", "/admin/deposits", "/admin/wallet", "/admin/payments", `/checkout/pay/${id}`, `/admin/payments/${id}`, `/admin/users/${userId}`]) revalidatePath(path);
+  for (const path of ["/wallet", "/allocations", `/deposits/${id}`, "/dashboard", "/account", "/admin", "/admin/deposits", "/admin/wallet", "/admin/payments", `/checkout/pay/${id}`, `/admin/payments/${id}`, `/admin/users/${userId}`]) revalidatePath(path);
 }
 
 export async function reportManualDeposit(_: FormState, form: FormData): Promise<FormState> {
