@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 
-export function CopyButton({ value }: { value: string }) {
+export function CopyButton({ value, valueName = "address" }: { value: string; valueName?: string }) {
   const [copied, setCopied] = useState(false);
   const [failed, setFailed] = useState(false);
   return (
@@ -20,7 +20,7 @@ export function CopyButton({ value }: { value: string }) {
     >
       {copied ? "Copied" : "Copy"}
     </button>
-    {failed && <span role="status" className="mt-2 block max-w-32 text-xs text-gold-300">Copy unavailable. Select and copy the address manually.</span>}
+    {failed && <span role="status" className="mt-2 block max-w-32 text-xs text-gold-300">Copy unavailable. Select and copy the {valueName} manually.</span>}
     </span>
   );
 }

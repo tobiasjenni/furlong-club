@@ -14,13 +14,14 @@ export default async function AdminAudit({ searchParams }: { searchParams: Promi
   const actorIds = [...new Set(entries.map((e) => e.actorId).filter((id): id is string => !!id))];
   const actors = new Map((await db.user.findMany({ where: { id: { in: actorIds } }, select: { id: true, email: true } })).map((u) => [u.id, u.email]));
   const filters = ["", "admin.", "payment.", "user.login", "user."];
+  const names: Record<string, string> = { "": "Everything", "admin.": "Admin events", "payment.": "Payments", "user.login": "Sign-ins", "user.": "Member events" };
 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap gap-2">
         {filters.map((f) => (
-          <Link key={f} href={f ? `?action=${f}` : "?"} className={`btn-ghost px-3 py-1.5 text-xs ${action === f ? "border-gold-400 text-gold-300" : ""}`}>
-            {f || "Everything"}
+          <Link key={f} href={f ? `?action=${f}` : "?"} aria-current={action === f ? "page" : undefined} className="btn-ghost">
+            {names[f]}
           </Link>
         ))}
       </div>

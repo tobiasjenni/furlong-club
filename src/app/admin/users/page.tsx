@@ -21,8 +21,8 @@ export default async function AdminUsers({ searchParams }: { searchParams: Promi
       {params.deleted === '1' && <p role="status" className="card border border-emerald-400/20 text-sm text-emerald-300">User permanently deleted from the CRM. Their account cannot sign in and their email can be used for a new registration.</p>}
       <div className="card"><h2 className="text-lg">Member management</h2><p className="muted mt-2 text-sm">Open a member’s profile to review their account.{admin.role === 'SUPER_ADMIN' ? ' Edit profiles, suspend or restore access, manage admin permissions, close accounts or permanently delete unused test accounts. Closed accounts remain under the Closed filter; permanently deleted users are removed from the CRM.' : ' Your Admin access is read-only. Account changes are reserved for Super Admin.'}</p><p className="mt-2 text-sm text-gold-300">Your access: {roleLabel(admin.role)}</p></div>
       <form className="flex flex-col gap-2 sm:flex-row">
-        <input name="q" defaultValue={q} placeholder="Search email, name or tag" className="input sm:max-w-sm" />
-        <select name="filter" defaultValue={filter} className="input sm:max-w-[200px]">
+        <input aria-label="Search email, name or tag" name="q" defaultValue={q} placeholder="Search email, name or tag" className="input sm:max-w-sm" />
+        <select aria-label="Member filter" name="filter" defaultValue={filter} className="input sm:max-w-[200px]">
           {filters.map((f) => <option key={f} value={f}>{f[0].toUpperCase() + f.slice(1)}</option>)}
         </select>
         <button className="btn-gold">Search</button>
@@ -57,7 +57,7 @@ export default async function AdminUsers({ searchParams }: { searchParams: Promi
                 <td>{u.status === "ACTIVE" ? "Active" : <span className="text-red-300">{u.status === "CLOSED" ? "Closed" : "Suspended"}</span>}</td>
                 <td>{date(u.createdAt)}</td>
                 <td>{date(u.lastLoginAt)}</td>
-                <td><Link className="whitespace-nowrap text-gold-300 underline" href={`/admin/users/${u.id}`}>{canManageUser(admin, u) ? 'Manage account' : 'View account'}</Link></td>
+                <td><Link className="btn-ghost workspace-record-action" href={`/admin/users/${u.id}`}>{canManageUser(admin, u) ? 'Manage account' : 'View account'}</Link></td>
               </tr>
             ))}
           </tbody>

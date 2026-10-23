@@ -63,7 +63,7 @@ export function AdminPasskeys({ setup = false, next = "/admin", keys = [], remai
         <button className="btn-gold w-full" disabled={busy} onClick={() => passkey(keys.length ? "authenticate" : "register")}>{busy ? "Waiting for verification…" : keys.length ? "Verify with passkey" : "Set up my passkey"}</button>
         <p className="muted text-xs">Use the full site in Chrome, Edge or Safari if your in-app browser does not support passkeys. You will receive recovery codes when you set up your first device.</p>
         {keys.length > 0 && <>
-          <button className="text-sm text-gold-300 underline" disabled={busy} onClick={() => setShowRecovery(v => !v)}>Use a recovery code instead</button>
+          <button className="btn-ghost" aria-expanded={showRecovery} disabled={busy} onClick={() => setShowRecovery(v => !v)}>Use a recovery code instead</button>
           {showRecovery && <form className="space-y-3 border-t border-white/10 pt-4" onSubmit={e => { e.preventDefault(); run(async () => complete(await securityRequest({ action: "recover", code: recoveryCode }))); }}>
             <label className="label">Recovery code<input className="input mt-1 font-mono" value={recoveryCode} onChange={e => setRecoveryCode(e.target.value)} maxLength={40} autoComplete="off" autoCapitalize="characters" required /></label>
             <button className="btn-ghost" disabled={busy}>Verify recovery code</button>
@@ -72,7 +72,7 @@ export function AdminPasskeys({ setup = false, next = "/admin", keys = [], remai
       </> : <>
         <h2 className="text-xl">Your passkeys</h2>
         <p className="muted text-sm">Add a second device before removing an old one. Your password and a passkey or recovery code are required for admin access.</p>
-        <ul className="space-y-3">{keys.map(key => <li key={key.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/10 p-4"><div><strong>{key.label}</strong><p className="muted text-xs">Added {key.createdAt} · {key.lastUsedAt ? `Last used ${key.lastUsedAt}` : "Not used to sign in yet"}</p></div><button className="btn-ghost text-red-200" disabled={busy || keys.length <= 1} onClick={() => run(async () => complete(await securityRequest({ action: "remove", credentialId: key.id })))}>Remove</button></li>)}</ul>
+        <ul className="space-y-3">{keys.map(key => <li key={key.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/10 p-4"><div><strong>{key.label}</strong><p className="muted text-xs">Added {key.createdAt} · {key.lastUsedAt ? `Last used ${key.lastUsedAt}` : "Not used to sign in yet"}</p></div><button className="btn-danger" disabled={busy || keys.length <= 1} onClick={() => run(async () => complete(await securityRequest({ action: "remove", credentialId: key.id })))}>Remove</button></li>)}</ul>
         <label className="label">New device name<input className="input mt-1" maxLength={80} value={label} onChange={e => setLabel(e.target.value)} placeholder="For example: my phone" /></label>
         <button className="btn-gold" disabled={busy || keys.length >= 5} onClick={() => passkey("register")}>Add another passkey</button>
         <div className="space-y-3 border-t border-white/10 pt-5"><h2 className="text-xl">Recovery codes</h2><p className="muted text-sm">{remainingCodes} unused codes remain. Replacing the codes immediately invalidates the old set.</p>

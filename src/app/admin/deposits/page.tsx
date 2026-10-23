@@ -1,3 +1,4 @@
+import { WorkspaceRecordList } from "@/components/WorkspaceRecordList";
 import Link from "next/link";
 import { requireAdmin } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -17,7 +18,7 @@ export default async function DepositApprovals({ searchParams }: { searchParams:
   return <div className="space-y-5">
     <AutoRefresh seconds={30} />
     <div><h2 className="text-3xl">Deposit approvals</h2><p className="muted mt-2 text-sm">{total} reported transfer{total === 1 ? "" : "s"} awaiting review. Verify the receipt and sender in your receiving wallet before adding credit.</p></div>
-    <div className="card overflow-x-auto">
+    <WorkspaceRecordList empty="No deposits awaiting approval." records={payments.map(payment => ({ id: payment.id, href: `/admin/payments/${payment.id}`, title: payment.user.name || payment.user.email, subtitle: payment.user.email, amount: `${(payment.amountCents / 100).toFixed(2)} ${payment.currency}`, status: "Awaiting review", meta: `${payment.network} · Reported ${dateTime(payment.submittedAt)}`, action: "Open deposit" }))} /><div className="card hidden overflow-x-auto md:block">
       {payments.length ? <table className="table"><thead><tr><th>Reported</th><th>Member</th><th>Amount</th><th>Credit</th><th>Transaction</th><th /></tr></thead>
         <tbody>{payments.map(payment => <tr key={payment.id}><td>{dateTime(payment.submittedAt)}</td>
           <td><Link href={`/admin/users/${payment.userId}`} className="text-gold-300 underline">{payment.user.name || payment.user.email}</Link><span className="muted block text-xs">{payment.user.email}</span></td>

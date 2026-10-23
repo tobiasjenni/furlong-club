@@ -16,7 +16,7 @@ export function ProfileForm({ name, country, marketing }: { name: string; countr
       <div><label className="label" htmlFor="country">Country (optional)</label><input className="input" id="country" name="country" autoComplete="country-name" maxLength={60} value={memberCountry} onChange={event => setMemberCountry(event.target.value)} /></div>
       <label className="flex gap-3 text-sm"><input type="checkbox" name="marketing" checked={updates} onChange={event => setUpdates(event.target.checked)} className="mt-1 accent-gold-400" /><span>Email me club updates and new video notices</span></label>
       <FormMessage state={state} focusOnError />
-      <SubmitButton className="btn-gold" pendingLabel="Saving profile…">Save profile</SubmitButton>
+      <SubmitButton className="btn-gold workspace-action-positive" pendingLabel="Saving profile…">Save profile</SubmitButton>
     </form>
   );
 }

@@ -8,5 +8,5 @@ export default async function AdminSecurityPage() {
     db.adminPasskey.findMany({ where: { userId: admin.id }, select: { id: true, label: true, createdAt: true, lastUsedAt: true }, orderBy: { createdAt: "asc" } }),
     db.adminRecoveryCode.count({ where: { userId: admin.id, usedAt: null } }),
   ]);
-  return <section className="card max-w-3xl"><h1 className="mb-6 text-3xl">Admin security</h1><AdminPasskeys next="/admin/security" remainingCodes={remainingCodes} keys={keys.map(k => ({ ...k, createdAt: k.createdAt.toLocaleDateString("en-GB", { timeZone: "UTC" }), lastUsedAt: k.lastUsedAt?.toLocaleDateString("en-GB", { timeZone: "UTC" }) ?? null }))} /></section>;
+  return <section className="card max-w-3xl"><h2 className="mb-6 text-3xl">Admin security</h2><AdminPasskeys next="/admin/security" remainingCodes={remainingCodes} keys={keys.map(k => ({ ...k, createdAt: k.createdAt.toLocaleDateString("en-GB", { timeZone: "UTC" }), lastUsedAt: k.lastUsedAt?.toLocaleDateString("en-GB", { timeZone: "UTC" }) ?? null }))} /></section>;
 }

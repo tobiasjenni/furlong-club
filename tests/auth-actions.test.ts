@@ -7,6 +7,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, expect, it, vi } from "vite
 let pg: PGlite;
 let current: Record<string, unknown>;
 let sessionVersion: number | undefined;
+let sessionEnded = false;
 let messages: {to:string;token?:string}[];
 let beforeSignIn: (() => Promise<void>) | undefined;
 let deliveryFails = false;
@@ -28,11 +29,11 @@ vi.mock("@/lib/db",()=>({db:{
     }},
   auditLog:{create:async({data}:{data:{actorId:string;action:string;target:string}})=>pg.query(`INSERT INTO "AuditLog"(id,"actorId",action,target) VALUES($1,$2,$3,$4)`,[crypto.randomUUID(),data.actorId,data.action,data.target])},
 }}));
-vi.mock("@/lib/auth",()=>({requireUser:async()=>current,startSession:async(u:{sessionVersion:number})=>{sessionVersion=u.sessionVersion;},endSession:async()=>{},revokeSessions:async()=>{throw new Error('Unexpected second session revocation');}}));
+vi.mock("@/lib/auth",()=>({requireUser:async()=>current,startSession:async(u:{sessionVersion:number})=>{sessionVersion=u.sessionVersion;},endSession:async()=>{sessionEnded=true;},revokeSessions:async()=>{throw new Error('Unexpected second session revocation');}}));
 vi.mock("@/lib/email",()=>({emailDelivers:()=>true,sendEmail:async(m:{to:string;token?:string})=>{if(deliveryFails)throw new Error('Simulated provider failure');messages.push(m);},verifyEmailMessage:(to:string,token:string)=>({to,token}),passwordChangedMessage:(to:string)=>({to}),resetPasswordMessage:(to:string,token:string)=>({to,token})}));
 vi.mock("next/headers",()=>({headers:async()=>new Headers()}));
 vi.mock("next/navigation",()=>({redirect:(path:string)=>{throw new Error(`REDIRECT:${path}`);}}));
-import { changeEmail, changePassword, requestPasswordReset, resendVerification, resetPassword, signup, login } from "@/app/actions/auth";
+import { changeEmail, changePassword, requestPasswordReset, resendVerification, resetPassword, signup, login, logout } from "@/app/actions/auth";
 import { consumeToken, issueToken, validPasswordReset } from "@/lib/tokens";
 
 const form=(values:Record<string,string>)=>{const f=new FormData();for(const [k,v]of Object.entries(values))f.set(k,v);return f;};
@@ -44,6 +45,7 @@ afterEach(()=>{vi.unstubAllEnvs();});
 beforeEach(async()=>{
   vi.stubEnv('EMAIL_VERIFICATION_REQUIRED','true');
   invitation.allowed = true;
+  sessionEnded = false;
   deliveryFails = false;
   await pg.exec('DELETE FROM "RateLimit"');beforeSignIn=undefined;
   const id=crypto.randomUUID();await pg.query(`INSERT INTO "User"(id,email,"passwordHash","ageConfirmedAt","updatedAt") VALUES($1,$2,$3,now(),now())`,[id,`${id}@example.com`,await bcrypt.hash('existing-password',4)]);
@@ -51,6 +53,10 @@ beforeEach(async()=>{
 });
 
 const registration=(extra:Record<string,string>={})=>form({name:'Test Member',email:`signup-${crypto.randomUUID()}@example.com`,password:'registration-password',passwordConfirm:'registration-password',age:'on',terms:'on',...extra});
+it("ends admission before returning to a directly usable sign-in endpoint", async () => {
+  await expect(logout()).rejects.toThrow('REDIRECT:/login');
+  expect(sessionEnded).toBe(true);
+});
 it("rejects signup posted through a public login URL without club admission", async () => {
   invitation.allowed = false;
   const data = registration();
