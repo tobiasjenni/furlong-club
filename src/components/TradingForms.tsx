@@ -39,6 +39,10 @@ export function RequestTradingForm({ requestKey, termsVersion, options, disabled
     setError(null); setStep(value => Math.min(2, value + 1));
     requestAnimationFrame(() => document.getElementById("trading-step-title")?.focus());
   };
+  const revisit = (index: number) => {
+    setStep(index); setError(null);
+    requestAnimationFrame(() => document.getElementById("trading-step-title")?.focus());
+  };
   if (state?.ok) return <div className="funding-credit-ready" role="status"><h3>Trading request received</h3><p className="mt-3">Your request is with the Super Admin. Funds remain available until approval, which reserves them for your selected moon entry.</p><Link prefetch={false} className="funding-link mt-4 inline-block" href="/allocations#allocations">View your request →</Link></div>;
   return <form action={action} onReset={event => event.preventDefault()} onSubmit={event => {
     if (step < 2) { event.preventDefault(); advance(); return; }
@@ -47,7 +51,8 @@ export function RequestTradingForm({ requestKey, termsVersion, options, disabled
   }} className="funding-wizard space-y-4" aria-busy={pending}>
     <input type="hidden" name="requestKey" value={intentKey} /><input type="hidden" name="termsVersion" value={termsVersion} />
     <input type="hidden" name="amount" value={amount} /><input type="hidden" name="entryId" value={entryId} /><input type="hidden" name="option" value={option} /><input type="hidden" name="address" value={address} /><input type="hidden" name="confirmAddress" value={confirmation} />
-    <nav className="funding-wizard-nav" aria-label="Trading request steps">{["Amount & entry", "Payout wallet", "Review"].map((label, index) => <span key={label} aria-current={step === index ? "step" : undefined}>{index + 1}. {label}</span>)}</nav>
+    <nav className="funding-wizard-nav" aria-label="Trading request steps">{["Amount & entry", "Payout wallet", "Review"].map((label, index) => <button key={label} type="button" disabled={pending || index > step} onClick={() => revisit(index)} aria-current={step === index ? "step" : undefined}>{index + 1}. {label}</button>)}</nav>
+    <p className="funding-form-note">Step {step + 1} of 3 · {step === 0 ? "Choose an amount and a published entry." : step === 1 ? "Add your own wallet for the eventual payout." : "Review the details before submitting."}</p>
     <h3 id="trading-step-title" tabIndex={-1} className="text-xl">{["Choose your trading amount", "Where should we pay you?", "Check your trading request"][step]}</h3>
     <fieldset hidden={step !== 0} disabled={locked || step !== 0} className="funding-wizard-fields"><legend className="sr-only">Amount and entry</legend>
       <p className="funding-inline-balance">Approved credit: <strong>${(availableCents / 100).toFixed(2)}</strong></p>
@@ -70,7 +75,7 @@ export function RequestTradingForm({ requestKey, termsVersion, options, disabled
       <label className="funding-acknowledgement"><input name="risk" type="checkbox" checked={risk} onChange={event => setRisk(event.target.checked)} required /><span>I understand the risks, lock and manual payout above and accept the <Link className="funding-link" href="/legal/terms#trading-terms" target="_blank" rel="noreferrer">allocation terms</Link>.</span></label>
     </fieldset>
     {error && <p id="trading-input-error" role="alert" className="funding-form-error">{error}</p>}<FormMessage state={state} focusOnError />
-    <div className="funding-wizard-controls">{step > 0 && <button type="button" className="btn-ghost" disabled={pending} onClick={() => { setStep(value => value - 1); setError(null); requestAnimationFrame(() => document.getElementById("trading-step-title")?.focus()); }}>Back</button>}{step < 2 ? <button type="button" className="funding-action funding-action-green" disabled={locked} onClick={advance}>{step === 0 ? "Continue to payout wallet →" : "Review request →"}</button> : <SubmitButton className="funding-action funding-action-green" disabled={locked} pendingLabel="Saving your request…">Submit trading request</SubmitButton>}</div>
+    <div className="funding-wizard-controls">{step > 0 && <button type="button" className="btn-ghost" disabled={pending} onClick={() => revisit(step - 1)}>Back</button>}{step < 2 ? <button type="button" className="funding-action funding-action-green" disabled={locked} onClick={advance}>{step === 0 ? "Continue to payout wallet →" : "Review request →"}</button> : <SubmitButton className="funding-action funding-action-green" disabled={locked} pendingLabel="Saving your request…">Submit trading request</SubmitButton>}</div>
     <p className="funding-form-note">No fee to request. Your funds stay available until Super Admin approval. Maximum $10,000 across open allocations.</p>
   </form>;
 }

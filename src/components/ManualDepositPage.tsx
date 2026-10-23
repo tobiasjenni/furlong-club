@@ -26,7 +26,7 @@ export async function ManualDepositPage({ payment, portal = false }: { payment: 
   const qr = pending && !test && payment.payAddress ? await QRCode.toDataURL(payment.payAddress, { margin: 1, width: 240, color: { dark: "#06140f", light: "#f6f1e7" } }) : null;
   const tx = payment.payinHash ?? payment.submittedTxHash;
   const explorer = test ? null : transactionUrl(payment.network, tx);
-  return <div className="container-page max-w-2xl space-y-5 py-10">
+  return <div className="container-page funding-receipt-page max-w-2xl space-y-5 py-10">
     {reviewing && <AutoRefresh seconds={10} />}
     <Link href={walletHref} className="text-sm text-gold-300 underline">← Back to wallet</Link>
     <section className="card space-y-5">
@@ -42,8 +42,7 @@ export async function ManualDepositPage({ payment, portal = false }: { payment: 
         <p className="muted mt-2 text-xs">Club credit after approval: {usd(payment.amountCents)}. One token equals $1 of USD club credit. Pay your sending wallet&apos;s network fee separately.</p></div>
       {pending && <>
         <p className="text-sm text-cream/80">Use only <strong>{payment.currency}</strong> on <strong>{network}</strong>. Send from your own wallet or exchange account and keep your transaction receipt.</p>
-        {qr && <img src={qr} alt={`${payment.currency} receiving address on ${network}`} className="mx-auto h-56 w-56 rounded-xl" />}
-        <div className="funding-receipt-address"><h2>Send funds here to add credit</h2><p className="muted mt-2 text-xs">Club deposit address · {network}</p><code className="select-all">{payment.payAddress}</code>{!test && <CopyButton value={payment.payAddress!} />}<p className="funding-form-note">This is the club’s address. For trading payouts, you’ll enter your own personal receiving wallet in the next step.</p></div>
+        <div className="funding-receipt-address"><h2>Send funds here to add credit</h2><p className="muted mt-2 text-xs">Club deposit address · {network}</p><code className="select-all">{payment.payAddress}</code>{!test && <CopyButton value={payment.payAddress!} />}{qr && <details className="funding-details"><summary>Show deposit QR code</summary><img src={qr} alt={`${payment.currency} receiving address on ${network}`} className="mx-auto my-4 h-56 w-56 rounded-xl" /><p className="funding-form-note">Scan from your sending wallet. Check the token, network and amount before sending.</p></details>}<p className="funding-form-note">This is the club’s address. For trading payouts, you’ll enter your own personal receiving wallet in the next step.</p></div>
         <ReportDepositForm id={payment.id} />
         <CancelDepositForm id={payment.id} portal={portal} />
       </>}
