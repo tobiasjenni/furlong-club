@@ -1,3 +1,4 @@
+import { SubmitButton } from "@/components/SubmitButton";
 import { ClubResultsCalendar } from "@/components/v2/ClubResultsCalendar";
 import { TradingSummary } from "@/components/TradingSummary";
 import { requireAdmin } from "@/lib/auth";
@@ -39,7 +40,7 @@ export default async function AdminUser({ params, searchParams }: { params: Prom
             <dt className="muted">Email confirmed</dt>
             <dd>
               {user.emailVerifiedAt ? date(user.emailVerifiedAt) : manageable && superAdmin ? (
-                <form action={confirmEmail}><input type="hidden" name="userId" value={user.id} /><label className="label">Ownership verification note<input name="reason" minLength={10} maxLength={500} required className="input" placeholder="How you verified this email belongs to the member" /></label><button className="text-gold-300 hover:underline">Confirm verified ownership</button></form>
+                <form action={confirmEmail}><input type="hidden" name="userId" value={user.id} /><label className="label">Ownership verification note<input name="reason" minLength={10} maxLength={500} required className="input" placeholder="How you verified this email belongs to the member" /></label><SubmitButton className="btn-gold workspace-action-positive" pendingLabel="Confirming ownership…">Confirm verified ownership</SubmitButton></form>
               ) : "Not yet"}
             </dd>
             <dt className="muted">Role</dt><dd>{roleLabel(user.role)}</dd>
@@ -64,17 +65,17 @@ export default async function AdminUser({ params, searchParams }: { params: Prom
           {superAdmin && <ResetLinkForm userId={user.id} />}
           <form action={signOutUser}>
             <input type="hidden" name="userId" value={user.id} />
-            <button className="btn-ghost w-full">Sign out of all devices</button>
+            <SubmitButton className="btn-ghost w-full" pendingLabel="Signing out devices…">Sign out of all devices</SubmitButton>
           </form>
         </div>}
         {manageable && <form action={grantPlan} className="card space-y-3">
           <h3 className="text-lg">Grant access</h3>
           <input type="hidden" name="userId" value={user.id} />
           <div className="grid grid-cols-2 gap-3">
-            <select name="planId" className="input">{plans.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</select>
-            <input name="days" type="number" defaultValue={33} min={1} max={366} className="input" />
+            <select aria-label="Plan to grant" name="planId" className="input">{plans.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</select>
+            <input aria-label="Days of access to grant" name="days" type="number" defaultValue={33} min={1} max={366} className="input" />
           </div>
-          <button className="btn-ghost">Grant days</button>
+          <SubmitButton className="btn-ghost" pendingLabel="Granting access…">Grant days</SubmitButton>
         </form>}
       </div>
       <div className="min-w-0 space-y-4">
@@ -98,8 +99,8 @@ export default async function AdminUser({ params, searchParams }: { params: Prom
           <h3 className="mb-3 text-lg">CRM notes</h3>
           {manageable && <form action={addNote} className="space-y-2">
             <input type="hidden" name="userId" value={user.id} />
-            <textarea name="body" rows={3} className="input" placeholder="Called, interested in Trading with Rob…" />
-            <button className="btn-gold">Add note</button>
+            <textarea aria-label="New CRM note" name="body" rows={3} className="input" placeholder="Called, interested in Trading with Rob…" />
+            <SubmitButton className="btn-gold" pendingLabel="Saving note…">Add note</SubmitButton>
           </form>}
           <ul className="mt-4 space-y-3">
             {user.notes.map((n) => (
@@ -120,7 +121,7 @@ export default async function AdminUser({ params, searchParams }: { params: Prom
                 return (
                   <tr key={s.id}>
                     <td>{s.plan.name}</td><td>{date(s.endsAt)}</td><td>{s.source}</td><td>{live ? "Active" : s.status === "CANCELLED" ? "Cancelled" : "Expired"}</td>
-                    <td>{live && manageable && <form action={cancelSubscription}><input type="hidden" name="id" value={s.id} /><button className="text-xs text-red-300 hover:underline">Cancel</button></form>}</td>
+                    <td>{live && manageable && <form action={cancelSubscription}><input type="hidden" name="id" value={s.id} /><SubmitButton className="btn-danger" pendingLabel="Cancelling access…">Cancel</SubmitButton></form>}</td>
                   </tr>
                 );
               })}

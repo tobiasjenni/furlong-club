@@ -1,3 +1,4 @@
+import { SubmitButton } from "@/components/SubmitButton";
 import { notFound } from "next/navigation";
 import { refreshAdminPayment } from "@/app/actions/wallet";
 import { requireAdmin } from "@/lib/auth";
@@ -32,7 +33,7 @@ export default async function PaymentAudit({ params, searchParams }: { params: P
   return <div className="space-y-6"><section className="card"><h2 className="text-2xl">Payment trail</h2>
     {(await searchParams).refresh && <p className="mt-3 text-gold-300">Provider unavailable; retry later.</p>}
     <dl className="mt-5 grid gap-3 text-sm sm:grid-cols-[220px_1fr]">{Object.entries(fields).map(([key, value]) => <div key={key} className="contents"><dt className="muted">{key}</dt><dd className="break-all">{value ?? "—"}</dd></div>)}</dl>
-    {canEdit && payment.provider === "nowpayments" && <form action={refreshAdminPayment} className="mt-5"><input type="hidden" name="id" value={payment.id} /><button className="btn-ghost">Reconcile with provider</button></form>}
+    {canEdit && payment.provider === "nowpayments" && <form action={refreshAdminPayment} className="mt-5"><input type="hidden" name="id" value={payment.id} /><SubmitButton className="btn-ghost" pendingLabel="Checking provider…">Reconcile with provider</SubmitButton></form>}
   </section>
   {payment.provider === "manual" && payment.status === "CONFIRMING" && <section className="card space-y-5">
     <h2 className="text-xl">Review deposit for {payment.user.email}</h2>

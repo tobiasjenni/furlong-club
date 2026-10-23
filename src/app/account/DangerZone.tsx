@@ -11,7 +11,7 @@ export function DangerZone({ protectedAccount = false }: { protectedAccount?: bo
       <div className="card">
         <h2 className="text-xl">Sessions</h2>
         <p className="muted mt-1 text-sm">Signed in on a shared or lost device? Sign out everywhere, including here.</p>
-        <form action={signOutEverywhere} className="mt-4"><button className="btn-ghost">Sign out on all devices</button></form>
+        <form action={signOutEverywhere} className="mt-4"><SubmitButton className="btn-ghost" pendingLabel="Signing out devices…">Sign out on all devices</SubmitButton></form>
       </div>
       {protectedAccount ? <div className="card"><h2 className="text-xl">Protected admin account</h2><p className="muted mt-2 text-sm">An admin must be demoted to Member before account closure. The Super Admin owner account cannot be closed here.</p></div> : <div className="card">
         <h2 className="text-xl">Take a break or close your account</h2>

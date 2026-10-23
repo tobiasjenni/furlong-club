@@ -1,3 +1,4 @@
+import { WorkspaceRecordList } from "@/components/WorkspaceRecordList";
 import { requireAdmin } from "@/lib/auth";
 import Link from "next/link";
 import { db } from "@/lib/db";
@@ -7,7 +8,7 @@ export default async function AdminPayments() {
   await requireAdmin();
   const payments = await db.payment.findMany({ orderBy: { createdAt: "desc" }, take: 100, include: { user: true, plan: true } });
   return (
-    <div className="card overflow-x-auto p-0 sm:p-0">
+    <div><WorkspaceRecordList empty="No payments yet." records={payments.map(payment => ({ id: payment.id, href: `/admin/payments/${payment.id}`, title: payment.user.email, amount: usd(payment.amountCents), status: payment.status, meta: `${payment.currency} · ${payment.network} · ${dateTime(payment.createdAt)}`, action: "Open payment trail" }))} /><div className="card hidden overflow-x-auto p-0 sm:p-0 md:block">
       <table className="table">
         <thead><tr><th>Date</th><th>User</th><th>Plan</th><th>Amount</th><th>Coin</th><th>Provider</th><th>Status</th></tr></thead>
         <tbody>
@@ -23,6 +24,6 @@ export default async function AdminPayments() {
         </tbody>
       </table>
       {payments.length === 0 && <p className="muted p-6 text-sm">No payments yet.</p>}
-    </div>
+    </div></div>
   );
 }

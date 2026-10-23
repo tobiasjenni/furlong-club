@@ -45,6 +45,6 @@ export function ReviewDepositForm({ id, submittedHash, amount, token, network }:
     {decision === "approve" && <label className="flex items-start gap-3 text-sm"><input type="checkbox" name="verified" checked={verified} onChange={event => setVerified(event.target.checked)} required className="mt-1 accent-gold-400" />
       <span>I independently verified that exactly <strong>{amount} {token}</strong> arrived at the saved club address on <strong>{network}</strong>, is confirmed, and belongs to this member. A transaction ID alone is not proof of who paid.</span></label>}
     <FormMessage state={state} />
-    <button className={decision === "approve" ? "btn-gold" : "btn-ghost text-red-200"} disabled={pending}>{pending ? "Saving…" : decision === "approve" ? "Approve & credit wallet" : "Reject deposit"}</button>
+    <SubmitButton className={decision === "approve" ? "btn-gold workspace-action-positive" : "btn-danger"} disabled={pending} pendingLabel="Saving deposit review…">{decision === "approve" ? "Approve & credit wallet" : "Reject deposit"}</SubmitButton>
   </form>;
 }

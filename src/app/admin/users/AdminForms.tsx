@@ -1,18 +1,19 @@
 "use client";
 import { useActionState } from "react";
 import { type AdminFormState, changeUserRole, sendResetLink, editUserProfile, deleteUserAccount, permanentlyDeleteUser } from "@/app/actions/admin";
+import { CopyButton } from "@/app/checkout/pay/[id]/CopyButton";
 import { SubmitButton } from "@/components/SubmitButton";
 
 function Result({ state }: { state: AdminFormState }) {
   if (!state) return null;
-  if (state.error) return <p role="alert" className="rounded-xl bg-red-500/10 px-3 py-2 text-sm text-red-300">{state.error}</p>;
+  if (state.error) return <p role="alert" className="workspace-feedback workspace-feedback-error">{state.error}</p>;
   return (
-    <div role="status" className="space-y-2 rounded-xl bg-emerald-500/10 px-3 py-2 text-sm text-emerald-300">
+    <div role="status" className="workspace-feedback workspace-feedback-success space-y-2">
       <p>{state.ok}</p>
       {state.link && (
         <div className="flex items-center gap-2">
           <code className="min-w-0 flex-1 break-all text-xs text-cream/80">{state.link}</code>
-          <button type="button" className="btn-ghost shrink-0 px-3 py-1 text-xs" onClick={() => navigator.clipboard.writeText(state.link!)}>Copy</button>
+          <CopyButton value={state.link} valueName="link" />
         </div>
       )}
     </div>
@@ -36,7 +37,7 @@ export function ProfileForm({ user }: { user: { id: string; name: string | null;
     <p className="muted text-sm">Suspension blocks sign-in and keeps the member’s records and funds. Use Close account below to close an account. Restoring access does not renew expired or cancelled memberships.</p>
     <p className="muted text-sm">The member manages their own sign-in email. Use Access &amp; security for password recovery. Age and marketing consent remain the member’s own declarations.</p>
     <label className="label">Reason for change<textarea name="reason" required minLength={10} maxLength={500} rows={2} className="input" placeholder="Explain the change for the audit history" /></label>
-    <SubmitButton pendingLabel="Saving profile…">Save member profile</SubmitButton>
+    <SubmitButton className="btn-gold workspace-action-positive w-full" pendingLabel="Saving profile…">Save member profile</SubmitButton>
     <Result state={state} />
   </form>;
 }
@@ -55,7 +56,7 @@ export function DeleteAccountForm({ userId, email, closed }: { userId: string; e
         <label className="label">Type the member’s email to confirm<input name="confirmation" type="email" required maxLength={254} autoComplete="off" spellCheck={false} className="input" /></label>
         <label className="label">Reason for closure<textarea name="reason" required minLength={10} maxLength={500} rows={2} className="input" /></label>
         <label className="label">Your Super Admin password<input type="password" name="password" autoComplete="current-password" required className="input" /></label>
-        <SubmitButton className="btn-ghost w-full border-red-400/40 text-red-300" pendingLabel="Closing account…">Close account and disable sign-in</SubmitButton>
+        <SubmitButton className="btn-danger w-full" pendingLabel="Closing account…">Close account and disable sign-in</SubmitButton>
         <Result state={state} />
       </form>
     </details>}
@@ -77,7 +78,7 @@ export function PermanentDeleteForm({ userId, email }: { userId: string; email: 
         <label className="label">Reason for permanent deletion<textarea name="reason" required minLength={10} maxLength={500} rows={2} className="input" placeholder="For example, unused test account" /></label>
         <label className="label">Your password to approve permanent deletion<input type="password" name="password" autoComplete="current-password" required className="input" /></label>
         <label className="flex items-start gap-3 text-sm"><input type="checkbox" name="acknowledgement" value="DELETE" required className="mt-1 shrink-0" /><span>I understand this permanently removes the account and cannot be undone.</span></label>
-        <SubmitButton className="btn-ghost w-full border-red-400/50 text-red-300" pendingLabel="Permanently deleting…">Permanently delete this user</SubmitButton>
+        <SubmitButton className="btn-danger w-full" pendingLabel="Permanently deleting…">Permanently delete this user</SubmitButton>
         <Result state={state} />
       </form>
     </details>

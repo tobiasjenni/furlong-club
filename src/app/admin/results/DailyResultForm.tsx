@@ -7,7 +7,7 @@ import { SubmitButton } from '@/components/SubmitButton';
 export type DailyResultRecord = { day: string; returnBps: number; revision: number; published: boolean; sourceNote: string; updatedAt: string };
 function Controls({ published, future }: { published: boolean; future: boolean }) {
   const { pending } = useFormStatus();
-  return <div className="flex flex-wrap gap-3"><button name="operation" value="publish" className="btn-gold" disabled={pending || future} aria-busy={pending}>{pending ? 'Saving daily result…' : 'Publish daily result'}</button>{published && <button name="operation" value="retract" className="btn-ghost text-red-300" disabled={pending}>Retract this result</button>}</div>;
+  return <div className="flex flex-wrap gap-3"><button name="operation" value="publish" className="btn-gold workspace-action-positive" disabled={pending || future} aria-busy={pending}>{pending ? 'Saving daily result…' : 'Publish daily result'}</button>{published && <button name="operation" value="retract" className="btn-danger" disabled={pending}>Retract this result</button>}</div>;
 }
 export function DailyResultForm({ day, today, record }: { day: string; today: string; record?: DailyResultRecord }) {
   const [state, action] = useActionState(saveDailyResult, null);

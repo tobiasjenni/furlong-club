@@ -8,7 +8,7 @@ export function FormMessage({ state, focusOnError = false }: { state?: { error?:
   }, [focusOnError, state]);
   if (!state?.error && !state?.ok) return null;
   return (
-    <p ref={message} tabIndex={focusOnError && state.error ? -1 : undefined} role={state.error ? "alert" : "status"} className={`rounded-xl px-3 py-2 text-sm ${state.error ? "bg-red-500/10 text-red-300" : "bg-emerald-500/10 text-emerald-300"}`}>
+    <p ref={message} tabIndex={focusOnError && state.error ? -1 : undefined} role={state.error ? "alert" : "status"} className={`workspace-feedback ${state.error ? "workspace-feedback-error bg-red-500/10 text-red-300" : "workspace-feedback-success bg-emerald-500/10 text-emerald-300"} rounded-xl px-3 py-2 text-sm`}>
       {state.error ?? state.ok}
     </p>
   );

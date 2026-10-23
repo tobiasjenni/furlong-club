@@ -3,7 +3,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { AdminCounts } from "@/lib/admin-data";
 
-export function AdminNotices({ initial }: { initial: AdminCounts }) {
+export function AdminNotices({ initial, canApprove = false }: { initial: AdminCounts; canApprove?: boolean }) {
   const [counts, setCounts] = useState(initial);
   useEffect(() => { setCounts(initial); }, [initial]);
   useEffect(() => {
@@ -24,8 +24,9 @@ export function AdminNotices({ initial }: { initial: AdminCounts }) {
     document.addEventListener("visibilitychange", poll);
     return () => { clearInterval(timer); controller.abort(); document.removeEventListener("visibilitychange", poll); };
   }, []);
-  return <div className="space-y-3">
-    {counts.deposits > 0 && <div role="status" className="mb-6 rounded-xl border border-gold-400/40 bg-gold-400/10 p-4 text-sm text-gold-300"><Link href="/admin/deposits" className="flex flex-wrap justify-between gap-2"><strong>{counts.deposits} deposit{counts.deposits === 1 ? "" : "s"} awaiting your approval</strong><span className="underline">Review deposits →</span></Link></div>}
-    {(counts.pending > 0 || counts.due > 0) && <div role="status" className="mb-6 rounded-xl border border-gold-400/40 bg-gold-400/10 p-4 text-sm text-gold-300"><Link href="/admin/trading" className="flex flex-wrap justify-between gap-2"><strong>Trading: {counts.pending} awaiting approval · {counts.due} results or payouts due</strong><span className="underline">Review allocations →</span></Link></div>}
+  if (counts.deposits === 0 && counts.pending === 0 && counts.due === 0) return null;
+  return <div className="workspace-notices">
+    {counts.deposits > 0 && <div role="status" className="workspace-notice"><Link prefetch={false} href="/admin/deposits"><strong>{counts.deposits} deposit{counts.deposits === 1 ? "" : "s"} {canApprove ? "ready for your review" : "awaiting Super Admin review"}</strong><span>{canApprove ? "Review deposits" : "View deposits"} →</span></Link></div>}
+    {(counts.pending > 0 || counts.due > 0) && <div role="status" className="workspace-notice"><Link prefetch={false} href="/admin/trading"><strong>Trading: {counts.pending} awaiting approval · {counts.due} results or payouts due</strong><span>{canApprove ? "Review allocations" : "View allocations"} →</span></Link></div>}
   </div>;
 }

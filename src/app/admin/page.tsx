@@ -21,7 +21,7 @@ export default async function AdminHome() {
   return (
     <div className="space-y-6">
       <div><h2 className="text-2xl">Rob’s syndicate overview</h2><p className="muted mt-2 text-sm">Funding review, scheduled entries and manual payouts. Reserved principal includes approved allocations waiting for their start. All times are UTC.</p></div>
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+      <div className="workspace-stats">
         {stats.map((s) => (
           <div key={s.label} className="card p-4 sm:p-4">
             <p className="muted text-xs">{s.label}</p>
@@ -29,7 +29,7 @@ export default async function AdminHome() {
           </div>
         ))}
       </div>
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">{[
+      <div className="workspace-quick-links grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{[
         ["/admin/deposits", "Deposit review", "Check reported incoming transfers."],
         ["/admin/trading?status=PENDING", "Allocation requests", "Review funds, destinations and entry dates."],
         ["/admin/syndicates", "Moon calendar", "See entry availability and reserved capital."],
