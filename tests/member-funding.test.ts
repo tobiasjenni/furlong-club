@@ -1,10 +1,31 @@
 import { describe, expect, it } from "vitest";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import ErrorPage from "@/app/error";
+import PortalError from "@/app/(member)/error";
 import { allocationCapacity, allocationRequestHref, defaultAllocationAmount, fundingCents } from "@/lib/member-funding";
 import { isClubReceivingAddress, normalizePayoutAddress, payoutDestinationError } from "@/lib/payout-address";
 
 const eth = "0x52908400098527886E0F7030069857D2E4169EE7";
 const other = "0xde709f2102306220921060314715629080e2fb77";
 const tron = "TPGPga3MfPrFThgFeGnBrfQN4aRCMPH5mf";
+
+describe("an open form can recover safely after a deployment", () => {
+  for (const component of [ErrorPage, PortalError]) {
+    it(`offers a page reload for an obsolete action in ${component.name}`, () => {
+      const error = new Error("Old action"); error.name = "UnrecognizedActionError";
+      const html = renderToStaticMarkup(createElement(component, { error, reset: () => {} }));
+      expect(html).toContain("Reload page");
+      expect(html).toContain("updated");
+      expect(html).not.toContain("Old action");
+    });
+    it(`preserves ordinary retry handling in ${component.name}`, () => {
+      const html = renderToStaticMarkup(createElement(component, { error: new Error("Private server details"), reset: () => {} }));
+      expect(html).toContain("Try again");
+      expect(html).not.toContain("Private server details");
+    });
+  }
+});
 
 describe("funding handoff respects credit and allocation limits", () => {
   it("parses cents exactly and rejects malformed or excessive query input", () => {
