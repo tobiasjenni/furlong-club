@@ -3,7 +3,7 @@ import Link from "next/link";
 import { adminUsersQuery, type AdminUserPage } from "@/lib/admin-query";
 import { db } from "@/lib/db";
 import { date } from "@/lib/format";
-import { isAdmin, roleLabel } from "@/lib/roles";
+import { canManageUser, isAdmin, roleLabel } from "@/lib/roles";
 
 export default async function AdminUsers({ searchParams }: { searchParams: Promise<{ q?: string; filter?: string; page?: string }> }) {
   const admin = await requireAdmin();
@@ -18,7 +18,7 @@ export default async function AdminUsers({ searchParams }: { searchParams: Promi
 
   return (
     <div className="space-y-4">
-      <div className="card"><h2 className="text-lg">Member management</h2><p className="muted mt-2 text-sm">Members register at <Link href="/signup" className="text-gold-300 underline">Create account</Link>. Open a member’s profile to review their account. Only Super Admin can grant admin access after they have signed in and confirmed their email.</p><p className="mt-2 text-sm text-gold-300">Your access: {roleLabel(admin.role)}</p></div>
+      <div className="card"><h2 className="text-lg">Member management</h2><p className="muted mt-2 text-sm">Open a member’s profile to review their account.{admin.role === 'SUPER_ADMIN' ? ' You can edit their name, country and tags, suspend or restore access, manage admin permissions, or delete their account. Deleted accounts remain available under the Closed filter with their financial history intact.' : ' Your Admin access is read-only. Account changes are reserved for Super Admin.'}</p><p className="mt-2 text-sm text-gold-300">Your access: {roleLabel(admin.role)}</p></div>
       <form className="flex flex-col gap-2 sm:flex-row">
         <input name="q" defaultValue={q} placeholder="Search email, name or tag" className="input sm:max-w-sm" />
         <select name="filter" defaultValue={filter} className="input sm:max-w-[200px]">
@@ -38,13 +38,14 @@ export default async function AdminUsers({ searchParams }: { searchParams: Promi
               <p className="muted mt-1 text-sm">
                 {u.name ?? "No name"} · {u.planName ?? "Free"}{isAdmin(u.role) ? ` · ${roleLabel(u.role)}` : ""} · joined {date(u.createdAt)}
               </p>
+              <span className="mt-2 inline-block text-sm text-gold-300">{canManageUser(admin, u) ? 'Manage account →' : 'View account →'}</span>
             </Link>
           </li>
         ))}
       </ul>
       <div className="card hidden overflow-x-auto p-0 sm:p-0 md:block">
         <table className="table">
-          <thead><tr><th>Email</th><th>Name</th><th>Plan</th><th>Tags</th><th>Status</th><th>Joined</th><th>Last login</th></tr></thead>
+          <thead><tr><th>Email</th><th>Name</th><th>Plan</th><th>Tags</th><th>Status</th><th>Joined</th><th>Last login</th><th>Account</th></tr></thead>
           <tbody>
             {users.map((u) => (
               <tr key={u.id}>
@@ -52,9 +53,10 @@ export default async function AdminUsers({ searchParams }: { searchParams: Promi
                 <td>{u.name}</td>
                 <td>{u.planName ?? <span className="muted">Free</span>}</td>
                 <td className="text-xs">{u.tags.join(", ")}</td>
-                <td>{u.status === "ACTIVE" ? "Active" : <span className="text-red-300">{u.status === "CLOSED" ? "Closed" : "Suspended"}</span>}</td>
+                <td>{u.status === "ACTIVE" ? "Active" : <span className="text-red-300">{u.status === "CLOSED" ? "Deleted / closed" : "Suspended"}</span>}</td>
                 <td>{date(u.createdAt)}</td>
                 <td>{date(u.lastLoginAt)}</td>
+                <td><Link className="whitespace-nowrap text-gold-300 underline" href={`/admin/users/${u.id}`}>{canManageUser(admin, u) ? 'Manage account' : 'View account'}</Link></td>
               </tr>
             ))}
           </tbody>
