@@ -11,7 +11,7 @@ export function SiteFooter() {
             <BrandLogo />
           </Link>
           <p className="muted max-w-md">
-            Horse racing education and opinion. Nothing here is financial advice or a promise of winnings. Betting involves
+            A private horse-racing syndicate led by Rob. Nothing here is a promise of winnings. Betting involves
             risk and you can lose the money you stake. Only bet what you can afford to lose.
           </p>
           <p className="muted max-w-md">

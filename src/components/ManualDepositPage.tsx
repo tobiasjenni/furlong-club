@@ -29,7 +29,7 @@ export async function ManualDepositPage({ payment, portal = false }: { payment: 
     <section className="card space-y-5">
       <div><p className="muted text-sm">Manual deposit · {payment.currency}</p>
         <h1 className="mt-1 text-3xl">{pending ? "Send your deposit" : manualDepositLabel(payment.status, payment.providerStatus)}</h1>
-        <p className="muted mt-2 text-sm">{approved ? `${usd(payment.amountCents)} has been added to your club credit.` : reviewing ? "Your payment report is with an admin. No credit is available until it is approved. Please do not send the payment again." : cancelled ? "This request was cancelled. Create a new deposit before sending funds." : payment.status === "FAILED" ? "This deposit was not approved. No credit was added." : payment.status === "EXPIRED" ? "This deposit request has expired. Create a new request before sending funds. If you already sent a payment, contact support with your transaction ID." : payment.status === "PARTIAL" ? "This deposit needs review. Contact support before sending any further funds." : "Send the amount below, then tell us once you have sent it."}</p>
+        <p className="muted mt-2 text-sm">{approved ? `${usd(payment.amountCents)} has been added to your club credit. A deposit alone does not create a trading allocation.` : reviewing ? "Your payment report is with the Super Admin. No credit is available until it is approved. Please do not send the payment again." : cancelled ? "This request was cancelled. Create a new deposit before sending funds." : payment.status === "FAILED" ? "This deposit was not approved. No credit was added." : payment.status === "EXPIRED" ? "This deposit request has expired. Create a new request before sending funds. If you already sent a payment, contact support with your transaction ID." : payment.status === "PARTIAL" ? "This deposit needs review. Contact support before sending any further funds." : "Send the amount below, then tell us once you have sent it."}</p>
       </div>
       <ol className="grid grid-cols-3 gap-2 text-xs" aria-label="Deposit progress">
         {["1. Send funds", "2. Report sent", "3. Admin approves"].map((label, index) => <li key={label} className={`rounded-xl p-3 ${approved || (reviewing && index < 2) ? "bg-emerald-500/10 text-emerald-200" : "bg-white/5 text-cream/70"}`}>{label}</li>)}
@@ -54,7 +54,7 @@ export async function ManualDepositPage({ payment, portal = false }: { payment: 
         {payment.reviewedAt && <><dt className="muted">Reviewed</dt><dd>{formatDate(payment.reviewedAt)}</dd></>}
         {tx && <><dt className="muted">Transaction</dt><dd className="break-all text-xs">{explorer ? <a href={explorer} target="_blank" rel="noreferrer" className="text-gold-300 underline">{tx}</a> : tx}</dd></>}
       </dl>
-      {approved && <Link href={walletHref} className="btn-gold w-full">View wallet balance</Link>}
+      {approved && <div className="grid gap-3"><Link prefetch={false} href="/allocations#request" className="btn-gold w-full">Choose an entry for Rob</Link><Link prefetch={false} href={walletHref} className="btn-ghost w-full">View wallet balance</Link></div>}
       <p className="muted text-xs">Questions? Contact <a href="mailto:support@furlong.club" className="text-gold-300 underline">support@furlong.club</a> with your reference and transaction ID.</p>
     </section>
   </div>;

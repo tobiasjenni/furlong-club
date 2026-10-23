@@ -1,6 +1,6 @@
 import { privateMetadata } from "@/lib/seo";
 import { roleLabel } from "@/lib/roles";
-import Link from "next/link";
+import { AdminNavigation } from "@/components/AdminNavigation";
 import { requireAdmin } from "@/lib/auth";
 import { Suspense } from "react";
 import { adminCounts } from "@/lib/admin-data";
@@ -18,7 +18,7 @@ const nav = [
   { href: "/admin/payments", label: "Payments" },
   { href: "/admin/wallet", label: "Wallet & reconciliation" },
   { href: "/admin/videos", label: "Videos" },
-  { href: "/admin/plans", label: "Plans" },
+  { href: "/admin/plans", label: "Future subscriptions" },
   { href: "/admin/audit", label: "Audit log" },
   { href: "/admin/security", label: "Security" },
 ];
@@ -32,11 +32,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         <h1 className="text-2xl">Back office</h1>
       </div>
       {admin.role === "ADMIN" && <p className="card mb-6 text-sm" role="status">Read-only access. You can view club records. Only the Super Admin can approve deposits or make changes. Your personal security settings remain available.</p>}
-      <nav className="-mx-4 mb-6 flex gap-2 overflow-x-auto px-4 pb-1">
-        {nav.map((n) => (
-          <Link key={n.href} href={n.href} className="btn-ghost shrink-0 px-4 py-2">{n.label}</Link>
-        ))}
-      </nav>
+      <AdminNavigation links={nav} />
       <Suspense fallback={null}><Notifications /></Suspense>
       {children}
     </div>

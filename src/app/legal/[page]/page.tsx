@@ -9,7 +9,7 @@ const pages: Record<string, { title: string; body: string[] }> = {
   terms: {
     title: "Terms of service",
     body: [
-      `${brand.name} provides horse racing education and opinion videos. Content is for information and entertainment and is not financial, investment or betting advice.`,
+      `${brand.name} provides free club accounts and access to separately requested Trading with Rob horse-racing allocations. Educational videos and additional club benefits may also be offered; they do not replace the specific allocation terms below or guarantee results.`,
       "You must be 18 or over, and of legal age to gamble where you live, to use the service.",
       "Paid subscriptions and additional club benefits are coming soon. New subscription purchases and renewals are paused. Existing membership access and historical payments remain recorded. Approved deposits add USD club credit for separately requested Trading with Rob allocations. Blockchain transfers cannot be reversed by the site; contact support about payment errors, refund requests and any applicable statutory rights.",
       "The website records manually verified stablecoin deposits, club credit and separately approved trading allocations. Deposits are received into the displayed club receiving wallets. It does not automatically execute trades, sign wallet transactions or send cryptocurrency. Rob and the club operator manage trading and transfers outside the website.",

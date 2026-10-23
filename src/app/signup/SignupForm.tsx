@@ -42,7 +42,7 @@ export function SignupForm({ next, verificationRequired = true }: { next?: strin
       </label>
       <label className="flex gap-3 text-sm">
         <input type="checkbox" name="marketing" checked={marketing} onChange={event => setMarketing(event.target.checked)} className="mt-1 accent-gold-400" />
-        <span className="muted">Email me club updates and new video notices.</span>
+        <span className="muted">Email me club updates and syndicate news.</span>
       </label>
       <p className="muted text-xs">Free to join. No payment needed. {verificationRequired ? "We will email you a link to confirm your address." : "You can use your account straight away."}</p>
       <FormMessage state={state} focusOnError />

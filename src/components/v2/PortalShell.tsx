@@ -10,7 +10,7 @@ const links: { href: string; label: string; icon: PortalIconName }[] = [
   { href: "/dashboard", label: "Overview", icon: "overview" }, { href: "/allocations", label: "Trading with Rob", icon: "trading" },
   { href: "/performance", label: "Results & profit", icon: "performance" }, { href: "/activity", label: "Transactions", icon: "activity" },
   { href: "/planner", label: "28-day planner", icon: "clock" },
-  { href: "/wallet", label: "Wallet & deposits", icon: "wallet" }, { href: "/membership", label: "Coming soon", icon: "plans" },
+  { href: "/wallet", label: "Wallet & deposits", icon: "wallet" }, { href: "/membership", label: "Future subscriptions", icon: "plans" },
   { href: "/videos", label: "Video library", icon: "plans" },
   { href: "/account", label: "Account & security", icon: "account" }, { href: "/support", label: "Help & support", icon: "support" },
 ];

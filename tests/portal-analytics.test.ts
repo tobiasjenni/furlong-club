@@ -65,6 +65,18 @@ describe("V2 financial overview from the existing records", () => {
   it("has an honest empty state without inventing value or yield", async () => {
     const s = await snapshot(); expect(s.series).toEqual([]); expect(s.valueCents).toBe(0); expect(s.recordedProfitCents).toBe(0); expect(s.resultCount).toBe(0); expect(snapshotIsReconciled(s)).toBe(true);
   });
+  it("keeps admin reserved capital separate from actual payout obligations", async () => {
+    const totals = async () => { const q = adminOverviewQuery(); return (await pg.query<{ activeAllocations: number; committedCents: number; payoutDueCents: number }>(q.text, q.values)).rows[0]; };
+    const before = await totals(); await fund(); const id = await mature();
+    const reserved = await totals();
+    expect(reserved.activeAllocations).toBe(before.activeAllocations + 1);
+    expect(reserved.committedCents).toBe(before.committedCents + 50000);
+    expect(reserved.payoutDueCents).toBe(before.payoutDueCents);
+    await result(id, -10000);
+    const due = await totals(); expect(due.committedCents).toBe(reserved.committedCents); expect(due.payoutDueCents).toBe(before.payoutDueCents + 40000);
+    await pay(id, 40000);
+    expect(await totals()).toEqual(before);
+  });
   it("does not treat deposits or a lock as earnings", async () => {
     await fund(); await mature(); const s = await snapshot();
     expect(s.availableCents).toBe(950000); expect(s.valueCents).toBe(1000000); expect(s.committedCents).toBe(50000); expect(s.recordedProfitCents).toBe(0); expect(s.resultCount).toBe(0); expect(snapshotIsReconciled(s)).toBe(true);
