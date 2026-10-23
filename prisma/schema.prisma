@@ -397,6 +397,27 @@ model AuthPolicy {
   updatedAt                 DateTime @default(now())
 }
 
+model ClubDailyResult {
+  day DateTime @id @db.Date
+  returnBps Int
+  published Boolean @default(true)
+  revision Int @default(1)
+  sourceNote String
+  updatedById String
+  updatedAt DateTime @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)"))
+}
+
+model ClubCycleSummary {
+  id String @id
+  endDay DateTime @db.Date
+  profitBps Int
+  published Boolean @default(true)
+  revision Int @default(1)
+  sourceNote String
+  updatedById String
+  updatedAt DateTime @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)"))
+}
+
 model ChainTransferClaim {
   key          String @id
   paymentId    String?
