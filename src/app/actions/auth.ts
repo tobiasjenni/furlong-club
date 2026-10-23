@@ -104,7 +104,9 @@ export async function login(_: FormState, form: FormData): Promise<FormState> {
 
 export async function logout() {
   await endSession();
-  redirect("/");
+  // Use the account endpoint directly. Following the locked home page through
+  // an action redirect can leave its entrance form posting to the home URL.
+  redirect("/login");
 }
 
 export async function resendVerification(_: FormState): Promise<FormState> {
