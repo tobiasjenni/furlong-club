@@ -12,6 +12,8 @@ Each date has a revision. Publishing corrections, retracting or restoring a resu
 
 The owner supplied a 148% net profit figure for a 33-day cycle ending 25 October 2026, but supplied no actual daily breakdown. A separate Owner-reported summary displays that figure and date. It marks a future end date as still ahead and displays how many of its 33 daily figures have been supplied. It does not fabricate winning/losing days, claim the cycle has ended, or confirm any personal payout. When all 33 daily figures exist, the calendar checks whether their compounded return reconciles with the reported summary.
 
+The member summary explicitly distinguishes participants' original capital from net profit. Its $1,000 calculation example derives from the saved percentage: 148% means $1,480 profit plus $1,000 capital, or $2,480 total (248% of starting capital). It is a proportional explanation of the reported summary, not a member-specific balance or payout. Loss and break-even summaries use corresponding wording and calculations. The same explanation is visible wherever the shared calendar appears, including the admin preview.
+
 Super Admin can edit or hide this reported summary in Admin → Daily performance. Its date, source, revisions and visibility changes are audited. The 33-day window uses 33 inclusive UTC calendar dates ending on the supplied end date; actual allocation lock timestamps remain unchanged in their own records.
 
 ## Financial boundaries
