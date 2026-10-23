@@ -6,7 +6,7 @@ for (const path of ['/', '/trading', '/meet-rob', '/plans', '/login', '/signup',
   const body = await response.text();
   // Node assertions only: React separates text with comments. Never render this as HTML
   // or reuse these replacements as an HTML sanitizer.
-  const visibleText = body.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, "").replace(/<!--[\s\S]*?-->/g, "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ");
+  const visibleText = body.replace(/<script\b[^>]*>[\s\S]*?<\/script\b[^>]*>/gi, "").replace(/<!--[\s\S]*?-->/g, "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ");
   if (response.status !== 200) { console.error(`Release check failed: ${path} (${response.status})`); failed = true; }
   if (path === '/' && /Wallet test site|Test mode: payments|All balances and payments are simulated/.test(body)) {
     console.error('Release check failed: test banner present in production'); failed = true;
