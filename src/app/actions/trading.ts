@@ -19,7 +19,7 @@ function refresh(userId: string, id: string) {
   for (const path of ["/trading", "/account", "/wallet", "/dashboard", "/admin", "/admin/trading", "/admin/wallet", `/admin/trading/${id}`, `/admin/users/${userId}`]) revalidatePath(path);
 }
 const errors: Record<string, string> = {
-  membership_required: "Activate Form Room or Inner Circle before requesting a trading allocation.", terms_changed: "These allocation terms have changed. Cancel the pending request and submit a new one using the current terms.",
+  terms_changed: "These allocation terms have changed. Cancel the pending request and submit a new one using the current terms.",
   closed: "Trading allocations are not open. No funds were locked.", insufficient: "Available balance is too low. Add funds or choose a smaller allocation.",
   limit: "The maximum total open allocation is $10,000 per member.", pending_exists: "You already have a request awaiting approval. Cancel it before changing the amount or destination.",
   unverified: "Confirm your email before requesting an allocation.", frozen: "The wallet is under review. Contact support.", locked: "The 33-day lock has not ended.",

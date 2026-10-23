@@ -2,7 +2,7 @@ import crypto from "node:crypto";
 import { keccak_256 } from "@noble/hashes/sha3.js";
 import { bytesToHex, utf8ToBytes } from "@noble/hashes/utils.js";
 
-export const tradingTermsVersion = "manual-v1-2026-10-22";
+export const tradingTermsVersion = "manual-v2-2026-10-23";
 export const tradingRequestsEnabled = process.env.TRADING_REQUESTS_ENABLED === "true" && process.env.WALLET_ENABLED === "true";
 export const tradingOptions = [
   { currency: "USDT", network: "TRC20", label: "USDT · Tron (TRC-20)" },

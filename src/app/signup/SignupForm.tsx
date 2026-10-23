@@ -37,8 +37,7 @@ export function SignupForm({ next, verificationRequired = true }: { next?: strin
       <label className="flex gap-3 text-sm">
         <input type="checkbox" name="terms" checked={terms} onChange={event => setTerms(event.target.checked)} className="mt-1 accent-gold-400" required />
         <span>
-          I accept the <Link href="/legal/terms" target="_blank" rel="noopener noreferrer" aria-label="terms (opens in a new tab)" className="text-gold-300 underline">terms</Link> and understand the videos are
-          education and opinion, not a guarantee of results.
+          I accept the <Link href="/legal/terms" target="_blank" rel="noopener noreferrer" aria-label="terms (opens in a new tab)" className="text-gold-300 underline">terms</Link> and understand that trading involves risk, including loss of all allocated funds. Returns are not guaranteed.
         </span>
       </label>
       <label className="flex gap-3 text-sm">

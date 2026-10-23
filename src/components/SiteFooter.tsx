@@ -22,7 +22,7 @@ export function SiteFooter() {
           <p className="font-semibold text-cream">The club</p>
           <Link href={brand.host.page} className="muted block hover:text-gold-300">Meet {brand.host.first}</Link>
           <Link href="/trading" className="muted block hover:text-gold-300">Trading with Harry</Link>
-          <Link href="/plans" className="muted block hover:text-gold-300">Plans</Link>
+          <Link href="/plans" className="muted block hover:text-gold-300">Subscriptions · Coming soon</Link>
           <a href={`mailto:${brand.supportEmail}`} className="muted block hover:text-gold-300">Support</a>
         </div>
         <div className="space-y-2">

@@ -1,4 +1,5 @@
 "use server";
+import { subscriptionSalesEnabled, subscriptionsComingSoon } from "@/lib/subscription-sales";
 import { memberEmailReady } from "@/lib/email-verification";
 
 import { redirect } from "next/navigation";
@@ -11,6 +12,7 @@ import type { FormState } from "./auth";
 
 export async function startCheckout(_: FormState, form: FormData): Promise<FormState> {
   const user = await requireUser();
+  if (!subscriptionSalesEnabled) return { error: subscriptionsComingSoon };
   if (!memberEmailReady(user.emailVerifiedAt)) return { error: "Please confirm your email address first. You'll find the link on your dashboard." };
   if (!await rateLimit(`checkout:${user.id}`, 10, 60 * 60 * 1000)) return { error: "Too many payment attempts. Please try again later." };
   const plan = await db.plan.findUnique({ where: { slug: String(form.get("plan")) } });
@@ -32,7 +34,7 @@ export async function simulatePayment(form: FormData) {
   const user = await requireUser();
   if (!mockPaymentsAllowed()) return;
   const payment = await db.payment.findFirst({ where: { id: String(form.get("id")), userId: user.id, provider: "mock" } });
-  if (!payment?.providerRef) return;
+  if (!payment?.providerRef || (payment.purpose === "SUBSCRIPTION" && !subscriptionSalesEnabled)) return;
   await applyPaymentStatus("mock", { providerRef: payment.providerRef, status: "CONFIRMED", providerStatus: "finished",
     receivedAmount: payment.payAmount ?? "0", outcomeAmount: payment.payAmount ?? "0", outcomeCurrency: payment.currency,
     payinHash: "simulation", payoutHash: "simulation" }, "local-simulation");

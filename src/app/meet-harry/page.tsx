@@ -20,9 +20,9 @@ export default function MeetHost() {
       <p>Look at how a horse moves, how its rider responds and what the pace, going and draw may mean for the pair. Put those observations alongside the form to build a more considered view of a race.</p>
       <p>Explore the club&apos;s video catalogue and its availability before choosing a plan. Racing outcomes remain uncertain, and no amount of experience can promise a winning result.</p>
       <h2 className="pt-4 text-2xl text-cream">Trading with Harry</h2>
-      <p>Trading with Harry is the centrepiece of Form Room membership, with access also included in Inner Circle. The allocation is funded separately from your membership: the range is $500–$10,000, with a 33-day lock beginning on admin approval. Its proposed daily target is provisional and unverified. View Trading with Harry for current availability and the funding and approval steps.</p>
+      <p>Trading with Harry is the heart of Furlong Club. Create a free account with no paid subscription required. Fund your allocation from approved club credit: the range is $500–$10,000, with a 33-day lock beginning on admin approval. Its proposed daily target is provisional and unverified. View Trading with Harry for current availability and the funding and approval steps.</p>
       <p>Trading can result in losses, including loss of the full allocation. Any eventual payout depends on actual results and manual processing; the website does not execute trades or send payouts automatically.</p>
-      <div className="flex flex-wrap gap-3"><Link href="/trading" className="btn-ghost">View the trading proposal</Link><Link href="/signup" className="btn-gold">Join Furlong Club</Link></div>
+      <div className="flex flex-wrap gap-3"><Link href="/trading" className="btn-ghost">View the trading proposal</Link><Link href="/signup?next=%2Fallocations" className="btn-gold">Sign up for Trading with Harry</Link></div>
     </article>
     <div className="order-2 md:order-1"><HostPortrait className="mx-auto w-full max-w-sm shadow-2xl" /><div className="mx-auto mt-5 max-w-sm rounded-2xl border border-gold-400/25 bg-gold-400/5 p-5 text-center"><p className="font-display text-4xl text-gold-300">40+ years</p><p className="muted mt-2 text-sm">Reading horses. Understanding riders. Studying the race.</p></div></div>
   </div>;

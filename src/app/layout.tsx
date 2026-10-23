@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   title: { default: `${brand.name} · Trading with Harry`, template: `%s · ${brand.name}` },
   metadataBase: new URL(siteOrigin),
   applicationName: brand.name,
-  category: "Horse racing membership and education",
+  category: "Horse racing and Trading with Harry",
   // Explicit links keep icons in the rendered metadata on the Worker adapter,
   // rather than relying on automatic discovery of app/icon.svg.
   icons: {
