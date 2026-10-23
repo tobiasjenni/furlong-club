@@ -7,7 +7,7 @@ import Link from "next/link";
 import { entryDate, moonPhaseName, type SyndicateEntry } from "@/lib/syndicate";
 import { allocationCapacity, defaultAllocationAmount, fundingCents } from "@/lib/member-funding";
 import { payoutDestinationError, type ClubReceivingAddress } from "@/lib/payout-address";
-import { FundingSteps } from "./FundingSteps";
+import "./funding-flow.css";
 
 export function RequestTradingForm({ requestKey, termsVersion, options, disabled, entries, availableCents, committedCents, initialAmount, initialOption = 0, clubAddresses }: { requestKey: string; termsVersion: string; options: readonly { label: string; network: string }[]; disabled: boolean; entries: SyndicateEntry[]; availableCents: number; committedCents: number; initialAmount?: string; initialOption?: number; clubAddresses: ClubReceivingAddress[] }) {
   const [state, action, pending] = useActionState(requestTrading, null);
@@ -47,7 +47,6 @@ export function RequestTradingForm({ requestKey, termsVersion, options, disabled
   }} className="funding-wizard space-y-4" aria-busy={pending}>
     <input type="hidden" name="requestKey" value={intentKey} /><input type="hidden" name="termsVersion" value={termsVersion} />
     <input type="hidden" name="amount" value={amount} /><input type="hidden" name="entryId" value={entryId} /><input type="hidden" name="option" value={option} /><input type="hidden" name="address" value={address} /><input type="hidden" name="confirmAddress" value={confirmation} />
-    <FundingSteps step={2} />
     <nav className="funding-wizard-nav" aria-label="Trading request steps">{["Amount & entry", "Payout wallet", "Review"].map((label, index) => <span key={label} aria-current={step === index ? "step" : undefined}>{index + 1}. {label}</span>)}</nav>
     <h3 id="trading-step-title" tabIndex={-1} className="text-xl">{["Choose your trading amount", "Where should we pay you?", "Check your trading request"][step]}</h3>
     <fieldset hidden={step !== 0} disabled={locked || step !== 0} className="funding-wizard-fields"><legend className="sr-only">Amount and entry</legend>
@@ -71,7 +70,7 @@ export function RequestTradingForm({ requestKey, termsVersion, options, disabled
       <label className="funding-acknowledgement"><input name="risk" type="checkbox" checked={risk} onChange={event => setRisk(event.target.checked)} required /><span>I understand the risks, lock and manual payout above and accept the <Link className="funding-link" href="/legal/terms#trading-terms" target="_blank" rel="noreferrer">allocation terms</Link>.</span></label>
     </fieldset>
     {error && <p id="trading-input-error" role="alert" className="funding-form-error">{error}</p>}<FormMessage state={state} focusOnError />
-    <div className="funding-wizard-controls">{step > 0 && <button type="button" className="btn-ghost" disabled={pending} onClick={() => { setStep(value => value - 1); setError(null); }}>Back</button>}{step < 2 ? <button type="button" className="funding-action funding-action-green" disabled={locked} onClick={advance}>{step === 0 ? "Continue to payout wallet →" : "Review request →"}</button> : <SubmitButton className="funding-action funding-action-green" disabled={locked} pendingLabel="Saving your request…">Submit trading request</SubmitButton>}</div>
+    <div className="funding-wizard-controls">{step > 0 && <button type="button" className="btn-ghost" disabled={pending} onClick={() => { setStep(value => value - 1); setError(null); requestAnimationFrame(() => document.getElementById("trading-step-title")?.focus()); }}>Back</button>}{step < 2 ? <button type="button" className="funding-action funding-action-green" disabled={locked} onClick={advance}>{step === 0 ? "Continue to payout wallet →" : "Review request →"}</button> : <SubmitButton className="funding-action funding-action-green" disabled={locked} pendingLabel="Saving your request…">Submit trading request</SubmitButton>}</div>
     <p className="funding-form-note">No fee to request. Your funds stay available until Super Admin approval. Maximum $10,000 across open allocations.</p>
   </form>;
 }
