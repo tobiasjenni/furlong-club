@@ -59,6 +59,12 @@
 .v2-portal .portal-nav-link { min-height:46px; }
 .workspace-role-badge { display:inline-flex; align-items:center; gap:8px; padding:10px 14px; border:1px solid #e9c46a55; background:#e9c46a10; border-radius:12px; font-size:12px; color:#f3d88a; }
 .workspace-role-badge::before { content:""; width:6px; height:6px; border-radius:50%; background:currentColor; }
+.workspace-admin[data-workspace-section=detail] .portal-content>.portal-page-heading { align-items:center; margin-bottom:18px; }
+.workspace-admin[data-workspace-section=detail] .portal-content>.portal-page-heading :is(.portal-eyebrow,.portal-lead) { display:none; }
+.workspace-admin[data-workspace-section=detail] .portal-content>.portal-page-heading h1 { font-size:1.25rem; }
+.workspace-admin[data-workspace-section=detail] .workspace-role-badge { padding:8px 12px; }
+.workspace-admin[data-workspace-section=detail] .workspace-notice { padding:13px 16px; }
+.workspace-admin[data-workspace-section=detail] .workspace-notice a { gap:3px; }
 .workspace-notices { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr)); gap:12px; margin-bottom:24px; }
 .workspace-notice { border:1px solid #e9c46a44; background:linear-gradient(120deg,#e9c46a0b,#173629); padding:18px; border-radius:16px; }
 .workspace-notice a { display:grid; gap:10px; font-size:13px; line-height:1.6; }
