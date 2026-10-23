@@ -48,6 +48,50 @@ export async function changeUserRole(_: AdminFormState, form: FormData): Promise
   return result === 'saved' ? { ok: 'Role updated. Existing sessions and recovery links have been revoked. The member must sign in again.' } : { error: errors[result] ?? 'Unable to update access. Refresh and try again.' };
 }
 
+const profileSchema = z.object({
+  name: z.string().trim().max(120),
+  country: z.string().trim().max(80),
+  status: z.enum(['ACTIVE', 'SUSPENDED', 'CLOSED']),
+  tags: z.array(z.string().trim().min(1).max(60)).max(20),
+  reason: z.string().trim().min(10).max(500),
+  expectedUpdatedAt: z.string().datetime(),
+});
+
+export async function editUserProfile(_: AdminFormState, form: FormData): Promise<AdminFormState> {
+  const admin = await requireSuperAdmin();
+  const parsed = profileSchema.safeParse({
+    name: form.get('name'), country: form.get('country'), status: form.get('status'),
+    tags: [...new Set(String(form.get('tags') ?? '').split(',').map(t => t.trim()).filter(Boolean))],
+    reason: form.get('reason'), expectedUpdatedAt: form.get('expectedUpdatedAt'),
+  });
+  if (!parsed.success) return { error: 'Check the profile fields and enter a reason of 10–500 characters. Use up to 20 tags, each up to 60 characters.' };
+  const result = await manage(admin.id, String(form.get('userId')), 'profile', parsed.data);
+  const errors: Record<string, string> = {
+    forbidden: 'This account is protected or your permissions have changed.',
+    stale: 'This account changed since you opened it. Refresh the page before editing again.',
+    invalid: 'Check the profile fields. Use Delete account below to close an account.',
+  };
+  return result === 'saved' ? { ok: 'Profile saved. Status changes sign the member out of all devices.' } : { error: errors[result] ?? 'Unable to save this profile. Refresh and try again.' };
+}
+
+export async function deleteUserAccount(_: AdminFormState, form: FormData): Promise<AdminFormState> {
+  const admin = await requireSuperAdmin();
+  if (!await rateLimit(`admin-delete:${admin.id}`, 5, 15 * 60 * 1000)) return { error: 'Too many attempts. Try again in 15 minutes.' };
+  const reason = String(form.get('reason') ?? '').trim();
+  const confirmation = String(form.get('confirmation') ?? '').trim();
+  if (reason.length < 10 || reason.length > 500 || !confirmation || confirmation.length > 254) return { error: 'Enter the member’s email and a reason of 10–500 characters.' };
+  if (!await matchesPassword(String(form.get('password') ?? ''), admin.passwordHash)) return { error: 'Your current password is incorrect.' };
+  const result = await manage(admin.id, String(form.get('userId')), 'delete', { reason, confirmation, passwordHash: admin.passwordHash });
+  const errors: Record<string, string> = {
+    forbidden: 'This account is protected or your permissions have changed.',
+    invalid: 'Type the member’s email exactly and enter a reason of 10–500 characters.',
+    wallet_unresolved: 'Resolve the wallet balance, wallet freeze, pending deposits and open trading allocations before deleting this account.',
+    membership_active: 'Cancel the active membership before deleting this account. Its payment history will be retained.',
+    already_closed: 'This account is already deleted / closed.',
+  };
+  return result === 'saved' ? { ok: 'Account deleted / closed. Sign-in and recovery links are disabled. Financial and audit records are retained; you can restore access using Account status.' } : { error: errors[result] ?? 'Unable to delete this account. Refresh and try again.' };
+}
+
 export async function grantPlan(form: FormData) {
   const admin = await requireSuperAdmin();
   const days = Number(form.get('days'));

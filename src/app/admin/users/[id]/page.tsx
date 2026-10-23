@@ -1,9 +1,9 @@
 import { TradingSummary } from "@/components/TradingSummary";
 import { requireAdmin } from "@/lib/auth";
 import { notFound } from "next/navigation";
-import { addNote, cancelSubscription, confirmEmail, grantPlan, signOutUser, updateUser } from "@/app/actions/admin";
+import { addNote, cancelSubscription, confirmEmail, grantPlan, signOutUser } from "@/app/actions/admin";
 import { canManageUser, roleLabel } from "@/lib/roles";
-import { ResetLinkForm, RoleForm } from "../AdminForms";
+import { ResetLinkForm, RoleForm, ProfileForm, DeleteAccountForm } from "../AdminForms";
 import { db } from "@/lib/db";
 import { date, dateTime, usd } from "@/lib/format";
 import { ReviewDepositForm } from "@/components/ManualDepositForms";
@@ -33,7 +33,7 @@ export default async function AdminUser({ params, searchParams }: { params: Prom
       <div className="min-w-0 space-y-4">
         <div className="card">
           <h2 className="text-xl">{user.name ?? "—"}</h2>
-          <p className="muted text-sm">{user.email}</p>
+          <p className="muted break-all text-sm">{user.email}</p>
           <dl className="mt-4 grid grid-cols-2 gap-2 text-sm">
             <dt className="muted">Email confirmed</dt>
             <dd>
@@ -42,6 +42,7 @@ export default async function AdminUser({ params, searchParams }: { params: Prom
               ) : "Not yet"}
             </dd>
             <dt className="muted">Role</dt><dd>{roleLabel(user.role)}</dd>
+            <dt className="muted">Account status</dt><dd>{user.status === 'CLOSED' ? 'Deleted / closed' : user.status === 'SUSPENDED' ? 'Suspended' : 'Active'}</dd>
             <dt className="muted">Country</dt><dd>{user.country ?? "—"}</dd>
             <dt className="muted">Joined</dt><dd>{dateTime(user.createdAt)}</dd>
             <dt className="muted">Last login</dt><dd>{dateTime(user.lastLoginAt)}</dd>
@@ -53,16 +54,8 @@ export default async function AdminUser({ params, searchParams }: { params: Prom
         </div>
         {management && <p role="status" className="card text-sm">{management === 'saved' ? 'Account updated and recorded in the audit history.' : management === 'wallet_unresolved' ? 'Resolve the balance, pending deposits and open trading allocations before closing this account.' : 'This action is unavailable. Check your permissions and the account status.'}</p>}
         {!manageable && <div className="card"><h3 className="text-lg">Protected account</h3><p className="muted mt-2 text-sm">{user.role === 'SUPER_ADMIN' ? 'The Super Admin owner account cannot be demoted, suspended or closed here.' : 'Your role does not allow changes to this account.'} Use your own profile for personal password and session settings.</p></div>}
-        {manageable && <form action={updateUser} className="card space-y-3">
-          <h3 className="text-lg">Account</h3>
-          {(await searchParams).tradingOpen && <p role="alert" className="text-sm text-gold-300">Resolve all pending or unpaid trading allocations before closing this account.</p>}
-          <input type="hidden" name="userId" value={user.id} />
-          <div className="grid grid-cols-2 gap-3">
-            <div><label htmlFor="account-status" className="label">Status</label><select id="account-status" name="status" defaultValue={user.status} className="input"><option>ACTIVE</option><option>SUSPENDED</option><option>CLOSED</option></select></div>
-          </div>
-          <div><label className="label">Tags (comma separated)</label><input name="tags" defaultValue={user.tags.join(", ")} className="input" placeholder="vip, uk, referral" /></div>
-          <button className="btn-gold">Save</button>
-        </form>}
+        {manageable && <ProfileForm key={user.id} user={{ id: user.id, name: user.name, country: user.country, tags: user.tags, status: user.status, updatedAt: user.updatedAt.toISOString() }} />}
+        {manageable && <DeleteAccountForm key={user.status} userId={user.id} email={user.email} closed={user.status === 'CLOSED'} />}
         {manageable && superAdmin && <RoleForm userId={user.id} role={user.role} />}
         {manageable && <div className="card space-y-3">
           <h3 className="text-lg">Access & security</h3>
