@@ -35,6 +35,7 @@
   transition:border-color .16s,box-shadow .16s; line-height:1.55;
 }
 .v2-portal textarea.input { resize:vertical; min-height:100px; }
+.v2-portal input.input.pr-20 { padding-right:80px; }
 .v2-portal .input::placeholder { color:#8fa597; opacity:1; }
 .v2-portal .input:hover:not(:disabled) { border-color:#bfd7c459; }
 .v2-portal .input:focus { border-color:#e9c46a; box-shadow:0 0 0 3px #e9c46a14; }
