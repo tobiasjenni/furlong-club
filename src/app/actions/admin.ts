@@ -69,7 +69,7 @@ export async function editUserProfile(_: AdminFormState, form: FormData): Promis
   const errors: Record<string, string> = {
     forbidden: 'This account is protected or your permissions have changed.',
     stale: 'This account changed since you opened it. Refresh the page before editing again.',
-    invalid: 'Check the profile fields. Use Delete account below to close an account.',
+    invalid: 'Check the profile fields. Use Close account below to close an account.',
   };
   return result === 'saved' ? { ok: 'Profile saved. Status changes sign the member out of all devices.' } : { error: errors[result] ?? 'Unable to save this profile. Refresh and try again.' };
 }
@@ -87,9 +87,38 @@ export async function deleteUserAccount(_: AdminFormState, form: FormData): Prom
     invalid: 'Type the member’s email exactly and enter a reason of 10–500 characters.',
     wallet_unresolved: 'Resolve the wallet balance, wallet freeze, pending deposits and open trading allocations before deleting this account.',
     membership_active: 'Cancel the active membership before deleting this account. Its payment history will be retained.',
-    already_closed: 'This account is already deleted / closed.',
+    already_closed: 'This account is already closed.',
   };
-  return result === 'saved' ? { ok: 'Account deleted / closed. Sign-in and recovery links are disabled. Financial and audit records are retained; you can restore access using Account status.' } : { error: errors[result] ?? 'Unable to delete this account. Refresh and try again.' };
+  return result === 'saved' ? { ok: 'Account closed. Sign-in and recovery links are disabled. Financial and audit records are retained; you can restore access using Account status.' } : { error: errors[result] ?? 'Unable to delete this account. Refresh and try again.' };
+}
+
+export async function permanentlyDeleteUser(_: AdminFormState, form: FormData): Promise<AdminFormState> {
+  const admin = await requireSuperAdmin();
+  if (!await rateLimit(`admin-permanent-delete:${admin.id}`, 5, 15 * 60 * 1000)) return { error: 'Too many attempts. Try again in 15 minutes.' };
+  const reason = String(form.get('reason') ?? '').trim();
+  const confirmation = String(form.get('confirmation') ?? '').trim();
+  if (reason.length < 10 || reason.length > 500 || !confirmation || confirmation.length > 254 || form.get('acknowledgement') !== 'DELETE') return { error: 'Type the member’s email, enter a reason of 10–500 characters and confirm permanent deletion.' };
+  if (!await matchesPassword(String(form.get('password') ?? ''), admin.passwordHash)) return { error: 'Your current password is incorrect.' };
+  const uid = String(form.get('userId'));
+  const data = { reason, confirmation, acknowledgement: 'DELETE', passwordHash: admin.passwordHash };
+  const rows = await db.$queryRaw<{ result: string }[]>`SELECT admin_permanently_delete_user(${admin.id},${uid},${JSON.stringify(data)}::jsonb,${crypto.randomUUID()}) AS result`;
+  const result = rows[0]?.result;
+  if (result === 'deleted') {
+    revalidatePath('/admin');
+    revalidatePath('/admin/users');
+    revalidatePath(`/admin/users/${uid}`);
+    redirect('/admin/users?deleted=1');
+  }
+  const errors: Record<string, string> = {
+    forbidden: 'This account is protected or your permissions have changed.',
+    missing: 'This account no longer exists. Return to Users & CRM.',
+    invalid: 'Type the member’s email exactly and confirm permanent deletion.',
+    staff_account: 'Change this Admin account to Member before permanently deleting it.',
+    wallet_unresolved: 'Resolve the wallet balance or wallet freeze before removing this account.',
+    financial_history: 'This account has payment, trading or financial membership records. Close the account to disable access; these records cannot be permanently deleted here.',
+    staff_history: 'This account authored CRM notes for other members. Close it to preserve that staff history.',
+  };
+  return { error: errors[result ?? ''] ?? 'Unable to remove this account. Refresh and try again.' };
 }
 
 export async function grantPlan(form: FormData) {

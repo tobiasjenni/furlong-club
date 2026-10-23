@@ -14,6 +14,7 @@ async function create(role: string) {
 const manage = (actor: string, uid: string, op: string, data: object = {}) => scalar(`SELECT admin_manage_user($1,$2,$3,$4::jsonb,$5) AS result`,[actor,uid,op,JSON.stringify(data),crypto.randomUUID()]);
 const roleData = (role = "ADMIN") => ({role,reason:"Verified staff appointment",passwordHash:"test-hash"});
 const deleteData = (uid: string) => ({confirmation:`${uid}@example.com`,reason:'Remove disposable test account',passwordHash:'test-hash'});
+const purge = (actor: string, uid: string, data: object = {}) => scalar(`SELECT admin_permanently_delete_user($1,$2,$3::jsonb,$4) AS result`,[actor,uid,JSON.stringify({...deleteData(uid),acknowledgement:'DELETE',...data}),crypto.randomUUID()]);
 const profileData = async (uid: string, fields: object = {}) => ({ name:'Updated member',country:'Switzerland',tags:['reviewed'],status:'ACTIVE',reason:'Corrected member profile details',expectedUpdatedAt:await scalar(`SELECT to_char("updatedAt",'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') AS result FROM "User" WHERE id=$1`,[uid]),...fields });
 const token = async (uid: string, digest: string, version = 0) => scalar(`SELECT auth_issue_token($1,'RESET_PASSWORD',$2,$3,3600000,$4) AS result`,[uid,crypto.randomUUID(),digest,version]);
 
@@ -217,5 +218,94 @@ describe('CRM profile edits and account deletion',()=>{
     await pg.query(`INSERT INTO "AuditLog"(id,action,target) VALUES($1,'fixture',$2)`,['manage:'+event,member]);
     await expect(pg.query(`SELECT admin_manage_user($1,$2,'delete',$3::jsonb,$4)`,[owner,member,JSON.stringify(deleteData(member)),event])).rejects.toThrow();
     expect(await scalar(`SELECT status AS result FROM "User" WHERE id=$1`,[member])).toBe('ACTIVE');
+  });
+});
+
+describe('permanent removal of unused CRM accounts',()=>{
+  it.each(['ACTIVE','SUSPENDED','CLOSED'])('physically removes a %s account and frees its email',async status=>{
+    await pg.query(`UPDATE "User" SET status=$2::"UserStatus" WHERE id=$1`,[member,status]);
+    expect(await purge(owner,member)).toBe('deleted');
+    expect(await scalar(`SELECT count(*)::int AS result FROM "User" WHERE id=$1`,[member])).toBe(0);
+    expect(await purge(owner,member)).toBe('missing');
+    await pg.query(`INSERT INTO "User"(id,email,"passwordHash","ageConfirmedAt","updatedAt") VALUES($1,$2,'new-hash',now(),now())`,[crypto.randomUUID(),`${member}@example.com`]);
+  });
+  it('removes account notes, tokens, passkeys, challenges and recovery codes while retaining audit history',async()=>{
+    await token(member,'obsolete-reset');
+    await pg.query(`INSERT INTO "CrmNote"(id,"subjectId","authorId",body) VALUES($1,$2,$3,'Disposable CRM note')`,[crypto.randomUUID(),member,owner]);
+    await pg.query(`INSERT INTO "CrmNote"(id,"subjectId","authorId",body) VALUES($1,$2,$2,'Self-authored disposable note')`,[crypto.randomUUID(),member]);
+    await pg.query(`INSERT INTO "AdminPasskey"(id,"userId","publicKey",label) VALUES($1,$2,'test-public-key','Former staff fixture')`,[crypto.randomUUID(),member]);
+    await pg.query(`INSERT INTO "AdminRecoveryCode"(hash,"userId") VALUES($1,$2)`,[crypto.randomBytes(32).toString('hex'),member]);
+    await pg.query(`INSERT INTO "AdminSecurityChallenge"(id,"userId",challenge,purpose,"sessionHash","sessionVersion",initial,"expiresAt") VALUES($1,$2,$3,'register',$4,0,true,now()+interval '5 minutes')`,[crypto.randomUUID(),member,crypto.randomBytes(32).toString('base64url'),crypto.randomBytes(32).toString('hex')]);
+    await pg.query(`INSERT INTO "AuditLog"(id,"actorId",action,target) VALUES($1,$2,'user.login',$2)`,[crypto.randomUUID(),member]);
+    expect(await purge(owner,member)).toBe('deleted');
+    for(const table of ['AuthToken','AdminPasskey','AdminRecoveryCode','AdminSecurityChallenge']) expect(await scalar(`SELECT count(*)::int AS result FROM "${table}" WHERE "userId"=$1`,[member])).toBe(0);
+    expect(await scalar(`SELECT count(*)::int AS result FROM "CrmNote" WHERE "subjectId"=$1`,[member])).toBe(0);
+    const logs=(await pg.query<{action:string;meta:object}>(`SELECT action,meta FROM "AuditLog" WHERE target=$1 ORDER BY action`,[member])).rows;
+    expect(logs.map(l=>l.action)).toEqual(['admin.user_permanently_deleted','user.login']);
+    expect(logs[0].meta).toMatchObject({email:`${member}@example.com`,reason:'Remove disposable test account'});
+    expect(JSON.stringify(logs)).not.toMatch(/test-hash|obsolete-reset|test-public-key|fixture-code|Disposable CRM note/);
+  });
+  it('protects the owner, self and staff accounts and enforces current authority',async()=>{
+    expect(await purge(owner,owner)).toBe('forbidden');
+    expect(await purge(admin,member)).toBe('forbidden');
+    expect(await purge(member,admin)).toBe('forbidden');
+    expect(await purge(owner,admin)).toBe('staff_account');
+    const secondOwner=await create('SUPER_ADMIN');
+    expect(await purge(owner,secondOwner)).toBe('forbidden');
+    await manage(owner,admin,'role',roleData('USER'));
+    expect(await purge(owner,admin)).toBe('deleted');
+  });
+  it.each([{passwordHash:'stale-password'},{confirmation:'other@example.com'},{acknowledgement:null},{acknowledgement:'yes'},{reason:'short'}])('rejects incomplete or stale confirmation: %j',async data=>{
+    expect(await purge(owner,member,data)).toBe('passwordHash' in data?'forbidden':'invalid');
+    expect(await scalar(`SELECT count(*)::int AS result FROM "User" WHERE id=$1`,[member])).toBe(1);
+  });
+  it('blocks nonzero balances and frozen wallets',async()=>{
+    await pg.query(`UPDATE "User" SET "walletFrozen"=true WHERE id=$1`,[member]);
+    expect(await purge(owner,member)).toBe('wallet_unresolved');
+    await pg.query(`UPDATE "User" SET "walletFrozen"=false WHERE id=$1`,[member]);
+    const id=crypto.randomUUID();
+    await pg.query(`INSERT INTO "WalletJournal"(id,"operationKey","userId",kind,description,"userDeltaCents","clearingDeltaCents","revenueDeltaCents") VALUES($1,$1,$2,'OPENING','Funding',100,-100,0)`,[id,member]);
+    expect(await purge(owner,member)).toBe('wallet_unresolved');
+  });
+  it.each(['PENDING','CONFIRMED','FAILED','EXPIRED'])('retains even a %s payment and its account',async status=>{
+    const id=crypto.randomUUID();
+    await pg.query(`INSERT INTO "Payment"(id,"userId",purpose,"amountCents",currency,network,provider,status,"updatedAt") VALUES($1,$2,'WALLET_TOPUP',1000,'USDT','ERC20','mock',$3::"PaymentStatus",now())`,[id,member,status]);
+    expect(await purge(owner,member)).toBe('financial_history');
+    expect(await scalar(`SELECT count(*)::int AS result FROM "Payment" WHERE id=$1`,[id])).toBe(1);
+  });
+  it('protects settled journals and legacy ledger records even with a zero available balance',async()=>{
+    const id=crypto.randomUUID();
+    await pg.query(`INSERT INTO "WalletJournal"(id,"operationKey","userId",kind,description,"userDeltaCents","clearingDeltaCents","revenueDeltaCents") VALUES($1,$1,$2,'OPENING','Settled',0,-100,100)`,[id,member]);
+    expect(await purge(owner,member)).toBe('financial_history');
+    const other=await create('USER');
+    await pg.query(`INSERT INTO "LedgerEntry"(id,"userId",type,status,"amountCents",currency) VALUES($1,$2,'WITHDRAWAL','COMPLETED',100,'USD')`,[crypto.randomUUID(),other]);
+    expect(await purge(owner,other)).toBe('financial_history');
+  });
+  it('retains trading records and does not bypass immutable history',async()=>{
+    await pg.query(`INSERT INTO "TradingAllocation"(id,"userId","requestKey","principalCents",currency,network,"payoutAddress","termsVersion","termsSnapshot") VALUES($1,$2,$1,50000,'USDT','ERC20','0x1111111111111111111111111111111111111111','fixture','{}')`,[crypto.randomUUID(),member]);
+    expect(await purge(owner,member)).toBe('financial_history');
+  });
+  it('blocks paid membership history but allows removal of cancelled, unpaid admin grants',async()=>{
+    const plan=crypto.randomUUID(),sub=crypto.randomUUID();
+    await pg.query(`INSERT INTO "Plan"(id,slug,name,tagline,"priceCents",tier,features) VALUES($1,$1,'QA','QA',2900,1,'{}')`,[plan]);
+    await pg.query(`INSERT INTO "Subscription"(id,"userId","planId","endsAt",source) VALUES($1,$2,$3,now()+interval '33 days','admin')`,[sub,member,plan]);
+    expect(await purge(owner,member)).toBe('financial_history');
+    await pg.query(`UPDATE "Subscription" SET status='CANCELLED',source='payment' WHERE id=$1`,[sub]);
+    expect(await purge(owner,member)).toBe('financial_history');
+    await pg.query(`UPDATE "Subscription" SET source='admin' WHERE id=$1`,[sub]);
+    expect(await purge(owner,member)).toBe('deleted');
+  });
+  it('preserves notes authored for other customers',async()=>{
+    const other=await create('USER');
+    await pg.query(`INSERT INTO "CrmNote"(id,"subjectId","authorId",body) VALUES($1,$2,$3,'Staff record for another customer')`,[crypto.randomUUID(),other,member]);
+    expect(await purge(owner,member)).toBe('staff_history');
+  });
+  it('rolls back every removal if its audit event cannot be recorded',async()=>{
+    const event=crypto.randomUUID(),note=crypto.randomUUID();
+    await pg.query(`INSERT INTO "CrmNote"(id,"subjectId","authorId",body) VALUES($1,$2,$3,'Must survive rollback')`,[note,member,owner]);
+    await pg.query(`INSERT INTO "AuditLog"(id,action) VALUES($1,'fixture')`,['purge:'+event]);
+    await expect(pg.query(`SELECT admin_permanently_delete_user($1,$2,$3::jsonb,$4)`,[owner,member,JSON.stringify({...deleteData(member),acknowledgement:'DELETE'}),event])).rejects.toThrow();
+    expect(await scalar(`SELECT count(*)::int AS result FROM "User" WHERE id=$1`,[member])).toBe(1);
+    expect(await scalar(`SELECT count(*)::int AS result FROM "CrmNote" WHERE id=$1`,[note])).toBe(1);
   });
 });

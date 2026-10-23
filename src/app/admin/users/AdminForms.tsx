@@ -1,6 +1,6 @@
 "use client";
 import { useActionState } from "react";
-import { type AdminFormState, changeUserRole, sendResetLink, editUserProfile, deleteUserAccount } from "@/app/actions/admin";
+import { type AdminFormState, changeUserRole, sendResetLink, editUserProfile, deleteUserAccount, permanentlyDeleteUser } from "@/app/actions/admin";
 import { SubmitButton } from "@/components/SubmitButton";
 
 function Result({ state }: { state: AdminFormState }) {
@@ -31,9 +31,9 @@ export function ProfileForm({ user }: { user: { id: string; name: string | null;
     <label className="label">Account status<select name="status" defaultValue={user.status} className="input">
       <option value="ACTIVE">Active{user.status === 'CLOSED' ? ' — restore account' : ''}</option>
       <option value="SUSPENDED">Suspended — sign-in blocked</option>
-      {user.status === 'CLOSED' && <option value="CLOSED">Deleted / closed — sign-in blocked</option>}
+      {user.status === 'CLOSED' && <option value="CLOSED">Closed — sign-in blocked</option>}
     </select></label>
-    <p className="muted text-sm">Suspension blocks sign-in and keeps the member’s records and funds. Use Delete account below to close an account. Restoring access does not renew expired or cancelled memberships.</p>
+    <p className="muted text-sm">Suspension blocks sign-in and keeps the member’s records and funds. Use Close account below to close an account. Restoring access does not renew expired or cancelled memberships.</p>
     <p className="muted text-sm">The member manages their own sign-in email. Use Access &amp; security for password recovery. Age and marketing consent remain the member’s own declarations.</p>
     <label className="label">Reason for change<textarea name="reason" required minLength={10} maxLength={500} rows={2} className="input" placeholder="Explain the change for the audit history" /></label>
     <SubmitButton pendingLabel="Saving profile…">Save member profile</SubmitButton>
@@ -44,21 +44,43 @@ export function ProfileForm({ user }: { user: { id: string; name: string | null;
 export function DeleteAccountForm({ userId, email, closed }: { userId: string; email: string; closed: boolean }) {
   const [state, action] = useActionState(deleteUserAccount, null);
   return <section className="card space-y-3 border border-red-400/25" id="delete-account">
-    <h3 className="text-lg">{closed ? 'Account deleted / closed' : 'Delete account'}</h3>
-    <p className="muted text-sm">Account deletion closes access and signs the member out of every device. Payment, trading and audit records stay in the CRM. This is not a personal-data erasure request. The email stays reserved; you can restore the same account above.</p>
+    <h3 className="text-lg">{closed ? 'Account closed' : 'Close account'}</h3>
+    <p className="muted text-sm">Account closure disables access and signs the member out of every device. Payment, trading and audit records stay in the CRM. This is not a personal-data erasure request. The email stays reserved; you can restore the same account above.</p>
     {closed ? <p className="text-sm text-gold-300">Sign-in is disabled. Choose Active under Account status to restore access.</p> : <details className="rounded-xl border border-red-400/20 p-3">
-      <summary className="cursor-pointer text-sm font-semibold text-red-300">Review account deletion</summary>
+      <summary className="cursor-pointer text-sm font-semibold text-red-300">Review account closure</summary>
       <form action={action} className="mt-4 space-y-4">
         <input type="hidden" name="userId" value={userId} />
-        <p className="muted text-sm">First resolve wallet balances, frozen wallets, pending deposits, open trading allocations and active memberships. Deletion is checked again when you confirm.</p>
+        <p className="muted text-sm">First resolve wallet balances, frozen wallets, pending deposits, open trading allocations and active memberships. Closure is checked again when you confirm.</p>
         <p className="break-all text-sm">Account: <strong>{email}</strong></p>
         <label className="label">Type the member’s email to confirm<input name="confirmation" type="email" required maxLength={254} autoComplete="off" spellCheck={false} className="input" /></label>
-        <label className="label">Reason for deletion<textarea name="reason" required minLength={10} maxLength={500} rows={2} className="input" /></label>
+        <label className="label">Reason for closure<textarea name="reason" required minLength={10} maxLength={500} rows={2} className="input" /></label>
         <label className="label">Your Super Admin password<input type="password" name="password" autoComplete="current-password" required className="input" /></label>
-        <SubmitButton className="btn-ghost w-full border-red-400/40 text-red-300" pendingLabel="Closing account…">Delete account and disable sign-in</SubmitButton>
+        <SubmitButton className="btn-ghost w-full border-red-400/40 text-red-300" pendingLabel="Closing account…">Close account and disable sign-in</SubmitButton>
         <Result state={state} />
       </form>
     </details>}
+  </section>;
+}
+
+export function PermanentDeleteForm({ userId, email }: { userId: string; email: string }) {
+  const [state, action] = useActionState(permanentlyDeleteUser, null);
+  return <section className="card space-y-3 border border-red-400/40" id="permanent-delete">
+    <h3 className="text-lg">Permanently delete user</h3>
+    <p className="muted text-sm">Remove an unused or test account completely from Users &amp; CRM. Its profile, account notes, login credentials and recovery links are deleted, and its email can be used again. This cannot be undone in the CRM.</p>
+    <p className="muted text-sm">Accounts with payment, ledger or trading records cannot be removed here. Existing security and audit logs, including a record of who approved deletion, are retained.</p>
+    <details className="rounded-xl border border-red-400/30 p-3">
+      <summary className="cursor-pointer text-sm font-semibold text-red-300">Review permanent deletion</summary>
+      <form action={action} className="mt-4 space-y-4">
+        <input type="hidden" name="userId" value={userId} />
+        <p className="break-all text-sm">User to remove: <strong>{email}</strong></p>
+        <label className="label">Confirm the email to permanently delete<input name="confirmation" type="email" required maxLength={254} autoComplete="off" spellCheck={false} className="input" /></label>
+        <label className="label">Reason for permanent deletion<textarea name="reason" required minLength={10} maxLength={500} rows={2} className="input" placeholder="For example, unused test account" /></label>
+        <label className="label">Your password to approve permanent deletion<input type="password" name="password" autoComplete="current-password" required className="input" /></label>
+        <label className="flex items-start gap-3 text-sm"><input type="checkbox" name="acknowledgement" value="DELETE" required className="mt-1 shrink-0" /><span>I understand this permanently removes the account and cannot be undone.</span></label>
+        <SubmitButton className="btn-ghost w-full border-red-400/50 text-red-300" pendingLabel="Permanently deleting…">Permanently delete this user</SubmitButton>
+        <Result state={state} />
+      </form>
+    </details>
   </section>;
 }
 

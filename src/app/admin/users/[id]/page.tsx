@@ -3,7 +3,7 @@ import { requireAdmin } from "@/lib/auth";
 import { notFound } from "next/navigation";
 import { addNote, cancelSubscription, confirmEmail, grantPlan, signOutUser } from "@/app/actions/admin";
 import { canManageUser, roleLabel } from "@/lib/roles";
-import { ResetLinkForm, RoleForm, ProfileForm, DeleteAccountForm } from "../AdminForms";
+import { ResetLinkForm, RoleForm, ProfileForm, DeleteAccountForm, PermanentDeleteForm } from "../AdminForms";
 import { db } from "@/lib/db";
 import { date, dateTime, usd } from "@/lib/format";
 import { ReviewDepositForm } from "@/components/ManualDepositForms";
@@ -42,7 +42,7 @@ export default async function AdminUser({ params, searchParams }: { params: Prom
               ) : "Not yet"}
             </dd>
             <dt className="muted">Role</dt><dd>{roleLabel(user.role)}</dd>
-            <dt className="muted">Account status</dt><dd>{user.status === 'CLOSED' ? 'Deleted / closed' : user.status === 'SUSPENDED' ? 'Suspended' : 'Active'}</dd>
+            <dt className="muted">Account status</dt><dd>{user.status === 'CLOSED' ? 'Closed' : user.status === 'SUSPENDED' ? 'Suspended' : 'Active'}</dd>
             <dt className="muted">Country</dt><dd>{user.country ?? "—"}</dd>
             <dt className="muted">Joined</dt><dd>{dateTime(user.createdAt)}</dd>
             <dt className="muted">Last login</dt><dd>{dateTime(user.lastLoginAt)}</dd>
@@ -56,6 +56,7 @@ export default async function AdminUser({ params, searchParams }: { params: Prom
         {!manageable && <div className="card"><h3 className="text-lg">Protected account</h3><p className="muted mt-2 text-sm">{user.role === 'SUPER_ADMIN' ? 'The Super Admin owner account cannot be demoted, suspended or closed here.' : 'Your role does not allow changes to this account.'} Use your own profile for personal password and session settings.</p></div>}
         {manageable && <ProfileForm key={user.id} user={{ id: user.id, name: user.name, country: user.country, tags: user.tags, status: user.status, updatedAt: user.updatedAt.toISOString() }} />}
         {manageable && <DeleteAccountForm key={user.status} userId={user.id} email={user.email} closed={user.status === 'CLOSED'} />}
+        {manageable && <PermanentDeleteForm key={user.id} userId={user.id} email={user.email} />}
         {manageable && superAdmin && <RoleForm userId={user.id} role={user.role} />}
         {manageable && <div className="card space-y-3">
           <h3 className="text-lg">Access & security</h3>
