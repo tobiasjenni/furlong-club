@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { adminNavigation, isAdminWorkspacePath, memberNavigation, workspaceLinkActive } from "@/lib/workspace-navigation";
+import { adminNavigation, isAdminWorkspacePath, memberNavigation, workspaceLinkActive, workspaceQuickNavigation } from "@/lib/workspace-navigation";
 
 describe("shared workspace navigation", () => {
   it("highlights exactly the relevant admin section on nested record pages", () => {
@@ -17,6 +17,17 @@ describe("shared workspace navigation", () => {
     expect(memberNavigation).toHaveLength(10);
     expect(memberNavigation.some(link => link.href.startsWith("/admin"))).toBe(false);
     expect(new Set(adminNavigation.map(link => link.href)).size).toBe(12);
-    expect(memberNavigation.filter(link => workspaceLinkActive("/deposits/receipt", link.href))).toHaveLength(0);
+    expect(memberNavigation.filter(link => workspaceLinkActive("/deposits/receipt", link.href)).map(link => link.href)).toEqual(["/wallet"]);
+  });
+  it("uses the same primary destinations and order on desktop and mobile", () => {
+    expect(workspaceQuickNavigation("member")).toEqual(memberNavigation.slice(0, 4));
+    expect(workspaceQuickNavigation("member").map(link => link.href)).toEqual(["/dashboard", "/wallet", "/allocations", "/performance"]);
+    expect(workspaceQuickNavigation("admin")).toEqual(adminNavigation.slice(0, 4));
+    expect(workspaceQuickNavigation("member").some(link => link.href.startsWith("/admin"))).toBe(false);
+  });
+  it("keeps deposit receipts in the wallet section without matching unrelated paths", () => {
+    expect(workspaceLinkActive("/deposits/receipt", "/wallet")).toBe(true);
+    expect(workspaceLinkActive("/deposits-fake", "/wallet")).toBe(false);
+    expect(workspaceLinkActive("/admin/deposits/receipt", "/wallet")).toBe(false);
   });
 });

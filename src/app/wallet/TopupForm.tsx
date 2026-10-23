@@ -13,11 +13,11 @@ export function TopupForm({ options, disabled, manual, portal = false, defaultAm
   return <form action={action} onReset={event => event.preventDefault()} className="space-y-4" aria-busy={pending}>
     {portal && <input type="hidden" name="experience" value="member" />}
     {returnTo && <input type="hidden" name="returnTo" value={returnTo} />}
-    <label className="label" htmlFor="topup-amount">{manual ? `Amount to send (${currency})` : "Amount to add (USD)"}</label>
+    <label className="label" htmlFor="topup-amount">1. {manual ? `Amount to send (${currency})` : "Amount to add (USD)"}</label>
     <input id="topup-amount" className="input" name="amount" type="number" inputMode="decimal" min="20" max="10000" step="0.01" value={amount} onChange={event => setAmount(event.target.value)} required disabled={disabled} />
     <div className="funding-presets" aria-label="Quick deposit amounts">{[500, 1000, 2500, 5000].map(value => <button type="button" key={value} className="funding-choice" disabled={disabled || pending} aria-pressed={Number(amount) === value} onClick={() => setAmount(String(value))}>${value.toLocaleString("en-US")}</button>)}</div>
     <input type="hidden" name="option" value={selected} />
-    <fieldset disabled={disabled || pending}><legend className="label">Pay with · choose your network</legend><div className="funding-routes">{options.filter(o => o.enabled).map(o => <button type="button" key={o.value} className="funding-choice funding-route" aria-pressed={selected === o.value} aria-label={o.label} onClick={() => setSelected(o.value)}><strong>{o.currency}</strong><small>{o.network === "TRC20" ? "Tron · TRC-20" : o.network === "ERC20" ? "Ethereum · ERC-20" : o.network}</small></button>)}</div></fieldset>
+    <fieldset disabled={disabled || pending}><legend className="label">2. Choose your token and network</legend><div className="funding-routes">{options.filter(o => o.enabled).map(o => <button type="button" key={o.value} className="funding-choice funding-route" aria-pressed={selected === o.value} aria-label={o.label} onClick={() => setSelected(o.value)}><strong>{o.currency}</strong><small>{o.network === "TRC20" ? "Tron · TRC-20" : o.network === "ERC20" ? "Ethereum · ERC-20" : o.network}</small></button>)}</div></fieldset>
     <FormMessage state={state} focusOnError />
     <SubmitButton className="funding-action funding-action-blue" disabled={disabled} pendingLabel="Preparing your deposit…">{manual ? "Get deposit address →" : "Continue to deposit →"}</SubmitButton>
     <p className="funding-form-note">The next page shows where to send {amount || "your chosen amount"} {currency}. Nothing is charged by this button.</p>
