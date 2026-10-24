@@ -28,7 +28,7 @@ export function CreditAdjustmentForm({ userId, balanceCents, expectedUpdatedAt, 
     <p className="muted text-sm">Available: <strong className="text-cream">{usd(balanceCents)}</strong>. Every correction creates a balanced ledger entry, an audit record and an internal CRM note. Trading funds stay committed.</p>
     <Result state={state} />
     {!state?.ok && <fieldset disabled={pending} className="space-y-4">
-      <input type="hidden" name="userId" value={userId} /><input type="hidden" name="expectedUpdatedAt" value={expectedUpdatedAt} /><input type="hidden" name="operationId" value={operationId} />
+      <input type="hidden" name="userId" value={userId} /><input type="hidden" name="expectedUpdatedAt" value={expectedUpdatedAt} /><input type="hidden" name="expectedBalanceCents" value={balanceCents} /><input type="hidden" name="operationId" value={operationId} />
       <div className="grid gap-3 sm:grid-cols-2"><label className="label">Correction<select name="direction" className="input"><option value="add">Add credit</option><option value="subtract">Deduct available credit</option></select></label>
       <label className="label">Amount (USD)<input name="amount" type="number" inputMode="decimal" min="0.01" max="10000" step="0.01" required className="input" placeholder="500.00" /></label></div>
       <label className="label">Related deposit<select name="paymentId" className="input"><option value="">General wallet correction</option>{receipts.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}</select></label>

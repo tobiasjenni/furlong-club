@@ -14,7 +14,7 @@ vi.mock("@/lib/db", () => ({ db: { user: { findUnique: async () => account }, $q
 import { requireAdmin, requireSuperAdmin } from "@/lib/auth";
 import { reviewManualDeposit } from "@/app/actions/wallet";
 import { refreshAdminPayment } from "@/app/actions/wallet";
-import { addNote, updateUser, grantPlan, cancelSubscription, saveVideo, deleteVideo, savePlan, signOutUser, changeUserRole, confirmEmail, sendResetLink, editUserProfile, deleteUserAccount, permanentlyDeleteUser } from "@/app/actions/admin";
+import { addNote, updateUser, grantPlan, cancelSubscription, saveVideo, deleteVideo, savePlan, signOutUser, changeUserRole, confirmEmail, sendResetLink, editUserProfile, deleteUserAccount, permanentlyDeleteUser, adjustWalletCredit } from "@/app/actions/admin";
 import { setSyndicateEntry } from "@/app/actions/syndicates";
 import { manageTrading } from "@/app/actions/trading";
 import { GET as notifications } from "@/app/api/admin/notifications/route";
@@ -54,6 +54,6 @@ it("lets a confirmed Admin read but blocks every back-office write before access
   store.set(ADMIN_COOKIE, await signAdminConfirmation(account, store.get(SESSION_COOKIE)!, "passkey"));
   expect(await requireAdmin()).toBe(account); expect((await notifications()).status).toBe(200);
   for (const action of [addNote, updateUser, grantPlan, cancelSubscription, saveVideo, deleteVideo, savePlan, signOutUser, confirmEmail, refreshAdminPayment]) await expect(action(new FormData())).rejects.toThrow("REDIRECT:/admin");
-  for (const action of [reviewManualDeposit, manageTrading, changeUserRole, sendResetLink, editUserProfile, deleteUserAccount, permanentlyDeleteUser, saveDailyResult, saveCycleSummary, setSyndicateEntry]) await expect(action(null, new FormData())).rejects.toThrow("REDIRECT:/admin");
+  for (const action of [reviewManualDeposit, manageTrading, changeUserRole, sendResetLink, editUserProfile, deleteUserAccount, permanentlyDeleteUser, saveDailyResult, saveCycleSummary, setSyndicateEntry, adjustWalletCredit]) await expect(action(null, new FormData())).rejects.toThrow("REDIRECT:/admin");
   expect(notificationQueries).toBe(1);
 });

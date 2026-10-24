@@ -23,16 +23,17 @@ export function adminUsersQuery(search: string, filter: string, page: number) {
     : filter === "subscribers" ? subscribed : filter === "free" ? Prisma.sql`NOT ${subscribed}`
     : filter === "suspended" ? Prisma.sql`u.status='SUSPENDED'` : filter === "closed" ? Prisma.sql`u.status='CLOSED'`
     : filter === "unverified" ? Prisma.sql`u."emailVerifiedAt" IS NULL` : filter === "marketing" ? Prisma.sql`u."marketingOptIn"=true` : Prisma.sql`true`;
-  const fundingFilter = filter === 'paid' ? Prisma.sql`("depositedCents">0 OR "adjustmentCents">0)`
-    : filter === 'deposit-review' ? Prisma.sql`"reportedCents">0`
-    : filter === 'available' ? Prisma.sql`"availableCents">0`
-    : filter === 'trading-review' ? Prisma.sql`"pendingTradeCents">0`
-    : filter === 'committed' ? Prisma.sql`"committedCents">0`
-    : filter === 'payout-due' ? Prisma.sql`"payoutCents">0` : Prisma.sql`true`;
-  return Prisma.sql`WITH candidates AS (
-    SELECT u.id,u.email,u.name,u.role,u.status,u.tags,u."createdAt",u."lastLoginAt",${fundingColumns} FROM "User" u
-    WHERE (${search}='' OR u.email ILIKE ${pattern} OR u.name ILIKE ${pattern} OR ${search}=ANY(u.tags)) AND ${condition}
-  ), matches AS (SELECT * FROM candidates WHERE ${fundingFilter}), selected AS (SELECT * FROM matches ORDER BY "createdAt" DESC,id DESC LIMIT 25 OFFSET ${(page - 1) * 25})
+  const fundingFilter = filter === 'paid' ? Prisma.sql`EXISTS(SELECT 1 FROM "WalletJournal" j WHERE j."userId"=u.id AND j.kind IN ('TOPUP','MANUAL_TOPUP','ADMIN_ADJUSTMENT') AND j."userDeltaCents">0)`
+    : filter === 'deposit-review' ? Prisma.sql`EXISTS(SELECT 1 FROM "Payment" p WHERE p."userId"=u.id AND p.purpose='WALLET_TOPUP' AND p.status='CONFIRMING')`
+    : filter === 'available' ? Prisma.sql`u."balanceCents">0`
+    : filter === 'trading-review' ? Prisma.sql`EXISTS(SELECT 1 FROM "TradingAllocation" a WHERE a."userId"=u.id AND a.status='PENDING')`
+    : filter === 'committed' ? Prisma.sql`EXISTS(SELECT 1 FROM "TradingAllocation" a WHERE a."userId"=u.id AND a.status IN ('ACTIVE','PAYOUT_READY'))`
+    : filter === 'payout-due' ? Prisma.sql`EXISTS(SELECT 1 FROM "TradingAllocation" a WHERE a."userId"=u.id AND a.status='PAYOUT_READY' AND a."payoutCents">0)` : Prisma.sql`true`;
+  return Prisma.sql`WITH matches AS (
+    SELECT u.id,u.email,u.name,u.role,u.status,u.tags,u."createdAt",u."lastLoginAt",u."balanceCents",u."walletFrozen" FROM "User" u
+    WHERE (${search}='' OR u.email ILIKE ${pattern} OR u.name ILIKE ${pattern} OR ${search}=ANY(u.tags)) AND ${condition} AND ${fundingFilter}
+  ), selected AS (SELECT u.id,u.email,u.name,u.role,u.status,u.tags,u."createdAt",u."lastLoginAt",${fundingColumns}
+    FROM (SELECT * FROM matches ORDER BY "createdAt" DESC,id DESC LIMIT 25 OFFSET ${(page - 1) * 25}) u)
   SELECT jsonb_build_object('total',(SELECT count(*) FROM matches),'users',COALESCE((SELECT jsonb_agg(jsonb_build_object(
     'id',m.id,'email',m.email,'name',m.name,'role',m.role,'status',m.status,'tags',m.tags,
     'availableCents',m."availableCents",'depositedCents',m."depositedCents",'adjustmentCents',m."adjustmentCents",'reportedCents',m."reportedCents",

@@ -4,6 +4,7 @@ import { usd } from "@/lib/format";
 
 export function FundingStatus({ funding: f }: { funding: Funding }) {
   return <div className="flex flex-wrap gap-2 text-xs">
+    {(f.depositedCents > 0 || f.adjustmentCents > 0) && <span className="badge bg-emerald-500/15 text-emerald-300">Funding credited</span>}
     {f.walletFrozen && <span className="badge bg-red-500/15 text-red-300">Wallet frozen</span>}
     {f.reportedCents > 0 && <span className="badge bg-amber-500/15 text-amber-200">Deposit needs review</span>}
     {f.pendingTradeCents > 0 && <span className="badge bg-amber-500/15 text-amber-200">Trading needs approval</span>}

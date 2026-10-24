@@ -214,15 +214,16 @@ export async function adjustWalletCredit(_: AdminFormState, form: FormData): Pro
   const reason = String(form.get('reason') ?? '').trim();
   const operationId = String(form.get('operationId') ?? '');
   const expected = String(form.get('expectedUpdatedAt') ?? '');
+  const expectedBalance = Number(form.get('expectedBalanceCents'));
   const direction = form.get('direction');
   if (!/^\d{1,5}(\.\d{1,2})?$/.test(amount) || Number(amount) <= 0 || Number(amount) > 10000
     || !['add', 'subtract'].includes(String(direction)) || reason.length < 10 || reason.length > 1000
-    || !z.uuid().safeParse(operationId).success || !z.iso.datetime().safeParse(expected).success) return { error: 'Enter $0.01–$10,000 and an internal reason of 10–1,000 characters.' };
+    || !Number.isSafeInteger(expectedBalance) || expectedBalance < 0 || !z.uuid().safeParse(operationId).success || !z.iso.datetime().safeParse(expected).success) return { error: 'Enter $0.01–$10,000 and an internal reason of 10–1,000 characters.' };
   if (!await matchesPassword(String(form.get('password') ?? ''), admin.passwordHash)) return { error: 'Your current password is incorrect.' };
   const delta = Math.round(Number(amount) * 100) * (direction === 'subtract' ? -1 : 1);
   const uid = String(form.get('userId'));
   const receipt = String(form.get('paymentId') ?? '');
-  const rows = await db.$queryRaw<{ result: string }[]>`SELECT wallet_admin_adjust_credit(${admin.id},${uid},${delta},${reason},${new Date(expected)}::timestamp,${operationId},${receipt},${admin.passwordHash}) AS result`;
+  const rows = await db.$queryRaw<{ result: string }[]>`SELECT wallet_admin_adjust_credit(${admin.id},${uid},${delta},${reason},${new Date(expected)}::timestamp,${expectedBalance},${operationId},${receipt},${admin.passwordHash}) AS result`;
   const result = rows[0]?.result;
   if (result === 'saved' || result === 'already_saved') {
     for (const path of ['/admin', '/admin/users', `/admin/users/${uid}`, '/dashboard', '/wallet', '/trading', '/transactions']) revalidatePath(path);

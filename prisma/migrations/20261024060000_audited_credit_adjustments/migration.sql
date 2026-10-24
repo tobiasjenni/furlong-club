@@ -1,6 +1,6 @@
 -- Append corrections; never rewrite a receipt, balance or locked principal.
 CREATE FUNCTION wallet_admin_adjust_credit(actor TEXT, uid TEXT, delta INTEGER, reason TEXT,
-  expected TIMESTAMP(3), operation_id TEXT, receipt TEXT, actor_password_hash TEXT) RETURNS TEXT LANGUAGE plpgsql AS $$
+  expected TIMESTAMP(3), expected_balance INTEGER, operation_id TEXT, receipt TEXT, actor_password_hash TEXT) RETURNS TEXT LANGUAGE plpgsql AS $$
 DECLARE a "User"%ROWTYPE; u "User"%ROWTYPE; previous "WalletJournal"%ROWTYPE; op TEXT;
 BEGIN
  PERFORM id FROM "User" WHERE id IN (actor,uid) ORDER BY id FOR UPDATE;
@@ -11,7 +11,7 @@ BEGIN
  IF u.id IS NULL THEN RETURN 'missing'; END IF;
  IF uid=actor OR u.role='SUPER_ADMIN' THEN RETURN 'forbidden'; END IF;
  IF delta IS NULL OR delta=0 OR abs(delta::bigint)>1000000 OR expected IS NULL
-   OR operation_id IS NULL OR operation_id !~ '^[0-9a-f-]{36}$'
+   OR operation_id IS NULL OR operation_id !~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
    OR reason IS NULL OR length(trim(reason)) NOT BETWEEN 10 AND 1000 THEN RETURN 'invalid'; END IF;
  receipt := NULLIF(receipt,''); reason := trim(reason); op := 'adjustment:'||operation_id;
  SELECT * INTO previous FROM "WalletJournal" WHERE "operationKey"=op;
@@ -21,7 +21,7 @@ BEGIN
      THEN RETURN 'already_saved'; END IF;
    RETURN 'conflict';
  END IF;
- IF u."updatedAt" IS DISTINCT FROM expected THEN RETURN 'stale'; END IF;
+ IF u."updatedAt" IS DISTINCT FROM expected OR u."balanceCents" IS DISTINCT FROM expected_balance THEN RETURN 'stale'; END IF;
  IF u.status='CLOSED' OR u."walletFrozen" THEN RETURN 'unavailable'; END IF;
  IF receipt IS NOT NULL AND NOT EXISTS(SELECT 1 FROM "Payment" WHERE id=receipt AND "userId"=uid
    AND purpose='WALLET_TOPUP' AND status='CONFIRMED') THEN RETURN 'invalid_receipt'; END IF;
