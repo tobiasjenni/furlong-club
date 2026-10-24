@@ -12,7 +12,7 @@ export const passwordSchema = z.string().min(15, "Password must be at least 15 c
 
 export const newPasswordSchema = z.object({
   password: passwordSchema,
-  passwordConfirm: z.string({ required_error: "Please confirm your password" }).min(1, "Please confirm your password"),
+  passwordConfirm: z.string({ error: "Please confirm your password" }).min(1, "Please confirm your password"),
 }).refine(value => value.password === value.passwordConfirm, {
   path: ["passwordConfirm"], message: "Passwords do not match. Enter the same password again.",
 });
