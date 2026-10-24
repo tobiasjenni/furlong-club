@@ -256,6 +256,7 @@ model WalletJournal {
   createdAt          DateTime @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)"))
 
   @@index([userId, createdAt])
+  @@index([paymentId])
 }
 
 model PaymentEvent {
