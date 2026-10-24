@@ -29,12 +29,29 @@ it('paginates newest first with stable IDs for equal dates and keeps complete ma
  const ids=[];for(let i=0;i<27;i++)ids.push(await deposit());
  const expected=ids.sort().reverse(),first=await query(),second=await query('history',member,'all',2),third=await query('history',member,'all',3);
  expect(first.total).toBe(27);expect(first.rows.map(p=>p.id)).toEqual(expected.slice(0,25));expect(second.rows.map(p=>p.id)).toEqual(expected.slice(25));expect(second.total).toBe(27);expect(third.rows).toEqual([]);
+ expect(first.summary).toMatchObject({depositCents:0,creditCents:0,pendingCount:27,pendingCents:1350000});expect(second.summary).toEqual(first.summary);expect(third.summary).toEqual(first.summary);
 });
 it('shows posted credit plus linked corrections without rewriting requests or treating unreported transfers as money',async()=>{
  const pid=uuid(),hash='0x'+crypto.randomBytes(32).toString('hex');await pg.query(`SELECT wallet_create_manual_deposit($1,$2,50000,'USDT','ERC20','0x1111111111111111111111111111111111111111')`,[member,pid]);await pg.query('SELECT wallet_report_manual_deposit($1,$2,$3)',[pid,member,hash]);await pg.query(`SELECT wallet_review_manual_deposit($1,$2,true,$3,'SIMULATED verified receipt')`,[pid,owner,hash]);
  const stamp=(await pg.query<{at:string}>(`SELECT to_char("updatedAt",'YYYY-MM-DD"T"HH24:MI:SS.MS') AS at FROM "User" WHERE id=$1`,[member])).rows[0].at;
  await pg.query(`SELECT wallet_admin_adjust_credit($1,$2,50000,'SIMULATED additional verified receipt credit',$3::timestamp,50000,$4,$5,'test')`,[owner,member,stamp,uuid(),pid]);
  const pending=await deposit();const data=await query();expect(data.rows.find(p=>p.id===pid)).toMatchObject({amountCents:50000,creditCents:100000,correctionCents:50000,status:'CONFIRMED',transactionHash:hash});expect(data.rows.find(p=>p.id===pending)).toMatchObject({creditCents:null,correctionCents:0,status:'PENDING'});
+ expect(data.summary).toMatchObject({confirmedCount:1,depositCents:50000,correctionCents:50000,creditCents:100000,pendingCount:1,pendingCents:50000});
+ expect((await query('history',member,'CONFIRMED')).summary).toEqual(data.summary);
+ const stamp2=(await pg.query<{at:string}>(`SELECT to_char("updatedAt",'YYYY-MM-DD"T"HH24:MI:SS.MS') AS at FROM "User" WHERE id=$1`,[member])).rows[0].at;
+ await pg.query(`SELECT wallet_admin_adjust_credit($1,$2,2000,'SIMULATED general wallet correction',$3::timestamp,100000,$4,NULL,'test')`,[owner,member,stamp2,uuid()]);
+ expect((await query()).summary).toEqual(data.summary); // Unlinked adjustments are not attributed to a receipt.
  expect(adminDepositStatus({status:'FAILED',providerStatus:'cancelled'})).toBe('Cancelled');expect(adminDepositStatus({status:'FAILED',providerStatus:'admin_rejected'})).toBe('Rejected');
- expect((await pg.query<{c:number}>('SELECT "balanceCents" AS c FROM "User" WHERE id=$1',[member])).rows[0].c).toBe(100000);
+ expect((await pg.query<{c:number}>('SELECT "balanceCents" AS c FROM "User" WHERE id=$1',[member])).rows[0].c).toBe(102000);
+});
+it('counts a confirmed 10k only once while keeping the second unreported 10k separate',async()=>{
+ const pid=uuid(),hash='0x'+crypto.randomBytes(32).toString('hex');
+ await pg.query(`SELECT wallet_create_manual_deposit($1,$2,1000000,'USDC','ERC20','0x1111111111111111111111111111111111111111')`,[member,pid]);
+ await pg.query('SELECT wallet_report_manual_deposit($1,$2,$3)',[pid,member,hash]);
+ for(let i=0;i<2;i++)await pg.query(`SELECT wallet_review_manual_deposit($1,$2,true,$3,'SIMULATED verified 10k receipt')`,[pid,owner,hash]);
+ const pending=uuid();await pg.query(`SELECT wallet_create_manual_deposit($1,$2,1000000,'USDC','ERC20','0x1111111111111111111111111111111111111111')`,[member,pending]);
+ const data=await query('history',member,'CONFIRMED');expect(data.total).toBe(1);expect(data.rows[0].id).toBe(pid);expect(data.summary).toMatchObject({confirmedCount:1,depositCents:1000000,correctionCents:0,creditCents:1000000,pendingCount:1,pendingCents:1000000});
+ expect((await query('history',member,'unfinished')).rows.map(p=>p.id)).toEqual([pending]);
+ expect((await query('history',pid)).summary).toMatchObject({creditCents:1000000,pendingCount:0});
+ expect((await query('history',uuid())).summary).toMatchObject({creditCents:0,pendingCount:0});
 });

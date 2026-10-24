@@ -27,7 +27,7 @@ export const portalSummary = cache(() => financialData(false));
 export const pendingTradingDeposit = cache(async () => {
   const user = await requireUser();
   return db.payment.findFirst({
-    where: { userId: user.id, purpose: "WALLET_TOPUP", status: { in: ["PENDING", "CONFIRMING", "PARTIAL"] }, OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }] },
+    where: { userId: user.id, purpose: "WALLET_TOPUP", status: { in: ["PENDING", "CONFIRMING", "PARTIAL"] }, OR: [{ status: { not: "PENDING" } }, { expiresAt: null }, { expiresAt: { gt: new Date() } }] },
     orderBy: [{ createdAt: "desc" }, { id: "desc" }], select: { id: true, status: true },
   });
 });

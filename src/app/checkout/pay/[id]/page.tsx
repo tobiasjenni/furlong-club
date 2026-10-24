@@ -11,12 +11,14 @@ import { dateTime, usd } from "@/lib/format";
 import { AutoRefresh } from "./AutoRefresh";
 import { CopyButton } from "./CopyButton";
 import { ManualDepositPage } from "@/components/ManualDepositPage";
+import { expireManualDeposits } from "@/lib/manual-deposits";
 
 export const metadata = { title: "Payment" };
 const networks: Record<string, string> = { TRC20: "Tron (TRC-20)", ERC20: "Ethereum (ERC-20)", POLYGON: "Polygon" };
 
 export default async function PayPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ refresh?: string }> }) {
   const user = await requireUser();
+  await expireManualDeposits(user.id);
   const payment = await db.payment.findFirst({ where: { id: (await params).id, userId: user.id }, include: { plan: true } });
   if (!payment) notFound();
   if (payment.provider === "manual") return <ManualDepositPage payment={payment} />;

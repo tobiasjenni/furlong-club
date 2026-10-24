@@ -45,6 +45,33 @@ try {
         (SELECT COALESCE(sum("principalCents"),0) FROM "TradingAllocation" WHERE "userId"=u.id AND status IN ('ACTIVE','PAYOUT_READY'))) AS "lockedPrincipalMismatches"`;
   }
   const trading = await db.tradingProgram.findUnique({ where: { id: 'harry' }, select: { enrollmentEnabled: true } });
+  // Check original credits separately from legitimate owner-recorded corrections.
+  const deposits = await db.$queryRaw`WITH receipts AS (
+    SELECT p.id,p.status,p."amountCents",p.network,p."payinHash",
+      count(j.id) FILTER (WHERE j.kind IN ('TOPUP','MANUAL_TOPUP')) AS credits,
+      COALESCE(sum(j."userDeltaCents") FILTER (WHERE j.kind IN ('TOPUP','MANUAL_TOPUP')),0) AS cents
+    FROM "Payment" p LEFT JOIN "WalletJournal" j ON j."paymentId"=p.id
+    WHERE p.purpose='WALLET_TOPUP' GROUP BY p.id
+  ) SELECT
+    (SELECT count(*)::int FROM receipts WHERE credits>1) AS "duplicateOriginalCredits",
+    (SELECT count(*)::int FROM receipts WHERE status='CONFIRMED' AND (credits<>1 OR cents<>"amountCents")) AS "confirmedCreditMismatches",
+    (SELECT count(*)::int FROM receipts WHERE status<>'CONFIRMED' AND credits<>0) AS "unconfirmedWithCredit",
+    (SELECT count(*)::int FROM (SELECT network,lower(regexp_replace("payinHash",'^0x','','i')) FROM receipts
+      WHERE credits>0 AND "payinHash" IS NOT NULL GROUP BY network,lower(regexp_replace("payinHash",'^0x','','i')) HAVING count(*)>1) d) AS "reusedCreditedTransactions"`;
+  const reference = process.env.AUDIT_DEPOSIT_REFERENCE?.trim();
+  let depositLookup;
+  if (reference) {
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(reference)) throw new Error('Invalid audit reference');
+    // Only the selected receipt and same-member/same-amount requests; no identity, wallet or hash.
+    depositLookup = await db.$queryRaw`SELECT p.id,p.status::text,p."amountCents",
+      (SELECT count(*)::int FROM "WalletJournal" j WHERE j."paymentId"=p.id AND j.kind IN ('TOPUP','MANUAL_TOPUP')) AS "originalCreditCount",
+      (SELECT COALESCE(sum(j."userDeltaCents"),0)::float8 FROM "WalletJournal" j WHERE j."paymentId"=p.id) AS "postedCreditCents",
+      (SELECT COALESCE(sum(j."userDeltaCents"),0)::float8 FROM "WalletJournal" j WHERE j."paymentId"=p.id AND j.kind='ADMIN_ADJUSTMENT') AS "linkedCorrectionCents"
+      FROM "Payment" p JOIN "Payment" selected ON selected.id=${reference}
+      WHERE selected.purpose='WALLET_TOPUP' AND p.purpose='WALLET_TOPUP'
+        AND p."userId"=selected."userId" AND p."amountCents"=selected."amountCents"
+      ORDER BY p."createdAt" DESC,p.id DESC LIMIT 25`;
+  }
   const security = await db.$queryRaw`SELECT
     (SELECT count(*)::int FROM "User" WHERE "passwordHash" !~ '^\\$2[aby]\\$12\\$') AS "passwordHashesOutsideCost12",
     (SELECT count(*)::int FROM "AuthToken" WHERE "tokenHash" !~ '^[0-9a-f]{64}$') AS "malformedTokenHashes",
@@ -64,7 +91,8 @@ try {
     const correctEntrance = expected !== 307 || new URL(result.headers.get('location'), 'https://furlong.club').pathname === '/entrance';
     routes.push({path,status:result.status,expected,gateHeaders,correctEntrance});
   }
-  console.log('RELEASE_AUDIT ' + JSON.stringify({flags,secretNames,database:counts[0],migrations:tables[0],ledger:ledger?.[0],security:security[0],trading,routes}));
+  console.log('RELEASE_AUDIT ' + JSON.stringify({flags,secretNames,database:counts[0],migrations:tables[0],ledger:ledger?.[0],deposits:deposits[0],depositLookup,security:security[0],trading,routes}));
+  if (Object.values(deposits[0]).some(value => value !== 0)) process.exitCode=1;
   if (counts[0].superAdmins!==1 || counts[0].outdatedPaidPlans || !counts[0].admins || counts[0].negativeBalances || ledger?.[0].balanceMismatches || ledger?.[0].unbalancedPostings || ledger?.[0].lockedPrincipalMismatches || trading?.enrollmentEnabled !== (flags.TRADING_REQUESTS_ENABLED==='true') || routes.some(r=>r.status!==r.expected || !r.gateHeaders || !r.correctEntrance) || (flags.CLUB_GATE_ENABLED==='true' && (!secretNames.includes('CLUB_PASSWORD_HASH') || !security[0].readOnlyAdminApplied || !tables[0].networkAdmissionApplied))) process.exitCode=1;
 } catch (error) {
   // Database/driver error objects may embed a connection string. Keep logs redacted.

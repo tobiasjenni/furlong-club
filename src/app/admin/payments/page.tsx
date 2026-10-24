@@ -3,9 +3,11 @@ import { requireAdmin } from "@/lib/auth";
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { dateTime, usd } from "@/lib/format";
+import { expireManualDeposits } from "@/lib/manual-deposits";
 
 export default async function AdminPayments() {
   await requireAdmin();
+  await expireManualDeposits();
   const payments = await db.payment.findMany({ orderBy: { createdAt: "desc" }, take: 100, include: { user: true, plan: true } });
   return (
     <div><WorkspaceRecordList empty="No payments yet." records={payments.map(payment => ({ id: payment.id, href: `/admin/payments/${payment.id}`, title: payment.user.email, amount: usd(payment.amountCents), status: payment.status, meta: `${payment.currency} · ${payment.network} · ${dateTime(payment.createdAt)}`, action: "Open payment trail" }))} /><div className="card hidden overflow-x-auto p-0 sm:p-0 md:block">

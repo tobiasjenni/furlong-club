@@ -6,10 +6,12 @@ import ClassicPayPage from "@/app/checkout/pay/[id]/page";
 import Link from "next/link";
 import { membershipReturnPath } from "@/lib/membership-funding";
 import { subscriptionSalesEnabled } from "@/lib/subscription-sales";
+import { expireManualDeposits } from "@/lib/manual-deposits";
 
 export const metadata = { title: "Deposit receipt" };
 export default async function PortalDeposit({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ refresh?: string; next?: string }> }) {
   const user = await requireUser();
+  await expireManualDeposits(user.id);
   const payment = await db.payment.findFirst({ where: { id: (await params).id, userId: user.id } });
   if (!payment) notFound();
   const returnTo = subscriptionSalesEnabled ? membershipReturnPath((await searchParams).next) : undefined;

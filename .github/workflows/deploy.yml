@@ -10,6 +10,10 @@ on:
         type: choice
         options: [audit, deploy]
         default: audit
+      deposit_reference:
+        description: Optional deposit reference for a read-only audit (no member identity is printed)
+        type: string
+        required: false
 
 concurrency: deploy-production
 
@@ -37,6 +41,7 @@ jobs:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          AUDIT_DEPOSIT_REFERENCE: ${{ inputs.deposit_reference }}
   deploy:
     if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || inputs.operation == 'deploy')
     runs-on: ubuntu-latest

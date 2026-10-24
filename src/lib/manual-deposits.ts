@@ -1,10 +1,17 @@
 import crypto from "node:crypto";
+import { cache } from "react";
 import type { CheckoutOption } from "./config";
 import { db } from "./db";
 import { walletTestMode } from "./environment";
 import { paymentsReady, poolAddress } from "./payments";
 
 export const manualDepositsEnabled = process.env.DEPOSIT_MODE === "manual";
+
+// Request-scoped deduplication; no balance changes and no cross-user result cache.
+export const expireManualDeposits = cache(async (userId: string | null = null) => {
+  const rows = await db.$queryRaw<{ count: number }[]>`SELECT wallet_expire_manual_deposits(${userId}) AS count`;
+  return rows[0].count;
+});
 
 export function depositAddress(option: CheckoutOption): string | null {
   // Staging never displays a usable real deposit address.

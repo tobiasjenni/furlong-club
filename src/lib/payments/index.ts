@@ -94,9 +94,10 @@ export async function reconcilePayment(payment: { provider: string; providerRef:
 }
 
 export async function expireStalePayments() {
+  const manual = await db.$queryRaw<{ count: number }[]>`SELECT wallet_expire_manual_deposits() AS count`;
   const count = await db.$executeRaw`UPDATE "Payment" SET status='EXPIRED', "updatedAt"=(CURRENT_TIMESTAMP AT TIME ZONE 'UTC')
-    WHERE status='PENDING' AND "expiresAt" < (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')`;
-  return { count };
+    WHERE provider<>'manual' AND status='PENDING' AND "expiresAt" < (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')`;
+  return { count: count + manual[0].count };
 }
 
 export async function reconcileRecentPayments() {
