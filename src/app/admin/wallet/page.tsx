@@ -34,7 +34,7 @@ export default async function AdminWallet() {
       })}</ul>
     </section>
     <section className="card overflow-x-auto"><h2 className="mb-3 text-xl">Recorded crypto receipts</h2>
-      <p className="muted mb-4 text-sm">Manual deposits arrive directly in the club wallet and are recorded after an admin verifies them. Automated receipts use provider settlement reports. These totals are historical receipts, not the current on-chain wallet balance. Compare the transactions and receiving wallet independently.</p>
+      <p className="muted mb-4 text-sm">Manual deposits arrive directly in the club wallet and are recorded after an admin verifies them. These totals retain the original receipt approvals; later wallet credit corrections appear in the journal below and on each linked payment. Review those corrections when reconciling. These figures are not the current on-chain wallet balance.</p>
       <table className="table"><thead><tr><th>Token / network</th><th>Source</th><th>Payments</th><th>Received</th><th>Received by club</th><th>Difference</th></tr></thead>
         <tbody>{pools.map(p => <tr key={`${p.provider}:${p.currency}:${p.network}`}><td>{p.currency} · {p.network}</td><td>{p.provider === "manual" ? "Admin verified" : "Provider reported"}</td><td>{p._count}</td><td>{p._sum.receivedAmount?.toFixed() ?? "—"}</td><td>{p._sum.outcomeAmount?.toFixed() ?? "—"}</td><td>{p._sum.receivedAmount && p._sum.outcomeAmount ? p._sum.receivedAmount.minus(p._sum.outcomeAmount).toFixed() : "—"}</td></tr>)}</tbody></table>
     </section>

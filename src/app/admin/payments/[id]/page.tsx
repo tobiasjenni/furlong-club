@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { dateTime, usd } from "@/lib/format";
 import { ReviewDepositForm } from "@/components/ManualDepositForms";
 import { transactionUrl } from "@/lib/manual-deposits";
+import Link from "next/link";
 
 export default async function PaymentAudit({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ refresh?: string }> }) {
   const admin = await requireAdmin();
@@ -14,6 +15,8 @@ export default async function PaymentAudit({ params, searchParams }: { params: P
     user: true, journal: true, events: { orderBy: { createdAt: "desc" }, take: 100 },
   } });
   if (!payment) notFound();
+  const corrections = payment.journal.filter(j => j.kind === 'ADMIN_ADJUSTMENT').reduce((sum,j) => sum+j.userDeltaCents,0);
+  const postedCredit = payment.journal.reduce((sum,j) => sum+j.userDeltaCents,0);
   const fields = {
     Reference: payment.id, User: payment.user.email, Purpose: payment.purpose,
     "USD invoice": usd(payment.amountCents), Token: `${payment.currency} · ${payment.network}`,
@@ -30,7 +33,9 @@ export default async function PaymentAudit({ params, searchParams }: { params: P
     "Reviewed at": payment.reviewedAt ? dateTime(payment.reviewedAt) : null,
     "Manual review note": payment.manualReviewNote,
   };
-  return <div className="space-y-6">  {payment.provider === "manual" && payment.status === "CONFIRMING" && <section className="card space-y-5">
+  return <div className="space-y-6">
+    {payment.purpose === 'WALLET_TOPUP' && <section className="card space-y-3"><h2 className="text-xl">Deposit credit</h2><p className="text-sm">Original request: {usd(payment.amountCents)} · Linked corrections: {usd(corrections)} · Total posted credit: <strong className="text-emerald-300">{usd(postedCredit)}</strong></p><p className="muted text-sm">Saved token receipt figures below retain the original approval. Corrections are separate ledger entries with their reasons in the member’s internal CRM history.</p><Link className="btn-ghost" href={`/admin/users/${payment.userId}#${canEdit ? 'adjust-credit' : 'funding'}`}>{canEdit ? 'Open member & correct credit →' : 'Open member funding →'}</Link></section>}
+    {payment.provider === "manual" && payment.status === "CONFIRMING" && <section className="card space-y-5">
     <div><h2 className="text-xl">Review deposit</h2><p className="muted mt-2 break-all text-sm">{payment.user.email}</p></div>
     <p className="text-sm">Requested credit: <strong>{usd(payment.amountCents)}</strong>. Verify <strong>{(payment.amountCents / 100).toFixed(2)} {payment.currency}</strong> arrived at the saved receiving address on <strong>{payment.network}</strong>.</p>
     <div className="rounded-xl border border-white/10 bg-turf-950/50 p-4"><p className="muted text-xs">Saved club receiving address</p><code className="mt-2 block break-all text-xs">{payment.poolAddress ?? payment.payAddress}</code></div>

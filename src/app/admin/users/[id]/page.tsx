@@ -5,7 +5,10 @@ import { requireAdmin } from "@/lib/auth";
 import { notFound } from "next/navigation";
 import { addNote, cancelSubscription, confirmEmail, grantPlan, signOutUser } from "@/app/actions/admin";
 import { canManageUser, roleLabel } from "@/lib/roles";
-import { ResetLinkForm, RoleForm, ProfileForm, DeleteAccountForm, PermanentDeleteForm } from "../AdminForms";
+import { ResetLinkForm, RoleForm, ProfileForm, DeleteAccountForm, PermanentDeleteForm, CreditAdjustmentForm } from "../AdminForms";
+import crypto from "node:crypto";
+import { memberFundingQuery, type MemberFunding } from "@/lib/admin-query";
+import { MemberFundingSummary } from "@/components/admin/MemberFunding";
 import { db } from "@/lib/db";
 import { date, dateTime, usd } from "@/lib/format";
 import { ReviewDepositForm } from "@/components/ManualDepositForms";
@@ -25,6 +28,8 @@ export default async function AdminUser({ params, searchParams }: { params: Prom
   const pendingDeposits = await db.payment.findMany({ where: { userId: user.id, provider: "manual", status: "CONFIRMING" }, orderBy: { submittedAt: "asc" }, take: 50 });
   const plans = await db.plan.findMany({ where: { priceCents: { gt: 0 } }, orderBy: { sortOrder: "asc" } });
   const history = await db.auditLog.findMany({ where: { target: user.id }, orderBy: { createdAt: "desc" }, take: 20 });
+  const funding = (await db.$queryRaw<{ data: MemberFunding }[]>(memberFundingQuery(user.id)))[0].data;
+  const receipts = await db.payment.findMany({ where: { userId: user.id, purpose: 'WALLET_TOPUP', status: 'CONFIRMED' }, orderBy: { confirmedAt: 'desc' }, take: 100, select: { id: true, amountCents: true, currency: true, confirmedAt: true } });
   const now = new Date();
   const manageable = canManageUser(admin,user);
   const superAdmin = admin.role === "SUPER_ADMIN";
@@ -33,6 +38,8 @@ export default async function AdminUser({ params, searchParams }: { params: Prom
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
       <div className="min-w-0 space-y-4">
+        <MemberFundingSummary funding={funding} userId={user.id} />
+        {manageable && superAdmin && <CreditAdjustmentForm key={user.updatedAt.toISOString()} userId={user.id} balanceCents={user.balanceCents} expectedUpdatedAt={user.updatedAt.toISOString()} operationId={crypto.randomUUID()} receipts={receipts.map(p => ({ id: p.id, label: `${date(p.confirmedAt)} · ${usd(p.amountCents)} ${p.currency} · ${p.id}` }))} />}
         <div className="card">
           <h2 className="text-xl">{user.name ?? "—"}</h2>
           <p className="muted break-all text-sm">{user.email}</p>
@@ -81,7 +88,7 @@ export default async function AdminUser({ params, searchParams }: { params: Prom
       <div className="min-w-0 space-y-4">
         <TradingSummary userId={user.id} admin />
         <ClubResultsCalendar />
-        <div className="card">
+        <div className="card" id="deposit-approvals">
           <h3 className="mb-3 text-lg">Crypto deposit approvals</h3>
           {pendingDeposits.length === 0 && <p className="muted text-sm">No reported deposits awaiting approval for this member.</p>}
           {pendingDeposits.map(payment => {
