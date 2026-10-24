@@ -22,7 +22,7 @@
   "dependencies": {
     "@neondatabase/serverless": "^1.2.0",
     "@noble/hashes": "^2.0.1",
-    "@prisma/adapter-neon": "^6.16.2",
+    "@prisma/adapter-neon": "^7.10.1",
     "@prisma/client": "6.16.2",
     "@simplewebauthn/browser": "^14.0.0",
     "@simplewebauthn/server": "^14.0.3",
