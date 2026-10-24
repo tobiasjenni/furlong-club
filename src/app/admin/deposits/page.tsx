@@ -73,7 +73,7 @@ function DepositAmount({ payment: p }: { payment: AdminDeposit }) {
   const posted = p.creditCents !== null;
   return <div className="space-y-1">
     <p className="muted text-xs">{posted ? 'Credit issued' : p.status === 'CONFIRMED' ? 'Credit missing · check record' : 'Requested amount · not credited'}</p>
-    <p className={`text-xl font-semibold ${posted ? 'text-gold-300' : ''}`}>{usd(posted ? p.creditCents! : p.amountCents)}</p>
+    <p className={`whitespace-nowrap text-xl font-semibold ${posted ? 'text-gold-300' : ''}`}>{usd(posted ? p.creditCents! : p.amountCents)}</p>
     <p className="muted text-xs">{p.currency} · {p.network}</p>
     {posted && p.amountCents !== p.creditCents && <p className="muted text-xs">Original request: {usd(p.amountCents)}</p>}
     {p.correctionCents !== 0 && <p className="muted text-xs">Includes linked corrections: {usd(p.correctionCents)}</p>}
