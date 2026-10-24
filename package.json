@@ -45,7 +45,7 @@
     "@types/qrcode": "1.5.5",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "autoprefixer": "10.4.20",
+    "autoprefixer": "10.6.1",
     "postcss": "8.5.31",
     "prisma": "6.16.2",
     "tailwindcss": "^4.3.3",
