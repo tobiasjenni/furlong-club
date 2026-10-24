@@ -223,10 +223,11 @@ export async function adjustWalletCredit(_: AdminFormState, form: FormData): Pro
   const delta = Math.round(Number(amount) * 100) * (direction === 'subtract' ? -1 : 1);
   const uid = String(form.get('userId'));
   const receipt = String(form.get('paymentId') ?? '');
-  const rows = await db.$queryRaw<{ result: string }[]>`SELECT wallet_admin_adjust_credit(${admin.id},${uid},${delta},${reason},${new Date(expected)}::timestamp,${expectedBalance},${operationId},${receipt},${admin.passwordHash}) AS result`;
+  const rows = await db.$queryRaw<{ result: string }[]>`SELECT wallet_admin_adjust_credit(${admin.id},${uid},${delta}::integer,${reason},${new Date(expected)}::timestamp,${expectedBalance}::integer,${operationId},${receipt},${admin.passwordHash}) AS result`;
   const result = rows[0]?.result;
   if (result === 'saved' || result === 'already_saved') {
-    for (const path of ['/admin', '/admin/users', `/admin/users/${uid}`, '/dashboard', '/wallet', '/trading', '/transactions']) revalidatePath(path);
+    for (const path of ['/admin', '/admin/users', `/admin/users/${uid}`, '/dashboard', '/wallet', '/allocations', '/activity', '/account', '/performance']) revalidatePath(path);
+    if (receipt) revalidatePath(`/admin/payments/${receipt}`);
     return { ok: `Credit correction ${result === 'already_saved' ? 'was already recorded' : 'recorded'}. The ledger, audit history and internal CRM note include this change. Refresh to see current balances.` };
   }
   const errors: Record<string, string> = {

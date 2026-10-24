@@ -14,7 +14,7 @@ export function TopupForm({ options, disabled, manual, portal = false, defaultAm
     {portal && <input type="hidden" name="experience" value="member" />}
     {returnTo && <input type="hidden" name="returnTo" value={returnTo} />}
     <label className="label" htmlFor="topup-amount">1. {manual ? `Amount to send (${currency})` : "Amount to add (USD)"}</label>
-    <div className="funding-presets" style={{ gridTemplateColumns: 'repeat(3,minmax(0,1fr))' }} aria-label="Quick deposit amounts">{[500, 1000, 5000].map(value => <button type="button" key={value} className="funding-choice" disabled={disabled || pending} aria-pressed={Number(amount) === value} onClick={() => setAmount(String(value))}>{value.toLocaleString("en-US")}<small className="block">{currency}</small></button>)}</div>
+    <div className="funding-presets" style={{ display: 'grid', gridTemplateColumns: 'repeat(3,minmax(0,1fr))' }} aria-label="Quick deposit amounts">{[500, 1000, 5000].map(value => <button type="button" key={value} className="funding-choice" disabled={disabled || pending} aria-pressed={Number(amount) === value} onClick={() => setAmount(String(value))}>{value.toLocaleString("en-US")}<small className="block">{currency}</small></button>)}</div>
     <p className="funding-form-note">Choose a quick amount above or enter your exact transfer amount below.</p>
     <input id="topup-amount" aria-label={`Exact deposit amount (${currency})`} className="input" name="amount" type="number" inputMode="decimal" min="20" max="10000" step="0.01" value={amount} onChange={event => setAmount(event.target.value)} required disabled={disabled || pending} />
     <input type="hidden" name="option" value={selected} />

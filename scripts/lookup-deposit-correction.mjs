@@ -17,7 +17,7 @@ try {
      if(credits._sum.userDeltaCents!==50000)throw Error('guard');
      const owners=await db.user.findMany({where:{role:'SUPER_ADMIN',status:'ACTIVE'},select:{id:true,passwordHash:true}});if(owners.length!==1)throw Error('guard');
      const reason=`Owner confirmed receipt of 1,000 ${p.currency} against a 500 ${p.currency} deposit request. Owner explicitly authorized an additional USD 500 credit to Darrel Hill. Original receipt retained. Executed through protected maintenance workflow: ${process.env.CORRECTION_RUN_URL}`;
-     const r=await db.$queryRaw`SELECT wallet_admin_adjust_credit(${owners[0].id},${u.id},${50000},${reason},${u.updatedAt}::timestamp,${u.balanceCents},${operationId},${pid},${owners[0].passwordHash}) AS result`;
+     const r=await db.$queryRaw`SELECT wallet_admin_adjust_credit(${owners[0].id},${u.id},${50000}::integer,${reason},${u.updatedAt}::timestamp,${u.balanceCents}::integer,${operationId},${pid},${owners[0].passwordHash}) AS result`;
      if(!['saved','already_saved'].includes(r[0]?.result))throw Error('guard');
      const after=await db.user.findUniqueOrThrow({where:{id:u.id},select:{balanceCents:true}});
      const note=await db.crmNote.count({where:{id:key,subjectId:u.id,authorId:owners[0].id}}),audit=await db.auditLog.count({where:{id:key,target:u.id,action:'admin.wallet_adjusted'}});

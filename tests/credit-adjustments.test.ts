@@ -4,6 +4,7 @@ import { PGlite } from '@electric-sql/pglite';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { adminUsersQuery, memberFundingQuery, type AdminUserPage, type MemberFunding } from '../src/lib/admin-query';
 import { portalActivityQuery, type PortalActivityPage } from '../src/lib/portal-activity';
+import { portalSnapshotQuery } from '../src/lib/portal-query';
 
 let pg: PGlite, owner: string, member: string, op: string, stamp: string;
 const uuid = () => crypto.randomUUID();
@@ -69,6 +70,7 @@ describe('audited Super Admin credit corrections',()=>{
   expect(await value('SELECT "amountCents" AS value FROM "Payment" WHERE id=$1',[pid])).toBe(50000);
   const q=portalActivityQuery(member,'adjustment','',1);const activity=(await rows<{activity:PortalActivityPage}>(q.text,q.values))[0].activity;expect(activity.total).toBe(1);expect(activity.rows[0]).toMatchObject({kind:'ADMIN_ADJUSTMENT',paymentId:pid,creditDeltaCents:50000});
   const f=await funding();expect(f.depositedCents).toBe(50000);expect(f.adjustmentCents).toBe(50000);
+  const s=portalSnapshotQuery(member);expect((await rows<{snapshot:{valueCents:number;recordedProfitCents:number}}>(s.text,s.values))[0].snapshot).toMatchObject({valueCents:100000,recordedProfitCents:0});
   expect((await crm('paid')).total).toBe(1);expect((await crm('available')).total).toBe(1);expect((await crm('committed')).total).toBe(0);
  });
  it('rolls the entire posting back if its audit insert fails',async()=>{
