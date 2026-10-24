@@ -61,16 +61,17 @@ describe('audited Super Admin credit corrections',()=>{
   expect(await adjust(50000,{op:uuid()})).toBe('saved');stamp=await updated();expect(await adjust(-25000,{op:uuid()})).toBe('saved');expect(await balance()).toBe(25000);expect((await funding()).committedCents).toBe(50000);
  });
  it('links the missing $500 to a confirmed $500 receipt without rewriting it or treating it as profit',async()=>{
-  const pid=uuid(),hash='0x'+'a'.repeat(64);await pg.query(`SELECT wallet_create_manual_deposit($1,$2,50000,'USDT','ERC20','0x1111111111111111111111111111111111111111')`,[member,pid]);
-  // Email verification policy remains enforced by the deposit flow.
+  const pid=uuid(),hash='0x'+'a'.repeat(64);
   await pg.query('UPDATE "User" SET "emailVerifiedAt"=now() WHERE id=$1',[member]);
-  await pg.query(`SELECT wallet_create_manual_deposit($1,$2,50000,'USDT','ERC20','0x1111111111111111111111111111111111111111')`,[member,pid]);
-  await pg.query('SELECT wallet_report_manual_deposit($1,$2,$3)',[pid,member,hash]);await pg.query(`SELECT wallet_review_manual_deposit($1,$2,true,$3,'Verified receipt fixture')`,[pid,owner,hash]);
-  stamp=await updated();expect(await adjust(50000,{receipt:pid})).toBe('saved');expect(await balance()).toBe(100000);
+  for(const p of [{id:uuid(),cents:2000,hash:'0x'+crypto.randomBytes(32).toString('hex')},{id:pid,cents:50000,hash}]) {
+   await pg.query(`SELECT wallet_create_manual_deposit($1,$2,$3,'USDT','ERC20','0x1111111111111111111111111111111111111111')`,[member,p.id,p.cents]);
+   await pg.query('SELECT wallet_report_manual_deposit($1,$2,$3)',[p.id,member,p.hash]);await pg.query(`SELECT wallet_review_manual_deposit($1,$2,true,$3,'Verified receipt fixture')`,[p.id,owner,p.hash]);
+  }
+  stamp=await updated();expect(await adjust(50000,{receipt:pid})).toBe('saved');expect(await balance()).toBe(102000);
   expect(await value('SELECT "amountCents" AS value FROM "Payment" WHERE id=$1',[pid])).toBe(50000);
   const q=portalActivityQuery(member,'adjustment','',1);const activity=(await rows<{activity:PortalActivityPage}>(q.text,q.values))[0].activity;expect(activity.total).toBe(1);expect(activity.rows[0]).toMatchObject({kind:'ADMIN_ADJUSTMENT',paymentId:pid,creditDeltaCents:50000});
-  const f=await funding();expect(f.depositedCents).toBe(50000);expect(f.adjustmentCents).toBe(50000);
-  const s=portalSnapshotQuery(member);expect((await rows<{snapshot:{valueCents:number;recordedProfitCents:number}}>(s.text,s.values))[0].snapshot).toMatchObject({valueCents:100000,recordedProfitCents:0});
+  const f=await funding();expect(f.depositedCents).toBe(52000);expect(f.adjustmentCents).toBe(50000);
+  const s=portalSnapshotQuery(member);expect((await rows<{snapshot:{valueCents:number;recordedProfitCents:number}}>(s.text,s.values))[0].snapshot).toMatchObject({valueCents:102000,recordedProfitCents:0});
   expect((await crm('paid')).total).toBe(1);expect((await crm('available')).total).toBe(1);expect((await crm('committed')).total).toBe(0);
  });
  it('rolls the entire posting back if its audit insert fails',async()=>{
