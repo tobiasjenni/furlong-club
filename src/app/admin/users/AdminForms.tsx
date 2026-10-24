@@ -1,6 +1,7 @@
 "use client";
 import { useActionState } from "react";
-import { type AdminFormState, changeUserRole, sendResetLink, editUserProfile, deleteUserAccount, permanentlyDeleteUser } from "@/app/actions/admin";
+import { type AdminFormState, changeUserRole, sendResetLink, editUserProfile, deleteUserAccount, permanentlyDeleteUser, adjustWalletCredit } from "@/app/actions/admin";
+import { usd } from "@/lib/format";
 import { CopyButton } from "@/app/checkout/pay/[id]/CopyButton";
 import { SubmitButton } from "@/components/SubmitButton";
 
@@ -18,6 +19,26 @@ function Result({ state }: { state: AdminFormState }) {
       )}
     </div>
   );
+}
+
+export function CreditAdjustmentForm({ userId, balanceCents, expectedUpdatedAt, operationId, receipts }: { userId: string; balanceCents: number; expectedUpdatedAt: string; operationId: string; receipts: { id: string; label: string }[] }) {
+  const [state, action, pending] = useActionState(adjustWalletCredit, null);
+  return <form action={action} className="card space-y-4" id="adjust-credit" aria-busy={pending}>
+    <h3 className="text-lg">Adjust wallet credit</h3>
+    <p className="muted text-sm">Available: <strong className="text-cream">{usd(balanceCents)}</strong>. Every correction creates a balanced ledger entry, an audit record and an internal CRM note. Trading funds stay committed.</p>
+    <Result state={state} />
+    {!state?.ok && <fieldset disabled={pending} className="space-y-4">
+      <input type="hidden" name="userId" value={userId} /><input type="hidden" name="expectedUpdatedAt" value={expectedUpdatedAt} /><input type="hidden" name="operationId" value={operationId} />
+      <div className="grid gap-3 sm:grid-cols-2"><label className="label">Correction<select name="direction" className="input"><option value="add">Add credit</option><option value="subtract">Deduct available credit</option></select></label>
+      <label className="label">Amount (USD)<input name="amount" type="number" inputMode="decimal" min="0.01" max="10000" step="0.01" required className="input" placeholder="500.00" /></label></div>
+      <label className="label">Related deposit<select name="paymentId" className="input"><option value="">General wallet correction</option>{receipts.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}</select></label>
+      <label className="label">Internal reason<textarea name="reason" minLength={10} maxLength={1000} required rows={3} className="input" placeholder="Explain the amount received, the difference and how you verified it." /></label>
+      <label className="label">Your current Super Admin password<input name="password" type="password" autoComplete="current-password" required className="input" /></label>
+      <SubmitButton className="btn-gold workspace-action-positive w-full" pendingLabel="Recording correction…">Record credit correction</SubmitButton>
+      <p className="muted text-xs">Adds or deducts club credit only. This does not send crypto or enroll funds in trading.</p>
+    </fieldset>}
+    {state?.ok && <a href={`/admin/users/${userId}`} className="btn-ghost">Refresh member balance →</a>}
+  </form>;
 }
 
 export function ProfileForm({ user }: { user: { id: string; name: string | null; country: string | null; tags: string[]; status: string; updatedAt: string } }) {

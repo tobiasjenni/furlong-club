@@ -207,6 +207,38 @@ export async function confirmEmail(form: FormData) {
 
 export type AdminFormState = { error?: string; ok?: string; link?: string } | null;
 
+export async function adjustWalletCredit(_: AdminFormState, form: FormData): Promise<AdminFormState> {
+  const admin = await requireSuperAdmin();
+  if (!await rateLimit(`admin-credit:${admin.id}`, 10, 15 * 60 * 1000)) return { error: 'Too many attempts. Try again in 15 minutes.' };
+  const amount = String(form.get('amount') ?? '').trim();
+  const reason = String(form.get('reason') ?? '').trim();
+  const operationId = String(form.get('operationId') ?? '');
+  const expected = String(form.get('expectedUpdatedAt') ?? '');
+  const direction = form.get('direction');
+  if (!/^\d{1,5}(\.\d{1,2})?$/.test(amount) || Number(amount) <= 0 || Number(amount) > 10000
+    || !['add', 'subtract'].includes(String(direction)) || reason.length < 10 || reason.length > 1000
+    || !z.uuid().safeParse(operationId).success || !z.iso.datetime().safeParse(expected).success) return { error: 'Enter $0.01–$10,000 and an internal reason of 10–1,000 characters.' };
+  if (!await matchesPassword(String(form.get('password') ?? ''), admin.passwordHash)) return { error: 'Your current password is incorrect.' };
+  const delta = Math.round(Number(amount) * 100) * (direction === 'subtract' ? -1 : 1);
+  const uid = String(form.get('userId'));
+  const receipt = String(form.get('paymentId') ?? '');
+  const rows = await db.$queryRaw<{ result: string }[]>`SELECT wallet_admin_adjust_credit(${admin.id},${uid},${delta},${reason},${new Date(expected)}::timestamp,${operationId},${receipt},${admin.passwordHash}) AS result`;
+  const result = rows[0]?.result;
+  if (result === 'saved' || result === 'already_saved') {
+    for (const path of ['/admin', '/admin/users', `/admin/users/${uid}`, '/dashboard', '/wallet', '/trading', '/transactions']) revalidatePath(path);
+    return { ok: `Credit correction ${result === 'already_saved' ? 'was already recorded' : 'recorded'}. The ledger, audit history and internal CRM note include this change. Refresh to see current balances.` };
+  }
+  const errors: Record<string, string> = {
+    forbidden: 'Only the active Super Admin can adjust another member’s credit.',
+    stale: 'This account changed. Refresh and review its current balance before adjusting.',
+    insufficient: 'The deduction exceeds available credit. Funds committed to Rob cannot be deducted here.',
+    unavailable: 'This wallet is frozen or the account is closed. Resolve its status first.',
+    invalid_receipt: 'Select a confirmed wallet deposit belonging to this member, or choose a general correction.',
+    conflict: 'This correction reference was already used with different details. Refresh before starting a new correction.',
+  };
+  return { error: errors[result ?? ''] ?? 'Unable to record this correction. Refresh and try again.' };
+}
+
 async function deliver(email: Email, link: string): Promise<AdminFormState> {
   if (!emailDelivers()) return { ok: 'Email delivery is unavailable. Share this one-hour link privately only after verifying the member’s identity:', link };
   await sendEmail(email);

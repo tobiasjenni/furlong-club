@@ -11,7 +11,7 @@ export function portalActivityQuery(userId: string, type: ActivityType, search: 
     SELECT j.id,j."createdAt" AS at,j.kind,j.description,
       CASE WHEN j.kind='TRADING_PAYOUT' THEN COALESCE(a."payoutCents",0) ELSE GREATEST(abs(j."userDeltaCents"::bigint),abs(j."lockedDeltaCents"::bigint)) END AS amount,
       j."userDeltaCents" AS credit,COALESCE(j."paymentId",j."allocationId",j.id) AS reference,j."paymentId",j."allocationId",
-      CASE WHEN j.kind='TRADING_LOCK' THEN 'allocation' WHEN j.kind='TRADING_PAYOUT' THEN 'payout'
+      CASE WHEN j.kind='ADMIN_ADJUSTMENT' THEN 'adjustment' WHEN j.kind='TRADING_LOCK' THEN 'allocation' WHEN j.kind='TRADING_PAYOUT' THEN 'payout'
       WHEN j."paymentId" IS NOT NULL AND j."userDeltaCents">0 THEN 'deposit'
       WHEN j."planId" IS NOT NULL AND j."userDeltaCents"<0 THEN 'membership' ELSE 'adjustment' END AS bucket
     FROM "WalletJournal" j LEFT JOIN "TradingAllocation" a ON a.id=j."allocationId" AND a."userId"=j."userId" WHERE j."userId"=${userId}
