@@ -14,5 +14,5 @@ it("does not invent another date after the published schedule is exhausted",()=>
 });
 it("uses the saved duration when showing a cycle report",()=>{
   const html=renderToStaticMarkup(createElement(ResultsCalendar,{asOf:'2026-10-23T00:00:00Z',points:[],cycle:{endDay:'2026-11-23',profitBps:100,updatedAt:'2026-10-23T00:00:00Z',lockDays:28}}));
-  expect(html).toContain('28-day club cycle');expect(html).toContain('0/28 days supplied');expect(html).not.toContain('33-day');
+  expect(html).toContain('Rob’s reported 28-day cycle');expect(html).toContain('0/28 days supplied');expect(html).not.toContain('33-day');
 });

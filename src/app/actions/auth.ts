@@ -23,10 +23,10 @@ const signupSchema = z.object({
   name: z.string().trim().min(1, "Please enter your name").max(80),
   email: z.string().trim().toLowerCase().email("Please enter a valid email").max(254),
   password: passwordSchema,
-  passwordConfirm: z.string({ required_error: "Please confirm your password" }).min(1, "Please confirm your password"),
+  passwordConfirm: z.string({ error: "Please confirm your password" }).min(1, "Please confirm your password"),
   country: z.string().trim().max(60).optional(),
-  age: z.literal("on", { errorMap: () => ({ message: "You must confirm you are 18 or over" }) }),
-  terms: z.literal("on", { errorMap: () => ({ message: "Please accept the terms" }) }),
+  age: z.literal("on", { error: "You must confirm you are 18 or over" }),
+  terms: z.literal("on", { error: "Please accept the terms" }),
   marketing: z.string().optional(),
 }).refine(value => value.password === value.passwordConfirm, { path: ["passwordConfirm"], message: "Passwords do not match. Enter the same password again." });
 

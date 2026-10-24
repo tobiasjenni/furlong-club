@@ -34,6 +34,7 @@ export function CycleSummaryForm({ record }: { record?: CycleSummaryRecord }) {
       <label className="label">Reported period<select name="lockDays" className="input" defaultValue={record?.lockDays ?? 28}><option value="28">28 days · current syndicate</option><option value="33">33 days · historical cycle</option></select></label>
       <label className="label">Cycle end date (UTC)<input name="endDay" type="date" required defaultValue={record?.endDay} className="input" /></label>
       <label className="label">Reported net cycle profit (%)<input name="profitPercent" type="number" step="0.01" min={-100} max={1000} required defaultValue={record ? record.profitBps / 100 : ''} className="input" /></label>
+      <p className="muted text-xs">Enter profit above the original capital. For example, 148% means $1,480 profit on $1,000 starting capital: $2,480 capital plus profit in total. Do not include the original capital in the profit percentage.</p>
       <label className="label">Summary source / correction reason<textarea name="sourceNote" required minLength={10} maxLength={1000} rows={3} className="input" /></label>
       {record && <p className="muted break-words text-xs">Previous reference: {record.sourceNote}</p>}
       <label className="flex items-start gap-3 text-sm"><input name="published" type="checkbox" defaultChecked={record?.published ?? true} className="mt-1" /><span>Show this owner-reported summary on member calendars</span></label>
