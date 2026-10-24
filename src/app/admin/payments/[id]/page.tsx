@@ -5,11 +5,12 @@ import { requireAdmin } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { dateTime, usd } from "@/lib/format";
 import { ReviewDepositForm } from "@/components/ManualDepositForms";
-import { transactionUrl } from "@/lib/manual-deposits";
+import { expireManualDeposits, transactionUrl } from "@/lib/manual-deposits";
 import Link from "next/link";
 
 export default async function PaymentAudit({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ refresh?: string }> }) {
   const admin = await requireAdmin();
+  await expireManualDeposits();
   const canEdit = admin.role === "SUPER_ADMIN";
   const payment = await db.payment.findUnique({ where: { id: (await params).id }, include: {
     user: true, journal: true, events: { orderBy: { createdAt: "desc" }, take: 100 },

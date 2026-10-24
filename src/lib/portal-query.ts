@@ -19,7 +19,7 @@ export function portalSnapshotQuery(userId: string, history = true) {
     pending AS (SELECT count(*) AS count,COALESCE(sum(p."amountCents"),0) AS cents
       FROM "Payment" p JOIN me ON p."userId"=me.id
       WHERE p.purpose='WALLET_TOPUP' AND p.status IN ('PENDING','CONFIRMING','PARTIAL')
-      AND (p."expiresAt" IS NULL OR p."expiresAt">(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'))),
+      AND (p.status<>'PENDING' OR p."expiresAt" IS NULL OR p."expiresAt">(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'))),
     ${history ? Prisma.sql`events AS (
       SELECT j."createdAt" AS at,j."userDeltaCents"::bigint+j."lockedDeltaCents"::bigint AS value_delta,0::bigint AS profit_delta,0 AS result_count
       FROM "WalletJournal" j JOIN me ON j."userId"=me.id

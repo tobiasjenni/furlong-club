@@ -27,7 +27,7 @@ export async function ManualDepositPage({ payment, portal = false }: { payment: 
   const tx = payment.payinHash ?? payment.submittedTxHash;
   const explorer = test ? null : transactionUrl(payment.network, tx);
   return <div className="container-page funding-receipt-page max-w-2xl space-y-5 py-10">
-    {reviewing && <AutoRefresh seconds={10} />}
+    {(pending || reviewing) && <AutoRefresh seconds={10} />}
     <Link href={walletHref} className="text-sm text-gold-300 underline">← Back to wallet</Link>
     <section className="card space-y-5">
       <div><p className="muted text-sm">Manual deposit · {payment.currency}</p>
@@ -41,13 +41,14 @@ export async function ManualDepositPage({ payment, portal = false }: { payment: 
         <p className="mt-1 font-display text-3xl">{amount} {payment.currency}</p><p className="mt-2 font-semibold text-gold-300">{network}</p>
         <p className="muted mt-2 text-xs">Club credit after approval: {usd(payment.amountCents)}. One token equals $1 of USD club credit. Pay your sending wallet&apos;s network fee separately.</p></div>
       {pending && <>
+        <p className="funding-callout funding-callout-amber">Report your transfer within 60 minutes of creating this request{payment.expiresAt ? ` · expires ${dateTimeUtc(payment.expiresAt)} UTC` : ''}. Unreported requests close automatically. If you have already sent funds, you can still report the transaction from the expired record.</p>
         <p className="text-sm text-cream/80">Use only <strong>{payment.currency}</strong> on <strong>{network}</strong>. Send from your own wallet or exchange account and keep your transaction receipt.</p>
         <div className="funding-receipt-address"><h2>Send funds here to add credit</h2><p className="muted mt-2 text-xs">Club deposit address · {network}</p><code className="select-all">{payment.payAddress}</code>{!test && <CopyButton value={payment.payAddress!} />}{qr && <details className="funding-details"><summary>Show deposit QR code</summary><img src={qr} alt={`${payment.currency} receiving address on ${network}`} className="mx-auto my-4 h-56 w-56 rounded-xl" /><p className="funding-form-note">Scan from your sending wallet. Check the token, network and amount before sending.</p></details>}<p className="funding-form-note">This is the club’s address. For trading payouts, you’ll enter your own personal receiving wallet in the next step.</p></div>
         <ReportDepositForm id={payment.id} />
         <CancelDepositForm id={payment.id} portal={portal} />
       </>}
       {payment.providerStatus === "admin_rejected" && <p className="rounded-xl bg-red-500/10 p-3 text-sm text-red-200">Reason: {payment.reviewReason}</p>}
-      {cancelled && <details className="text-sm"><summary className="cursor-pointer text-gold-300">Already sent funds for this cancelled request?</summary><div className="mt-4"><ReportDepositForm id={payment.id} /></div></details>}
+      {(cancelled || payment.status === 'EXPIRED') && <details className="text-sm"><summary className="cursor-pointer text-gold-300">Already sent funds for this {cancelled ? 'cancelled' : 'expired'} request?</summary><div className="mt-4"><p className="muted mb-3 text-xs">Report the existing transaction for review. Do not send it again.</p><ReportDepositForm id={payment.id} /></div></details>}
       <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-3 text-sm">
         <dt className="muted">Status</dt><dd>{manualDepositLabel(payment.status, payment.providerStatus)}</dd>
         <dt className="muted">Reference</dt><dd className="break-all text-xs">{payment.id}</dd>

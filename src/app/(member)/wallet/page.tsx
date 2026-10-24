@@ -6,7 +6,7 @@ import Link from "next/link";
 import { pendingTradingDeposit, portalSummary } from "@/lib/portal-data";
 import { db } from "@/lib/db";
 import { checkoutOptions, walletEnabled } from "@/lib/config";
-import { depositsReady, manualDepositLabel, manualDepositsEnabled } from "@/lib/manual-deposits";
+import { depositsReady, expireManualDeposits, manualDepositLabel, manualDepositsEnabled } from "@/lib/manual-deposits";
 import { dateTimeUtc, usd } from "@/lib/format";
 import { TopupForm } from "@/app/wallet/TopupForm";
 import { EmptyState, PortalHeading } from "@/components/v2/PortalCommon";
@@ -19,6 +19,7 @@ export default async function PortalWallet({ searchParams }: { searchParams: Pro
   const [{ user, snapshot }, deposit] = await Promise.all([portalSummary(), pendingTradingDeposit()]); const params = await searchParams; const page = pageParam(params.page);
   const forTrading = params.for === "trading";
   const where = { userId: user.id, purpose: "WALLET_TOPUP" };
+  await expireManualDeposits(user.id);
   const [payments, count] = await Promise.all([db.payment.findMany({ where, orderBy: [{ createdAt: "desc" }, { id: "desc" }], take: 20, skip: (page - 1) * 20 }), db.payment.count({ where })]);
   const defaultAmount = snapshot.availableCents < 50000 ? Math.max(20, (50000 - snapshot.availableCents) / 100) : 500;
   const options = checkoutOptions.map((option, value) => ({ label: option.label, currency: option.currency, network: option.network, value, enabled: depositsReady(option) }));
